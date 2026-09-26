@@ -1,0 +1,8 @@
+flask
+streamlit
+streamlit-folium
+folium
+requests
+google-genai
+chromadb
+python-dotenv
