@@ -10,6 +10,7 @@ import time
 from pathlib import Path
 
 import chromadb
+import requests
 from dotenv import load_dotenv
 from google import genai
 from google.genai import errors as genai_errors
@@ -49,6 +50,8 @@ SECTION_LABELS = [
 
 _client = None
 _RETRYABLE = (429, 500, 503)
+# Anything that means "Gemini didn't answer": API errors and dropped connections alike.
+AI_ERRORS = (genai_errors.APIError, requests.exceptions.RequestException)
 
 
 def client() -> genai.Client:
@@ -62,8 +65,9 @@ def _with_retry(fn, attempts: int = 3):
     for i in range(attempts):
         try:
             return fn()
-        except genai_errors.APIError as e:
-            if e.code not in _RETRYABLE or i == attempts - 1:
+        except AI_ERRORS as e:
+            retryable = not isinstance(e, genai_errors.APIError) or e.code in _RETRYABLE
+            if not retryable or i == attempts - 1:
                 raise
             time.sleep(1.5 * (i + 1))
 
@@ -178,8 +182,17 @@ Hard rules:
 - For every source you use, keep EVERY point of its CAVEAT (e.g. registration or empanelment requirements, stabilization-only limits, and any "you can still register for the future" advice).
 - Every bullet must end with its source in square brackets, using the document title given in the CONTEXT.
 - CONTEXT sections marked GUIDANCE tell you how to use a source; follow them but do not quote them.
+- CAVEAT text can also contain notes addressed to you (e.g. "the most important thing to surface", "the app should"); follow them but never quote that wording.
 - If a source clearly doesn't apply to this person's situation, leave it out.
-- Plain, warm, simple English. 4-7 short bullets, under 200 words total. No headings, no preamble, no legal advice disclaimer (the app shows one)."""
+- If a QUESTION is given, your first bullet must answer that exact question directly. If it contains several \
+questions, answer each one, in order. Only include other points that help with what they asked.
+- CONVERSATION SO FAR is only for understanding follow-ups (e.g. "what about that hospital?", "and if I already paid?"). \
+Do not repeat points you already made unless they ask again.
+- Only when a QUESTION is given: if it needs something the CONTEXT does not cover (medical advice, other laws or schemes, phone numbers, \
+costs of treatment), say plainly in one bullet that Raahat can't answer that from its sources, and suggest asking \
+the hospital or a doctor (or calling 108 in an emergency). Never guess. That bullet needs no citation.
+- Without a QUESTION, give a short overview of what they may be eligible for.
+- Plain, warm, simple English. 2-7 short bullets, under 200 words total. No headings, no preamble, no legal advice disclaimer (the app shows one)."""
 
 
 # Situations the user can tick. `phrase` feeds retrieval and the generator; `include` forces
@@ -189,7 +202,7 @@ SITUATIONS = {
     "cant_pay": {
         "label": "Can't pay right now / worried about the cost",
         "phrase": "I cannot afford to pay for emergency treatment right now",
-        "include": ["clinical_establishments_act"],
+        "include": ["clinical_establishments_act", "telangana_aarogyasri"],
     },
     "asked_to_pay_first": {
         "label": "Asked to pay before emergency treatment",
@@ -209,7 +222,7 @@ SITUATIONS = {
     "big_bill": {
         "label": "Already got a large hospital bill",
         "phrase": "I already received a large hospital bill for emergency treatment",
-        "include": ["clinical_establishments_act"],
+        "include": ["clinical_establishments_act", "telangana_aarogyasri"],
     },
     "bpl_card": {
         "label": "Have a BPL ration card / Aarogyasri enrolment",
@@ -241,9 +254,10 @@ def situation_rules(tags: list[str]) -> tuple[list[str], tuple[str, ...], tuple[
     return phrases, must, exclude
 
 
-def build_situation_query(injury_label: str, facility: dict | None, situation: str | None) -> str:
+def build_situation_query(injury_label: str, facility: dict | None, situation: str | None,
+                          question: str | None = None) -> str:
     # The user's own words go first so they dominate the embedding over the fixed template.
-    parts = [f"{situation}." if situation else "",
+    parts = [f"{question}" if question else "", f"{situation}." if situation else "",
              f"Medical emergency: {injury_label}. My rights to emergency treatment and any help with costs."]
     if facility:
         emp = {True: "is Aarogyasri-empanelled", False: "is NOT Aarogyasri-empanelled",
@@ -287,7 +301,7 @@ def _generate_with(prompt: str, config: types.GenerateContentConfig) -> tuple[st
             resp = _with_retry(lambda: client().models.generate_content(
                 model=model, contents=prompt, config=config), attempts=2)
             return (resp.text or "").strip(), model
-        except genai_errors.APIError as e:  # overloaded, retired (404) etc. -> try the next model
+        except AI_ERRORS as e:  # overloaded, retired (404), network drop -> try the next model
             last_err = e
     raise last_err
 
@@ -297,7 +311,8 @@ def _generate(prompt: str) -> tuple[str, str]:
 
 
 def generate_explanation(injury_label: str, situation: str | None, facility: dict | None,
-                         chunks: list[dict]) -> tuple[str, str]:
+                         chunks: list[dict], question: str | None = None,
+                         history: list[dict] | None = None) -> tuple[str, str]:
     # Built separately from the retrieval query so facility facts only appear when a source backs them.
     lines = [f"INJURY: {injury_label}"]
     if situation:
@@ -309,6 +324,11 @@ def generate_explanation(injury_label: str, situation: str | None, facility: dic
             fac += (f"; Aarogyasri-empanelled: {status}"
                     " (from public sources that may be out of date; tell them to confirm it at the hospital)")
         lines.append(fac)
+    if history:
+        convo = "\n".join(f"{m['role'].upper()}: {m['content']}" for m in history)
+        lines.append(f"\nCONVERSATION SO FAR:\n{convo}")
+    if question:
+        lines.append(f"\nQUESTION: {question}")
     prompt = "\n".join(lines) + f"\n\nCONTEXT:\n{format_context(chunks)}"
     allowed = {c["metadata"]["title"] for c in chunks}
     for _ in range(2):
@@ -327,14 +347,19 @@ def fallback_explanation(sources: list[dict]) -> str:
             f"to your situation — ask the hospital's help desk or a legal aid clinic about them:\n{titles}")
 
 
+MAX_HISTORY = 6  # most recent messages given to the model for follow-ups
+
+
 def explain(injury_label: str, facility: dict | None = None, situation: str | None = None,
-            situation_tags: list[str] | None = None) -> dict:
+            situation_tags: list[str] | None = None, question: str | None = None,
+            history: list[dict] | None = None) -> dict:
     ensure_index()
     tags = [t for t in dict.fromkeys(situation_tags or []) if t in SITUATIONS]
     phrases, must, exclude = situation_rules(tags)
     # Ticked situations first, then the user's free text, in one description.
     situation = ". ".join([*phrases, *([situation] if situation else [])]) or None
-    query = build_situation_query(injury_label, facility, situation)
+    query = build_situation_query(injury_label, facility, situation, question)
+    history = [{"role": m["role"], "content": m["content"][:800]} for m in (history or [])][-MAX_HISTORY:]
     # A non-empanelled (or unverified) facility may void Aarogyasri -- always surface that warning.
     if facility and not facility["aarogyasri_empanelled"]:
         must = (*must, "telangana_aarogyasri")
@@ -344,12 +369,13 @@ def explain(injury_label: str, facility: dict | None = None, situation: str | No
         m = c["metadata"]
         sources.setdefault(m["doc_id"], {"doc_id": m["doc_id"], "title": m["title"], "citation": m["citation"]})
     try:
-        explanation, model_used = generate_explanation(injury_label, situation, facility, chunks)
+        explanation, model_used = generate_explanation(injury_label, situation, facility, chunks, question, history)
         generated = True
-    except genai_errors.APIError:
+    except AI_ERRORS:
         explanation, model_used, generated = fallback_explanation(list(sources.values())), None, False
     return {
         "query": query,
+        "question": question,
         "explanation": explanation,
         "generated": generated,
         "sources": list(sources.values()),

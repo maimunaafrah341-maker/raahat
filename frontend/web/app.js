@@ -16,7 +16,8 @@ const state = {
   strings: {}, languages: {}, rtl: [], lang: "en",
   injuries: [], situations: [], sources: [], preview: null,
   injury: null, chosenSituations: new Set(),
-  triage: null, selectedId: null, entitlements: null, understood: null,
+  triage: null, selectedId: null, understood: null,
+  caseData: null, pending: false, restored: false,
   map: null, markers: {},
 };
 
@@ -45,7 +46,8 @@ function renderExplanation(text) {
     const m = b.match(/^[*-]\s+([\s\S]*)$/);
     (m ? bullets : paras).push(m ? m[1] : b);
   }
-  const withCites = (s) => inlineMd(s).replace(/\s*\[([^\]]+)\]\.?\s*$/, (_, c) => `<br><span class="cite">${c}</span>`);
+  // Every [Source title] becomes a badge, wherever Gemini placed it in the bullet.
+  const withCites = (s) => inlineMd(s).replace(/\s*\[([^\]]+)\]\.?/g, (_, c) => ` <span class="cite">${c}</span>`);
   let html = "";
   if (bullets.length) html += `<ul>${bullets.map((b) => `<li>${withCites(b)}</li>`).join("")}</ul>`;
   if (paras.length) html += paras.map((p) => `<p>${withCites(p)}</p>`).join("");
@@ -104,9 +106,7 @@ function applyLanguage() {
   renderUnderstood();
   if (state.triage) renderResults();
   if (state.triage) renderEntitlementForm();
-  // An explanation is language-specific; ask again rather than show the old language.
-  if (state.entitlements && state.entitlements.language !== state.lang) state.entitlements = null;
-  renderEntitlementResult();
+  renderChat();
 }
 
 /* ---------- injury choice (select + tiles stay in sync) ---------- */
@@ -172,28 +172,28 @@ function searchOrigin() {
   }
   return LOCALITIES[$("locality").value];
 }
-async function onSearch(e) {
-  e.preventDefault();
+async function runSearch({ scroll = true, selectId = null } = {}) {
   const btn = $("search-btn");
   const [lat, lng] = searchOrigin();
   busy(btn, true);
   try {
     state.triage = await api("/api/triage", { injury: state.injury, lat, lng, radius_km: Number($("radius").value) });
-    state.selectedId = state.triage.results[0]?.id ?? null;
-    state.entitlements = null;
+    const ids = state.triage.results.map((f) => f.id);
+    state.selectedId = ids.includes(selectId) ? selectId : (ids[0] ?? null);
     $("start-info").hidden = true;
     $("results").hidden = false;
     $("entitlements").hidden = !state.triage.results.length;
     renderResults();
     renderEntitlementForm();
-    renderEntitlementResult();
-    $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+    renderChat();
+    if (scroll) $("results").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (err) {
     toast(err.message);
   } finally {
     busy(btn, false);
   }
 }
+function onSearch(e) { e.preventDefault(); runSearch(); }
 
 function directionsUrl(f) { return `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}`; }
 function sourceTitle(docId) { return state.sources.find((x) => x.doc_id === docId)?.title || ""; }
@@ -212,7 +212,8 @@ function renderPreview() {
   const box = $("preview-list");
   if (!state.preview) { box.innerHTML = ""; return; }
   const item = state.injuries.find((i) => i.key === state.preview.injury.key);
-  $("preview-injury").textContent = item ? injuryLabel(item) : "";
+  $("preview-injury").textContent = t("preview_near", { injury: item ? injuryLabel(item) : "", place: "Charminar" });
+  $("preview-badge").textContent = t("preview_badge");
   box.innerHTML = state.preview.results.slice(0, 4).map((f) => `
     <li class="preview__row">
       <span class="preview__rank">${f.rank}</span>
@@ -341,7 +342,7 @@ function selectFacility(id, fromList = true) {
   const m = state.markers[id];
   if (m && fromList) { state.map.panTo(m.getLatLng()); m.openPopup(); }
   renderSteps();
-  if (state.entitlements && state.entitlements.facility_id !== id) { state.entitlements = null; renderEntitlementResult(); }
+  if (state.caseData) { syncCase(); saveCase(); }
 }
 
 /* ---------- entitlements ---------- */
@@ -355,49 +356,118 @@ function renderEntitlementForm() {
   if (state.selectedId != null) $("ent-facility").value = String(state.selectedId);
   renderChips();
 }
-function renderEntitlementResult() {
-  const box = $("ent-result");
-  const e = state.entitlements;
-  if (!e) {
-    box.innerHTML = `<div class="ent__placeholder"><div><svg class="ico"><use href="#i-shield"/></svg><p>${esc(t("eligible_caption"))}</p></div></div>`;
-    return;
-  }
-  if (e.loading) {
-    box.innerHTML = `<p class="mt-label">${esc(t("spinner"))}</p><div class="skeleton"><div></div><div></div><div></div><div></div></div>`;
-    return;
-  }
-  const translated = e.explanation_translated;
+/* ---------- conversation with memory (saved on this device only) ---------- */
+const CASE_KEY = "raahat.case.v1";
+const HISTORY_SENT = 6; // recent messages sent with each question
+
+function loadCase() {
+  try { return JSON.parse(store.get(CASE_KEY) || "null"); } catch { return null; }
+}
+function saveCase() { store.set(CASE_KEY, JSON.stringify(state.caseData)); }
+function syncCase() {
+  state.caseData = {
+    ...(state.caseData || { messages: [] }),
+    injury: state.triage?.injury.key || state.injury,
+    locality: $("locality").value,
+    facilityId: state.selectedId,
+    situations: [...state.chosenSituations],
+    notes: $("situation-text").value.trim(),
+  };
+}
+function newCase() {
+  state.caseData = null;
+  try { localStorage.removeItem(CASE_KEY); } catch { /* storage blocked */ }
+  state.chosenSituations = new Set();
+  $("situation-text").value = "";
+  state.restored = false;
+  renderChips();
+  renderSteps();
+  renderChat();
+}
+
+function renderAnswer(m) {
+  const translated = m.lang === state.lang ? m.translated : null;
   let html = "";
   if (translated) html += `<p class="mt-label"><svg class="ico"><use href="#i-sparkle"/></svg>${esc(t("mt_label"))}</p>`;
-  else if (state.lang !== "en" && e.generated) html += `<p class="mt-label">${esc(t("translation_failed"))}</p>`;
-  html += `<div class="explanation">${renderExplanation(translated || e.explanation)}</div>`;
-  if (translated) html += `<details><summary>${esc(t("show_english"))}</summary><div class="explanation english">${renderExplanation(e.explanation)}</div></details>`;
-  html += `<details><summary>${esc(t("sources_used"))}</summary><div class="sources">${(e.sources || []).map((s) =>
-    `<div><b>${esc(s.title)}</b>${esc(s.citation)}</div>`).join("")}</div></details>`;
-  if (e.model?.generation) html += `<p class="model">${esc(t("generated_by", { gen: e.model.generation, emb: e.model.embedding }))}</p>`;
-  box.innerHTML = html;
+  else if (state.lang !== "en" && m.generated) html += `<p class="mt-label">${esc(t("translation_failed"))}</p>`;
+  html += `<div class="explanation">${renderExplanation(translated || m.content)}</div>`;
+  if (translated) html += `<details><summary>${esc(t("show_english"))}</summary><div class="explanation english">${renderExplanation(m.content)}</div></details>`;
+  if (m.sources?.length) html += `<details><summary>${esc(t("sources_used"))}</summary><div class="sources">${m.sources.map((x) =>
+    `<div><b>${esc(x.title)}</b>${esc(x.citation)}</div>`).join("")}</div></details>`;
+  if (m.model?.generation) html += `<p class="model">${esc(t("generated_by", { gen: m.model.generation, emb: m.model.embedding }))}</p>`;
+  return html;
 }
-async function onExplain(e) {
-  e.preventDefault();
-  const btn = $("ent-btn");
-  const facilityId = Number($("ent-facility").value);
-  state.entitlements = { loading: true };
-  renderEntitlementResult();
-  busy(btn, true);
+
+function renderChat() {
+  const box = $("ent-result");
+  const msgs = state.caseData?.messages || [];
+  let html = "";
+  if (state.restored && msgs.length) html += `<p class="note note--ok">${esc(t("welcome_back"))}</p>`;
+  if (!msgs.length && !state.pending) {
+    html += `<div class="ent__placeholder"><div><svg class="ico"><use href="#i-shield"/></svg><p>${esc(t("eligible_caption"))}</p></div></div>`;
+  }
+  html += `<div class="chat-log">${msgs.map((m) => m.role === "user"
+    ? `<div class="msg msg--user"><span class="msg__who">${esc(t("chat_you"))}</span><p>${esc(m.content)}</p></div>`
+    : `<div class="msg msg--ai">${renderAnswer(m)}</div>`).join("")}`;
+  if (state.pending) html += `<div class="msg msg--ai"><p class="mt-label">${esc(t("spinner"))}</p><div class="skeleton"><div></div><div></div></div></div>`;
+  html += `</div>
+    <div class="suggest">${["q.1", "q.2", "q.3", "q.4"].map((k) => `<button type="button" class="chip suggest__q" data-q="${esc(t(k))}">${esc(t(k))}</button>`).join("")}</div>
+    <form class="ask" id="ask-form">
+      <textarea id="ask-input" rows="2" maxlength="500" placeholder="${esc(t("ask_placeholder"))}"></textarea>
+      <button type="submit" class="btn btn--primary" ${state.pending ? "disabled" : ""}>${esc(t("ask_button"))}</button>
+    </form>
+    <div class="memory"><span>${esc(t("memory_note"))}</span>${msgs.length ? `<button type="button" class="btn btn--ghost btn--sm" id="new-case">${esc(t("new_case"))}</button>` : ""}</div>`;
+  box.innerHTML = html;
+  const log = box.querySelector(".chat-log");
+  if (log) log.scrollTop = log.scrollHeight;
+}
+
+async function ask(question, shownText) {
+  if (state.pending || !state.triage) return;
+  syncCase();
+  const previous = state.caseData.messages.slice(-HISTORY_SENT).map((m) => ({ role: m.role, content: m.content }));
+  state.caseData.messages.push({ role: "user", content: shownText || question });
+  state.pending = true;
+  renderChat();
   try {
-    const body = { injury: state.triage.injury.key, facility_id: facilityId, situations: [...state.chosenSituations], language: state.lang };
-    const text = $("situation-text").value.trim();
-    if (text) body.situation = text;
+    const body = {
+      injury: state.caseData.injury, facility_id: state.caseData.facilityId,
+      situations: state.caseData.situations, language: state.lang, history: previous,
+    };
+    if (question) body.question = question;
+    if (state.caseData.notes) body.situation = state.caseData.notes;
     const res = await api("/api/entitlements", body, 120000);
-    state.entitlements = { ...res, facility_id: facilityId, language: state.lang };
+    state.caseData.messages.push({
+      role: "assistant", content: res.explanation, translated: res.explanation_translated,
+      lang: state.lang, sources: res.sources, model: res.model, generated: res.generated,
+    });
+    saveCase();
   } catch (err) {
-    state.entitlements = null;
+    state.caseData.messages.pop(); // let them retry the same question
     toast(err.message);
   } finally {
-    busy(btn, false);
+    state.pending = false;
+    renderChat();
   }
-  renderEntitlementResult();
-  if (window.matchMedia("(max-width: 980px)").matches) $("ent-result").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("ent-result").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function onExplain(e) {
+  e.preventDefault();
+  ask(null, t("overview_q"));
+}
+
+/* Re-open the last case saved on this device: same search, hospital, situations and conversation. */
+async function restoreCase() {
+  const c = loadCase();
+  if (!c?.injury || !state.injuries.some((i) => i.key === c.injury)) return;
+  state.caseData = c;
+  state.restored = true;
+  setInjury(c.injury);
+  if (LOCALITIES[c.locality]) { $("locality").value = c.locality; $("locality").dispatchEvent(new Event("change")); }
+  state.chosenSituations = new Set(c.situations || []);
+  $("situation-text").value = c.notes || "";
+  await runSearch({ scroll: false, selectId: c.facilityId });
 }
 
 /* ---------- boot ---------- */
@@ -458,8 +528,20 @@ async function init() {
   $("describe-form").addEventListener("submit", onDescribe);
   $("search-form").addEventListener("submit", onSearch);
   $("ent-form").addEventListener("submit", onExplain);
+  $("ent-result").addEventListener("submit", (ev) => {
+    if (ev.target.id !== "ask-form") return;
+    ev.preventDefault();
+    const q = $("ask-input").value.trim();
+    if (q) ask(q);
+  });
+  $("ent-result").addEventListener("click", (ev) => {
+    const q = ev.target.closest(".suggest__q");
+    if (q) ask(q.dataset.q);
+    if (ev.target.closest("#new-case")) newCase();
+  });
 
   applyLanguage();
+  restoreCase();
 
   // Hero preview shows a real ranking (first injury type, Charminar) rather than a mock.
   const [pla, plng] = LOCALITIES.Charminar;

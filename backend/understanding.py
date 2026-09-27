@@ -7,7 +7,6 @@ Categories are constrained to the app's own lists, so Gemini can't invent one.
 import enum
 import json
 
-from google.genai import errors as genai_errors
 from google.genai import types
 from pydantic import BaseModel
 
@@ -72,7 +71,7 @@ def understand(text: str) -> dict | None:
     try:
         raw, _model = rag._generate_with(prompt, config)
         parsed = Understanding.model_validate(json.loads(raw))
-    except (genai_errors.APIError, ValueError):
+    except (*rag.AI_ERRORS, ValueError):
         return None
     injury = parsed.injury.value
     return {

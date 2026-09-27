@@ -39,7 +39,15 @@ Peak memory for a full session is well inside the free tier's 512 MB (the API al
 - `POST /api/triage` — `{"injury": "hand_finger", "lat": 17.36, "lng": 78.47, "radius_km": 20}`
 - `POST /api/understand` — `{"text": "machine lo vellu tegipoyayi"}` → suggested injury, situations, life-threatening flag
 - `GET  /api/situations` — situation tags the user can tick
-- `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 15, "situations": ["construction_worker"], "situation": "optional free text"}`
+- `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 3, "situations": ["cant_pay"], "situation": "optional notes", "question": "optional", "history": [{"role": "user", "content": "..."}], "language": "te"}`
+
+## Conversation memory
+
+Each person's case (injury, hospital, situations, notes) and their questions and answers are saved **only in
+their own browser** (`localStorage`), never on the server, so they can close the page and come back to ask a
+follow-up. Each question sends the case plus the last 6 messages; the model answers the question asked (each
+one, if several), uses the history only to resolve follow-ups, and says plainly when something is outside its
+four sources instead of guessing. "Start a new case" clears it.
 
 ## How the RAG layer stays accurate
 

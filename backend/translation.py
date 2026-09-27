@@ -7,7 +7,6 @@ the translation, labelled as machine translation.
 """
 import re
 
-from google.genai import errors as genai_errors
 from google.genai import types
 
 from backend import rag
@@ -53,7 +52,7 @@ def translate_explanation(text: str, language: str) -> str | None:
         try:
             resp, _model = rag._generate_with(
                 prompt, types.GenerateContentConfig(temperature=0.1))
-        except genai_errors.APIError:
+        except rag.AI_ERRORS:
             return None
         translated = (resp or "").strip()
         if translated and _preserved(text, translated):

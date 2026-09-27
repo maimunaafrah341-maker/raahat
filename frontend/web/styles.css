@@ -292,6 +292,21 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .sources-band__label { letter-spa
 .skeleton div { height: 64px; border-radius: 14px; background: linear-gradient(90deg, #e3ebe6 25%, #f3f6f4 50%, #e3ebe6 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
+/* conversation */
+.preview__titlerow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.preview__badge { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #8a5a00; background: #fff4d6; border-radius: 999px; padding: 3px 10px; }
+.chat-log { display: flex; flex-direction: column; gap: 14px; max-height: 620px; overflow: auto; padding-inline-end: 4px; }
+.msg--user { align-self: flex-end; max-width: 85%; background: var(--primary); color: #fff; border-radius: 16px 16px 4px 16px; padding: 10px 14px; }
+html[dir="rtl"] .msg--user { border-radius: 16px 16px 16px 4px; }
+.msg__who { display: block; font-size: .72rem; font-weight: 700; opacity: .8; }
+.msg--ai { align-self: stretch; }
+.suggest { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 10px; }
+.suggest__q { font-size: .84rem; }
+.ask { display: flex; gap: 10px; align-items: stretch; }
+.ask textarea { flex: 1; resize: vertical; min-height: 52px; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #fff; }
+.memory { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 12px; font-size: .8rem; color: var(--muted); }
+.ent__result .note { margin-bottom: 12px; border-radius: 12px; padding: 10px 14px; font-size: .92rem; }
+
 /* ---------- footer & toast ---------- */
 .footer { background: var(--ink); color: rgba(255, 255, 255, .8); padding: 28px 0; }
 .footer p + p { margin-top: 6px; opacity: .8; }
@@ -327,4 +342,5 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .sources-band__label { letter-spa
   .call-pill { padding: 8px 12px; }
   .steps { padding: 20px; }
   .ent__form, .ent__result { padding: 20px; }
+  .ask { flex-direction: column; }
 }

@@ -4,7 +4,6 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
 
-from google.genai import errors as genai_errors
 
 from backend import rag
 from backend.db import get_connection, list_facilities
@@ -102,17 +101,23 @@ def entitlements():
     tags = body.get("situations") or []
     if not isinstance(tags, list) or any(t not in rag.SITUATIONS for t in tags):
         return {"error": f"situations must be a list drawn from {list(rag.SITUATIONS)}"}, 400
+    question = (body.get("question") or "").strip()[:500] or None
+    history = body.get("history") or []
+    if not isinstance(history, list) or not all(
+            isinstance(m, dict) and m.get("role") in ("user", "assistant") and isinstance(m.get("content"), str)
+            for m in history):
+        return {"error": "history must be a list of {role: user|assistant, content: str}"}, 400
     language = body.get("language") or "en"
     if language not in LANGUAGE_NAMES:
         return {"error": f"language must be one of {list(LANGUAGE_NAMES)}"}, 400
     try:
-        result = rag.explain(INJURIES[injury]["label"], facility, situation, tags)
+        result = rag.explain(INJURIES[injury]["label"], facility, situation, tags, question, history)
         # English stays authoritative; the translation is an extra, checked field.
         result["language"] = language
         result["explanation_translated"] = (
             translate_explanation(result["explanation"], language) if result["generated"] else None)
         return jsonify(result)
-    except genai_errors.APIError:
+    except rag.AI_ERRORS:
         return {"error": "The AI service is busy. Please try again in a moment."}, 503
 
 
