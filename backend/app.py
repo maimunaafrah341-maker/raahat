@@ -8,6 +8,7 @@ from google.genai import errors as genai_errors
 from backend import rag
 from backend.db import get_connection, list_facilities
 from backend.translation import LANGUAGE_NAMES, translate_explanation
+from backend.understanding import understand
 from backend.triage import DEFAULT_RADIUS_KM, INJURIES, rank_facilities
 
 app = Flask(__name__)
@@ -51,6 +52,18 @@ def triage():
     return jsonify({"injury": {"key": injury, "label": INJURIES[injury]["label"]},
                     "origin": {"lat": lat, "lng": lng},
                     "results": ranked})
+
+
+@app.post("/api/understand")
+def understand_text():
+    """Free-text description -> suggested injury + situations, for the user to confirm."""
+    text = ((request.get_json(silent=True) or {}).get("text") or "").strip()[:1000]
+    if not text:
+        return {"error": "text is required"}, 400
+    result = understand(text)
+    if result is None:
+        return {"error": "The AI service is busy. Please choose from the list instead."}, 503
+    return jsonify(result)
 
 
 @app.post("/api/entitlements")

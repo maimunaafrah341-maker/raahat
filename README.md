@@ -27,6 +27,7 @@ streamlit run frontend/streamlit_app.py  # UI (second terminal)
 - `GET  /api/injuries` — supported injury types
 - `GET  /api/facilities` — all facilities
 - `POST /api/triage` — `{"injury": "hand_finger", "lat": 17.36, "lng": 78.47, "radius_km": 20}`
+- `POST /api/understand` — `{"text": "machine lo vellu tegipoyayi"}` → suggested injury, situations, life-threatening flag
 - `GET  /api/situations` — situation tags the user can tick
 - `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 15, "situations": ["construction_worker"], "situation": "optional free text"}`
 
@@ -56,4 +57,7 @@ The UI and the entitlement explanations are available in English, Hindi, Telugu 
   translation is rejected (English shown instead) unless every source citation and every number
   or amount survives unchanged. Translations are labelled as machine translation, with the English
   original one tap away.
+- "Tell us what happened" accepts a description in any of the four languages, native script or
+  romanized. Gemini structured output maps it onto the app's own injury/situation lists (so it can't
+  invent a category) and only pre-fills the form for the user to confirm.
 - Not yet reviewed by native speakers. "Why this ranking" reasons are still English only.

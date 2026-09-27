@@ -293,12 +293,52 @@ if not injuries:
     st.error("No injuries are available from the server right now.")
     st.stop()
 
+
+def understand_description(text):
+    """Ask the backend to read a free-text description; store suggestions to pre-fill the forms."""
+    try:
+        with st.spinner(t(LANG, "understanding")):
+            response = requests.post(f"{API_URL}/api/understand", json={"text": text}, timeout=60)
+    except requests.exceptions.RequestException:
+        _show_connection_error()
+    if not response.ok:
+        st.session_state.understood = {"error": _response_error(response)}
+        return
+    st.session_state.understood = response.json()
+    st.session_state.understood["text"] = text
+
+
+with st.container(border=True):
+    st.subheader(t(LANG, "describe_header"))
+    with st.form("raahat_describe_form"):
+        description = st.text_area(t(LANG, "describe_label"), placeholder=t(LANG, "describe_placeholder"),
+                                   max_chars=1000)
+        if st.form_submit_button(t(LANG, "understand_button")) and description.strip():
+            understand_description(description.strip())
+
+understood = st.session_state.get("understood") or {}
+if understood.get("life_threatening_signs"):
+    st.error(t(LANG, "urgent"))
+if understood.get("error"):
+    st.warning(understood["error"])
+elif understood:
+    injury_keys = [i["key"] for i in injuries]
+    if understood.get("injury") in injury_keys:
+        picked = injuries[injury_keys.index(understood["injury"])]
+        st.success(t(LANG, "understood", injury=_label("injury", picked), button=t(LANG, "find_button")))
+    else:
+        st.info(t(LANG, "not_understood"))
+
+prefill_injury = understood.get("injury")
+prefill_index = next((i for i, item in enumerate(injuries) if item["key"] == prefill_injury), 0)
+
 with st.container(border=True):
     st.subheader(t(LANG, "find_care"))
     with st.form("raahat_search_form"):
         injury_index = st.selectbox(
             t(LANG, "injury"),
             options=list(range(len(injuries))),
+            index=prefill_index,
             format_func=lambda index: _label("injury", injuries[index]),
         )
         locality = st.selectbox(
@@ -401,10 +441,12 @@ else:
                 t(LANG, "situations_q"),
                 options=list(situation_by_key),
                 format_func=lambda key: _label("situation", situation_by_key[key]),
+                default=[k for k in understood.get("situations", []) if k in situation_by_key],
                 help=t(LANG, "situations_help"),
             )
             situation = st.text_area(
                 t(LANG, "anything_else"),
+                value=(understood.get("text") or "")[:500],
                 placeholder=t(LANG, "anything_placeholder"),
                 max_chars=500,
             )
