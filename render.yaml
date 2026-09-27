@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: raahat
+    runtime: docker
+    plan: free
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false   # Render asks for the value when the blueprint is created

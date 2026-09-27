@@ -1,0 +1,10 @@
+.git
+.env
+.claude
+__pycache__
+*.pyc
+data/healthcare.db
+chroma_db
+docs
+tests
+.venv

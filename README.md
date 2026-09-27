@@ -22,6 +22,13 @@ python -m backend.app                    # Flask API on :5000
 streamlit run frontend/streamlit_app.py  # UI (second terminal)
 ```
 
+## Deploy (Render)
+
+`render.yaml` + `Dockerfile` run the whole app in one container: the Flask API on an internal
+port and Streamlit on the public one. In Render: **New → Blueprint →** pick this repo, then paste
+your `GEMINI_API_KEY` when asked. The database is seeded and the vector index built on startup.
+Measured peak memory for a full session is ~255 MB, inside the free tier's 512 MB.
+
 ## API
 
 - `GET  /api/injuries` — supported injury types
