@@ -9,6 +9,7 @@ from backend import rag
 from backend.db import get_connection, list_facilities
 from backend.i18n import LANGUAGES, RTL, STRINGS
 from backend.translation import LANGUAGE_NAMES, translate_explanation
+from backend.first_aid import first_aid
 from backend.understanding import understand
 from backend.triage import DEFAULT_RADIUS_KM, INJURIES, rank_facilities
 
@@ -39,7 +40,18 @@ def injuries():
 
 @app.get("/api/sources")
 def sources():
-    return jsonify([{"doc_id": k, "title": v} for k, v in rag.DOC_TITLES.items()])
+    return jsonify([{"doc_id": k, "title": v, "kind": "legal" if k in rag.LEGAL_DOCS else "first_aid"}
+                    for k, v in rag.DOC_TITLES.items()])
+
+
+@app.get("/api/first_aid")
+def first_aid_card():
+    """Fixed, sourced first-aid steps for an injury (translated if a language is given)."""
+    injury = request.args.get("injury")
+    language = request.args.get("language", "en")
+    if injury not in INJURIES or language not in LANGUAGE_NAMES:
+        return {"error": "injury and language must be valid keys"}, 400
+    return jsonify(first_aid(injury, language))
 
 
 @app.get("/api/situations")
@@ -111,7 +123,7 @@ def entitlements():
     if language not in LANGUAGE_NAMES:
         return {"error": f"language must be one of {list(LANGUAGE_NAMES)}"}, 400
     try:
-        result = rag.explain(INJURIES[injury]["label"], facility, situation, tags, question, history)
+        result = rag.explain(INJURIES[injury]["label"], facility, situation, tags, question, history, injury)
         # English stays authoritative; the translation is an extra, checked field.
         result["language"] = language
         result["explanation_translated"] = (

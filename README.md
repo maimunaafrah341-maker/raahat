@@ -41,6 +41,15 @@ Peak memory for a full session is well inside the free tier's 512 MB (the API al
 - `GET  /api/situations` — situation tags the user can tick
 - `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 3, "situations": ["cant_pay"], "situation": "optional notes", "question": "optional", "history": [{"role": "user", "content": "..."}], "language": "te"}`
 
+## First aid
+
+`corpus/first_aid_*.md` holds first-aid steps for all 8 injury types, taken only from NHS, British Red Cross,
+St John Ambulance and British Heart Foundation guidance (sources listed in each file; 999 replaced by 108).
+The app shows these steps as a fixed card — never generated — as soon as the injury is understood and in
+"Your next steps"; Gemini only translates them (translation rejected unless numbers and step count survive).
+They are also in the vector store, so follow-up questions like "should I put the finger in ice?" are answered
+from them with a citation. Anything beyond them gets "ask a doctor or call 108".
+
 ## Conversation memory
 
 Each person's case (injury, hospital, situations, notes) and their questions and answers are saved **only in

@@ -160,6 +160,7 @@ function renderUnderstood() {
   else if (u.injury) {
     const item = state.injuries.find((i) => i.key === u.injury);
     html += `<p class="note note--ok">${inlineMd(t("understood", { injury: item ? injuryLabel(item) : u.injury, button: t("find_button") }))}</p>`;
+    html += firstAidCard(u.injury);
   } else html += `<p class="note note--info">${esc(t("not_understood"))}</p>`;
   box.innerHTML = html;
 }
@@ -182,6 +183,7 @@ async function runSearch({ scroll = true, selectId = null } = {}) {
     state.selectedId = ids.includes(selectId) ? selectId : (ids[0] ?? null);
     $("start-info").hidden = true;
     $("results").hidden = false;
+    $("results-map").hidden = false;
     $("entitlements").hidden = !state.triage.results.length;
     renderResults();
     renderEntitlementForm();
@@ -223,7 +225,29 @@ function renderPreview() {
       </div>
       <span class="emp-badge emp-badge--${empKey(f)}" title="Aarogyasri">${EMP_MARK[empKey(f)]}</span>
     </li>`).join("");
-  $("preview-foot").textContent = `${state.sources.length} ${t("stat.sources")}`;
+  $("preview-foot").textContent = `${state.sources.filter((x) => x.kind === "legal").length} ${t("stat.sources")}`;
+}
+
+const firstAidCache = {};
+function firstAidCard(injuryKey) {
+  if (!injuryKey) return "";
+  const key = `${injuryKey}:${state.lang}`;
+  const card = firstAidCache[key];
+  if (card === undefined) {
+    firstAidCache[key] = null; // loading
+    api(`/api/first_aid?injury=${encodeURIComponent(injuryKey)}&language=${state.lang}`, undefined, 90000)
+      .then((c) => { firstAidCache[key] = c; renderSteps(); renderUnderstood(); })
+      .catch(() => { delete firstAidCache[key]; });
+    return "";
+  }
+  if (!card) return "";
+  return `<div class="firstaid">
+    <p class="firstaid__title"><svg class="ico"><use href="#i-sparkle"/></svg>${esc(t("firstaid.title"))}</p>
+    <ol class="firstaid__steps">${card.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
+    <p class="firstaid__dont"><b>${esc(t("firstaid.dont"))}:</b> ${card.cautions.map(esc).join(" ")}</p>
+    ${card.translated ? `<details><summary>${esc(t("show_english"))}</summary><ol class="firstaid__steps english">${card.steps_en.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></details>` : ""}
+    <p class="firstaid__note">${esc(t("firstaid.note"))} <span class="cite">${esc(card.title)}</span></p>
+  </div>`;
 }
 
 function renderSteps() {
@@ -235,7 +259,7 @@ function renderSteps() {
   const go = inlineMd(t("steps.go", { name: f.name, km: Number(f.distance_km).toFixed(1), tier: "%TIER%" }))
     .replace("%TIER%", tierPill(f));
   const steps = [
-    `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}</div></li>`,
+    `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}${firstAidCard(state.triage.injury.key)}</div></li>`,
     `<li><div>${go}</div></li>`,
     `<li><div>${esc(t("steps.ask"))}${citePill("clinical_establishments_act")}</div></li>`,
     `<li><div>${esc(t(`steps.emp_${empKey(f)}`))}${citePill("telangana_aarogyasri")}</div></li>`,
@@ -477,7 +501,7 @@ async function init() {
       api("/api/i18n"), api("/api/injuries"), api("/api/situations"), api("/api/facilities"), api("/api/sources"),
     ]);
     Object.assign(state, { strings: i18n.strings, languages: i18n.languages, rtl: i18n.rtl, injuries, situations, sources });
-    $("sources-band").innerHTML = sources.map((x) => `<li>${esc(x.title)}</li>`).join("");
+    $("sources-band").innerHTML = sources.filter((x) => x.kind === "legal").map((x) => `<li>${esc(x.title)}</li>`).join("");
     $("stat-injuries").textContent = injuries.length;
     $("stat-facilities").textContent = facilities.length;
   } catch (err) {

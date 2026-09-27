@@ -38,6 +38,27 @@ DOC_TITLES = {
     "paschim_banga_case": "Paschim Banga Khet Mazdoor Samity v. State of West Bengal (1996)",
     "telangana_aarogyasri": "Telangana Rajiv Aarogyasri Scheme",
     "telangana_bocw": "Telangana BOCW Welfare Board (BOCW Act, 1996)",
+    "first_aid_severed_finger": "First aid: cut-off finger (NHS, St John Ambulance)",
+    "first_aid_bleeding": "First aid: heavy bleeding (St John Ambulance, British Red Cross, NHS inform)",
+    "first_aid_burns": "First aid: burns (NHS, British Red Cross, St John Ambulance)",
+    "first_aid_fracture": "First aid: broken bones (British Red Cross, St John Ambulance)",
+    "first_aid_head_injury": "First aid: head injury (NHS, British Red Cross, St John Ambulance)",
+    "first_aid_spinal_fall": "First aid: fall with possible spinal injury (St John Ambulance)",
+    "first_aid_eye": "First aid: eye injury (NHS, St John Ambulance)",
+    "first_aid_heart_attack": "First aid: heart attack (British Red Cross, St John Ambulance, BHF)",
+}
+LEGAL_DOCS = ("clinical_establishments_act", "paschim_banga_case", "telangana_aarogyasri", "telangana_bocw")
+
+# Injury key -> the first-aid document for it (keys match backend.triage.INJURIES).
+FIRST_AID_DOCS = {
+    "hand_finger": "first_aid_severed_finger",
+    "deep_cut": "first_aid_bleeding",
+    "burns": "first_aid_burns",
+    "fracture": "first_aid_fracture",
+    "head_injury": "first_aid_head_injury",
+    "fall_polytrauma": "first_aid_spinal_fall",
+    "eye_injury": "first_aid_eye",
+    "chest_pain": "first_aid_heart_attack",
 }
 
 # Each corpus file is a sequence of labelled sections. The label decides the chunk kind.
@@ -138,7 +159,8 @@ def build_index() -> int:
 
 
 def ensure_index() -> None:
-    if collection().count() == 0:
+    # Rebuild when the corpus has changed (e.g. new documents added).
+    if collection().count() != len(load_chunks()):
         build_index()
 
 
@@ -182,6 +204,8 @@ Hard rules:
 - For every source you use, keep EVERY point of its CAVEAT (e.g. registration or empanelment requirements, stabilization-only limits, and any "you can still register for the future" advice).
 - Every bullet must end with its source in square brackets, using the document title given in the CONTEXT.
 - CONTEXT sections marked GUIDANCE tell you how to use a source; follow them but do not quote them.
+- First-aid sources (titles starting "First aid:"): repeat only steps written there, in their words. Never add, \
+change or combine steps, times or doses, and never give medical advice beyond them. Mention calling 108 when relevant.
 - CAVEAT text can also contain notes addressed to you (e.g. "the most important thing to surface", "the app should"); follow them but never quote that wording.
 - If a source clearly doesn't apply to this person's situation, leave it out.
 - If a QUESTION is given, your first bullet must answer that exact question directly. If it contains several \
@@ -352,7 +376,7 @@ MAX_HISTORY = 6  # most recent messages given to the model for follow-ups
 
 def explain(injury_label: str, facility: dict | None = None, situation: str | None = None,
             situation_tags: list[str] | None = None, question: str | None = None,
-            history: list[dict] | None = None) -> dict:
+            history: list[dict] | None = None, injury_key: str | None = None) -> dict:
     ensure_index()
     tags = [t for t in dict.fromkeys(situation_tags or []) if t in SITUATIONS]
     phrases, must, exclude = situation_rules(tags)
@@ -363,6 +387,10 @@ def explain(injury_label: str, facility: dict | None = None, situation: str | No
     # A non-empanelled (or unverified) facility may void Aarogyasri -- always surface that warning.
     if facility and not facility["aarogyasri_empanelled"]:
         must = (*must, "telangana_aarogyasri")
+    # First aid: only the document for this injury, and only when a question is asked
+    # (the overview is about entitlements; the app shows first aid as its own card).
+    own_fa = FIRST_AID_DOCS.get(injury_key) if question else None
+    exclude = (*exclude, *(d for d in FIRST_AID_DOCS.values() if d != own_fa))
     chunks = retrieve(query, must_include=must, exclude=exclude)
     sources = {}
     for c in chunks:

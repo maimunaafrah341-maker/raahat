@@ -21,8 +21,7 @@ Rules:
 - Keep every "may", "might" and "if" -- these are possibilities, not promises, and must stay that way.
 - Keep plain, warm, everyday words; avoid formal or legal register.
 - Keep all numbers and amounts exactly as written, in Western digits (e.g. ₹5,00,000, 90+, 18–60).
-- Keep every text inside square brackets [like this] EXACTLY as written, in English -- these are source citations.
-- Keep the bullet list structure (lines starting with "* ").
+{citation_rule}- Keep the bullet list structure (lines starting with "* ").
 - Output the translation and nothing else.
 
 Text:
@@ -47,7 +46,10 @@ def translate_explanation(text: str, language: str) -> str | None:
     """
     if not text or language not in LANGUAGE_NAMES or language == "en":
         return None
-    prompt = _PROMPT.format(language=LANGUAGE_NAMES[language], text=text)
+    # Only mention citations when there are some: without any, smaller models start bracketing sentences.
+    citation_rule = ("- Keep every text inside square brackets [like this] EXACTLY as written, in English -- "
+                     "these are source citations.\n") if _CITATION_RX.search(text) else ""
+    prompt = _PROMPT.format(language=LANGUAGE_NAMES[language], text=text, citation_rule=citation_rule)
     for _ in range(2):
         try:
             resp, _model = rag._generate_with(

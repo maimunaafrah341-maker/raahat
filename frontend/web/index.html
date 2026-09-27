@@ -137,14 +137,6 @@
       <div id="injury-tiles" class="tiles" role="list"></div>
     </section>
 
-    <section class="stats">
-      <div class="container stats__grid">
-        <div class="stat"><b id="stat-injuries">8</b><span data-i18n="stat.injuries"></span></div>
-        <div class="stat"><b id="stat-facilities">18</b><span data-i18n="stat.facilities"></span></div>
-        <div class="stat"><b>4</b><span data-i18n="stat.languages"></span></div>
-        <div class="stat"><b>4</b><span data-i18n="stat.sources"></span></div>
-      </div>
-    </section>
 
     <div class="container">
       <p class="demo-note" data-i18n="demo_warning"></p>
@@ -164,16 +156,6 @@
 
       <div id="next-steps" class="steps card"></div>
 
-      <div class="results__grid">
-        <div class="map-wrap card">
-          <div id="map" dir="ltr"></div>
-          <div class="legend" id="legend"></div>
-        </div>
-        <div>
-          <h3 class="list-title" data-i18n="nearby"></h3>
-          <ol id="facility-list" class="facility-list"></ol>
-        </div>
-      </div>
     </section>
 
     <section id="entitlements" class="container section" hidden>
@@ -199,6 +181,27 @@
           </form>
         </div>
         <div class="ent__result" id="ent-result" aria-live="polite"></div>
+      </div>
+    </section>
+    <section id="results-map" class="container section" hidden>
+      <div class="results__grid">
+        <div class="map-wrap card">
+          <div id="map" dir="ltr"></div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div>
+          <h3 class="list-title" data-i18n="nearby"></h3>
+          <ol id="facility-list" class="facility-list"></ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="container stats__grid">
+        <div class="stat"><b id="stat-injuries">8</b><span data-i18n="stat.injuries"></span></div>
+        <div class="stat"><b id="stat-facilities">18</b><span data-i18n="stat.facilities"></span></div>
+        <div class="stat"><b>4</b><span data-i18n="stat.languages"></span></div>
+        <div class="stat"><b>4</b><span data-i18n="stat.sources"></span></div>
       </div>
     </section>
   </main>

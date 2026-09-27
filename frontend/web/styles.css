@@ -193,7 +193,7 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .sources-band__label { letter-spa
 .tile__icon .ico { width: 22px; height: 22px; }
 .tile__label { font-weight: 600; font-size: .92rem; line-height: 1.35; color: var(--ink); }
 
-.stats { margin-top: 64px; background: var(--ink); color: #fff; }
+.stats { margin-top: 72px; background: var(--ink); color: #fff; }
 .stats__grid { display: grid; grid-template-columns: repeat(4, 1fr); padding: 34px 0; }
 .stat { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 4px 12px; }
 .stat + .stat { border-inline-start: 1px solid rgba(255, 255, 255, .16); }
@@ -291,6 +291,18 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .sources-band__label { letter-spa
 .skeleton { display: flex; flex-direction: column; gap: 12px; }
 .skeleton div { height: 64px; border-radius: 14px; background: linear-gradient(90deg, #e3ebe6 25%, #f3f6f4 50%, #e3ebe6 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
 @keyframes shimmer { to { background-position: -200% 0; } }
+
+/* first aid */
+.firstaid { margin-top: 12px; background: #fff; border: 1px solid #f3d7a8; border-inline-start: 4px solid #e0a13a; border-radius: 14px; padding: 14px 16px; color: var(--text); font-weight: 400; }
+.firstaid__title { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
+.firstaid__title .ico { color: #c47f10; }
+.firstaid__steps { margin: 0; padding-inline-start: 22px; display: grid; gap: 4px; }
+.firstaid__steps.english { direction: ltr; text-align: left; margin-top: 8px; }
+.firstaid__dont { margin-top: 8px; font-size: .9rem; color: #8f1c2e; }
+.firstaid__note { margin-top: 8px; font-size: .8rem; color: var(--muted); }
+.firstaid details { margin-top: 6px; font-size: .88rem; }
+.understood .firstaid { margin-top: 10px; }
+.steps li.is-urgent .firstaid { color: var(--text); }
 
 /* conversation */
 .preview__titlerow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
