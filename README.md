@@ -27,7 +27,8 @@ streamlit run frontend/streamlit_app.py  # UI (second terminal)
 - `GET  /api/injuries` — supported injury types
 - `GET  /api/facilities` — all facilities
 - `POST /api/triage` — `{"injury": "hand_finger", "lat": 17.36, "lng": 78.47, "radius_km": 20}`
-- `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 15, "situation": "construction worker"}`
+- `GET  /api/situations` — situation tags the user can tick
+- `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 15, "situations": ["construction_worker"], "situation": "optional free text"}`
 
 ## How the RAG layer stays accurate
 
@@ -37,5 +38,8 @@ streamlit run frontend/streamlit_app.py  # UI (second terminal)
   cosine similarity of the top one, so the answer draws on 1–3 of the 4 sources.
 - A selected document always brings its caveat with it; a non-empanelled hospital always pulls in
   the Aarogyasri empanelment warning.
+- Ticked situations force in the sources that always apply to them (e.g. "turned away" → Clinical
+  Establishments Act + Paschim Banga), and gate out ones that can't (BOCW is dropped unless a
+  worker situation is ticked).
 - Gemini output is checked in code: guarantee language or a citation that isn't a retrieved source
   triggers a rewrite. If Gemini is unavailable, the app falls back to listing the relevant sources.

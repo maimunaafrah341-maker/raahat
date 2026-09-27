@@ -138,20 +138,22 @@ def ensure_index() -> None:
         build_index()
 
 
-def retrieve(query: str, must_include: tuple[str, ...] = (),
+def retrieve(query: str, must_include: tuple[str, ...] = (), exclude: tuple[str, ...] = (),
              max_docs: int = MAX_DOCS, margin: float = RELEVANCE_MARGIN) -> list[dict]:
     """Score every chunk, rank documents by their best chunk, keep documents within
     `margin` of the top one (max `max_docs`), and return all chunks of those documents.
 
     Returning a selected document's caveat alongside its key fact means a benefit
     never reaches the generator without its limits. `must_include` forces documents
-    in regardless of score (used for rule-based safety warnings).
+    in regardless of score (rule-based warnings, user-declared situations); `exclude`
+    removes documents the user's declared situation rules out.
     """
     col = collection()
     res = col.query(query_embeddings=embed([query], "RETRIEVAL_QUERY"), n_results=col.count())
     hits = [
         {"id": i, "text": d, "metadata": m, "similarity": round(1 - dist, 3)}
         for i, d, m, dist in zip(res["ids"][0], res["documents"][0], res["metadatas"][0], res["distances"][0])
+        if m["doc_id"] not in exclude
     ]
     doc_score = {}
     for h in hits:  # hits are sorted best-first, so first sighting is the doc's best chunk
@@ -178,6 +180,49 @@ Hard rules:
 - CONTEXT sections marked GUIDANCE tell you how to use a source; follow them but do not quote them.
 - If a source clearly doesn't apply to this person's situation, leave it out.
 - Plain, warm, simple English. 4-7 short bullets, under 200 words total. No headings, no preamble, no legal advice disclaimer (the app shows one)."""
+
+
+# Situations the user can tick. `phrase` feeds retrieval and the generator; `include` forces
+# documents that are always relevant to that situation.
+SITUATIONS = {
+    "construction_worker": {
+        "label": "Construction / building worker",
+        "phrase": "I am a construction worker injured in building work",
+        "include": ["telangana_bocw"],
+    },
+    "informal_worker": {
+        "label": "Daily wage / informal labourer",
+        "phrase": "I am an informal daily wage labourer",
+        "include": [],
+    },
+    "bpl_card": {
+        "label": "Have a BPL ration card / Aarogyasri enrolment",
+        "phrase": "My family has a BPL ration card",
+        "include": ["telangana_aarogyasri"],
+    },
+    "turned_away": {
+        "label": "Was turned away or told to wait by a hospital",
+        "phrase": "A hospital turned me away or told me to wait instead of treating my emergency",
+        "include": ["clinical_establishments_act", "paschim_banga_case"],
+    },
+    "asked_to_pay_first": {
+        "label": "Asked to pay before emergency treatment",
+        "phrase": "The hospital asked me to pay before giving emergency treatment",
+        "include": ["clinical_establishments_act"],
+    },
+}
+
+# Documents that only apply to people in certain situations. When the user has ticked
+# situations and none of these open the gate, the document is left out entirely.
+GATED_DOCS = {"telangana_bocw": {"construction_worker", "informal_worker"}}
+
+
+def situation_rules(tags: list[str]) -> tuple[list[str], tuple[str, ...], tuple[str, ...]]:
+    """Return (phrases, must_include, exclude) for the ticked situation tags."""
+    phrases = [SITUATIONS[t]["phrase"] for t in tags]
+    must = tuple(dict.fromkeys(d for t in tags for d in SITUATIONS[t]["include"]))
+    exclude = tuple(d for d, gate in GATED_DOCS.items() if tags and not gate & set(tags))
+    return phrases, must, exclude
 
 
 def build_situation_query(injury_label: str, facility: dict | None, situation: str | None) -> str:
@@ -261,12 +306,18 @@ def fallback_explanation(sources: list[dict]) -> str:
             f"to your situation — ask the hospital's help desk or a legal aid clinic about them:\n{titles}")
 
 
-def explain(injury_label: str, facility: dict | None = None, situation: str | None = None) -> dict:
+def explain(injury_label: str, facility: dict | None = None, situation: str | None = None,
+            situation_tags: list[str] | None = None) -> dict:
     ensure_index()
+    tags = [t for t in dict.fromkeys(situation_tags or []) if t in SITUATIONS]
+    phrases, must, exclude = situation_rules(tags)
+    # Ticked situations first, then the user's free text, in one description.
+    situation = ". ".join([*phrases, *([situation] if situation else [])]) or None
     query = build_situation_query(injury_label, facility, situation)
     # A non-empanelled facility voids Aarogyasri entirely -- always surface that warning.
-    must = ("telangana_aarogyasri",) if facility and not facility["aarogyasri_empanelled"] else ()
-    chunks = retrieve(query, must_include=must)
+    if facility and not facility["aarogyasri_empanelled"]:
+        must = (*must, "telangana_aarogyasri")
+    chunks = retrieve(query, must_include=must, exclude=exclude)
     sources = {}
     for c in chunks:
         m = c["metadata"]
@@ -281,6 +332,8 @@ def explain(injury_label: str, facility: dict | None = None, situation: str | No
         "explanation": explanation,
         "generated": generated,
         "sources": list(sources.values()),
+        "situations": tags,
+        "excluded_sources": list(exclude),
         "chunks": [{"id": c["id"], "kind": c["metadata"]["kind"], "similarity": c["similarity"],
                     "doc_score": c["doc_score"]} for c in chunks],
         "model": {"generation": model_used, "embedding": EMBED_MODEL},

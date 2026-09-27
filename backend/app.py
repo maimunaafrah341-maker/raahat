@@ -22,6 +22,11 @@ def injuries():
     return jsonify([{"key": k, "label": v["label"]} for k, v in INJURIES.items()])
 
 
+@app.get("/api/situations")
+def situations():
+    return jsonify([{"key": k, "label": v["label"]} for k, v in rag.SITUATIONS.items()])
+
+
 @app.get("/api/facilities")
 def facilities():
     with get_connection() as conn:
@@ -61,8 +66,11 @@ def entitlements():
         if facility is None:
             return {"error": "unknown facility_id"}, 404
     situation = (body.get("situation") or "").strip()[:500] or None
+    tags = body.get("situations") or []
+    if not isinstance(tags, list) or any(t not in rag.SITUATIONS for t in tags):
+        return {"error": f"situations must be a list drawn from {list(rag.SITUATIONS)}"}, 400
     try:
-        return jsonify(rag.explain(INJURIES[injury]["label"], facility, situation))
+        return jsonify(rag.explain(INJURIES[injury]["label"], facility, situation, tags))
     except genai_errors.APIError:
         return {"error": "The AI service is busy. Please try again in a moment."}, 503
 
