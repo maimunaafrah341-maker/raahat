@@ -4,11 +4,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "frontend"))
 sys.path.insert(0, str(ROOT))
 
-from i18n import LANGUAGES, STRINGS  # noqa: E402
-
+from backend.i18n import LANGUAGES, STRINGS  # noqa: E402
 from backend.rag import SITUATIONS  # noqa: E402
 from backend.triage import INJURIES  # noqa: E402
 

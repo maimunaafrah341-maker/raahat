@@ -18,16 +18,15 @@ pip install -r requirements.txt
 echo GEMINI_API_KEY=your-key > .env
 python data/seed_facilities.py          # builds data/healthcare.db
 python -m backend.rag build              # embeds corpus/ into chroma_db/ (also auto-built on first use)
-python -m backend.app                    # Flask API on :5000
-streamlit run frontend/streamlit_app.py  # UI (second terminal)
+python -m backend.app                    # app + API on http://127.0.0.1:5000
 ```
 
 ## Deploy (Render)
 
-`render.yaml` + `Dockerfile` run the whole app in one container: the Flask API on an internal
-port and Streamlit on the public one. In Render: **New → Blueprint →** pick this repo, then paste
+`render.yaml` + `Dockerfile` run the whole app in one container: Flask (gunicorn) serves both
+the web page and the API. In Render: **New → Blueprint →** pick this repo, then paste
 your `GEMINI_API_KEY` when asked. The database is seeded and the vector index built on startup.
-Measured peak memory for a full session is ~255 MB, inside the free tier's 512 MB.
+Peak memory for a full session is well inside the free tier's 512 MB (the API alone peaked at ~136 MB).
 
 ## API
 
@@ -58,7 +57,7 @@ The UI and the entitlement explanations are available in English, Hindi, Telugu 
 (approach adapted from [Athena](https://github.com/maimunaafrah341-maker/Athena)).
 
 - Fixed UI text, including the 108 banner and empanelment warnings, is hand-written in
-  `frontend/i18n.py`, not machine-translated at runtime. `tests/test_i18n.py` checks every key
+  `backend/i18n.py`, not machine-translated at runtime. `tests/test_i18n.py` checks every key
   exists in every language and nothing was left in English.
 - Explanations are generated and checked **in English first**, then translated by Gemini. The
   translation is rejected (English shown instead) unless every source citation and every number

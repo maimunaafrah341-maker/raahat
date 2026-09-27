@@ -1,4 +1,4 @@
-"""Fixed UI text in English, Hindi, Telugu and Urdu.
+"""Fixed UI text in English, Hindi, Telugu and Urdu (served to the web page by /api/i18n).
 
 Written by hand, not machine-translated at runtime, so safety text (the 108
 banner, empanelment warnings) is always exact. Pattern and the machine-translation
@@ -75,6 +75,11 @@ STRINGS = {
         "understood": "We picked **{injury}** for you. Please check it below, then press “{button}”.",
         "not_understood": "We couldn't tell the injury from that. Please choose it from the list below.",
         "urgent": "**This sounds life-threatening. Call 108 now.** You can keep using this page while you wait.",
+        "stat.injuries": "Injury types understood",
+        "stat.facilities": "Hospitals mapped",
+        "stat.languages": "Languages",
+        "stat.sources": "Legal sources checked",
+        "tap_hint": "Tap a hospital to see it on the map and ask what help you may get there.",
         "injury.hand_finger": "Hand / finger injury (cut, crush, partial amputation)",
         "injury.fracture": "Broken bone / suspected fracture",
         "injury.head_injury": "Head injury (fall, blow to head, unconsciousness)",
@@ -153,6 +158,11 @@ STRINGS = {
         "understood": "हमने आपके लिए **{injury}** चुना है। कृपया नीचे जाँच लें, फिर “{button}” दबाएँ।",
         "not_understood": "इससे चोट का पता नहीं चल सका। कृपया नीचे दी गई सूची से चुनें।",
         "urgent": "**यह जानलेवा लग रहा है। अभी 108 पर कॉल करें।** इंतज़ार करते हुए आप यह पेज इस्तेमाल कर सकते हैं।",
+        "stat.injuries": "समझी जाने वाली चोटें",
+        "stat.facilities": "नक्शे पर अस्पताल",
+        "stat.languages": "भाषाएँ",
+        "stat.sources": "जाँचे गए कानूनी स्रोत",
+        "tap_hint": "किसी अस्पताल पर टैप करें — नक्शे पर देखें और पूछें कि वहाँ क्या मदद मिल सकती है।",
         "injury.hand_finger": "हाथ / उंगली की चोट (कटना, कुचलना, उंगली का हिस्सा कटना)",
         "injury.fracture": "हड्डी टूटना / टूटने का शक",
         "injury.head_injury": "सिर की चोट (गिरना, सिर पर चोट, बेहोशी)",
@@ -231,6 +241,11 @@ STRINGS = {
         "understood": "మీ కోసం **{injury}** ఎంచుకున్నాం. దయచేసి కింద సరిచూసుకుని, “{button}” నొక్కండి.",
         "not_understood": "దీని నుండి గాయం ఏమిటో తెలియలేదు. దయచేసి కింది జాబితా నుండి ఎంచుకోండి.",
         "urgent": "**ఇది ప్రాణాపాయంగా అనిపిస్తోంది. వెంటనే 108కి కాల్ చేయండి.** వేచి ఉన్నప్పుడు ఈ పేజీని వాడుకోవచ్చు.",
+        "stat.injuries": "గుర్తించగల గాయాలు",
+        "stat.facilities": "మ్యాప్‌లో ఆసుపత్రులు",
+        "stat.languages": "భాషలు",
+        "stat.sources": "పరిశీలించిన న్యాయ మూలాలు",
+        "tap_hint": "ఏదైనా ఆసుపత్రిని నొక్కండి — మ్యాప్‌లో చూడండి, అక్కడ ఏ సహాయం అందవచ్చో అడగండి.",
         "injury.hand_finger": "చేయి / వేలు గాయం (తెగడం, నలగడం, వేలు భాగం తెగిపోవడం)",
         "injury.fracture": "ఎముక విరగడం / విరిగిందని అనుమానం",
         "injury.head_injury": "తలకు గాయం (పడిపోవడం, తలపై దెబ్బ, స్పృహ కోల్పోవడం)",
@@ -309,6 +324,11 @@ STRINGS = {
         "understood": "ہم نے آپ کے لیے **{injury}** منتخب کیا ہے۔ براہ کرم نیچے جانچ لیں، پھر “{button}” دبائیں۔",
         "not_understood": "اس سے چوٹ کا پتہ نہیں چل سکا۔ براہ کرم نیچے دی گئی فہرست سے منتخب کریں۔",
         "urgent": "**یہ جان لیوا لگ رہا ہے۔ ابھی 108 پر کال کریں۔** انتظار کے دوران آپ یہ صفحہ استعمال کر سکتے ہیں۔",
+        "stat.injuries": "سمجھی جانے والی چوٹیں",
+        "stat.facilities": "نقشے پر اسپتال",
+        "stat.languages": "زبانیں",
+        "stat.sources": "جانچے گئے قانونی ذرائع",
+        "tap_hint": "کسی اسپتال پر ٹیپ کریں — نقشے پر دیکھیں اور پوچھیں کہ وہاں کیا مدد مل سکتی ہے۔",
         "injury.hand_finger": "ہاتھ / انگلی کی چوٹ (کٹنا، کچلنا، انگلی کا حصہ کٹ جانا)",
         "injury.fracture": "ہڈی ٹوٹنا / ٹوٹنے کا شبہ",
         "injury.head_injury": "سر کی چوٹ (گرنا، سر پر ضرب، بے ہوشی)",

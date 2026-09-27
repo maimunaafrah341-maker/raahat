@@ -1,22 +1,36 @@
-"""Flask API.  Run:  python -m backend.app"""
+"""Flask app: JSON API under /api, plus the web page.  Run:  python -m backend.app"""
 import os
+from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 
 from google.genai import errors as genai_errors
 
 from backend import rag
 from backend.db import get_connection, list_facilities
+from backend.i18n import LANGUAGES, RTL, STRINGS
 from backend.translation import LANGUAGE_NAMES, translate_explanation
 from backend.understanding import understand
 from backend.triage import DEFAULT_RADIUS_KM, INJURIES, rank_facilities
 
-app = Flask(__name__)
+WEB_DIR = Path(__file__).resolve().parent.parent / "frontend" / "web"
+
+app = Flask(__name__, static_folder=str(WEB_DIR), static_url_path="")
+
+
+@app.get("/")
+def index():
+    return send_from_directory(WEB_DIR, "index.html")
 
 
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/i18n")
+def i18n():
+    return jsonify({"languages": LANGUAGES, "rtl": sorted(RTL), "strings": STRINGS})
 
 
 @app.get("/api/injuries")
