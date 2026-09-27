@@ -4,3 +4,4 @@ __pycache__/
 data/healthcare.db
 chroma_db/
 .venv/
+docs/manus_frontend_prompt.md
