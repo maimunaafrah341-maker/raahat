@@ -41,7 +41,10 @@ CREATE TABLE IF NOT EXISTS facilities (
     specialties            TEXT    NOT NULL,  -- JSON list drawn from SPECIALTIES
     trauma_level           INTEGER NOT NULL CHECK (trauma_level BETWEEN 0 AND 3),
     emergency_24x7         INTEGER NOT NULL CHECK (emergency_24x7 IN (0,1)),
-    aarogyasri_empanelled  INTEGER NOT NULL CHECK (aarogyasri_empanelled IN (0,1)),
+    aarogyasri_empanelled  INTEGER CHECK (aarogyasri_empanelled IN (0,1)),  -- NULL = not verified
+    aarogyasri_evidence    TEXT    CHECK (aarogyasri_evidence IN ('official','reported')),
+    sources                TEXT    NOT NULL DEFAULT '[]',  -- JSON list of {label, url}
+    checked_on             TEXT,
     is_synthetic           INTEGER NOT NULL DEFAULT 1
 );
 """
@@ -54,15 +57,20 @@ def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
 
 
 def init_db(conn: sqlite3.Connection) -> None:
+    conn.execute("DROP TABLE IF EXISTS facilities")  # always rebuilt from the seed files
     conn.executescript(SCHEMA)
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict:
     d = dict(row)
     d["specialties"] = json.loads(d["specialties"])
+    d["sources"] = json.loads(d["sources"])
     d["trauma_label"] = TRAUMA_LEVELS[d["trauma_level"]]
-    for flag in ("emergency_24x7", "aarogyasri_empanelled", "is_synthetic"):
+    for flag in ("emergency_24x7", "is_synthetic"):
         d[flag] = bool(d[flag])
+    # Tri-state: True / False / None (not verified)
+    if d["aarogyasri_empanelled"] is not None:
+        d["aarogyasri_empanelled"] = bool(d["aarogyasri_empanelled"])
     return d
 
 

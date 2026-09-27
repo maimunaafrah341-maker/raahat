@@ -1,9 +1,10 @@
-"""Seed ~18 SYNTHETIC healthcare facilities in Hyderabad district, Telangana.
+"""Seed the facility registry.
 
-Names are fictional (so the app never pairs a real hospital with a made-up
-empanelment status); localities and coordinates are real Hyderabad areas.
+Default: REAL Hyderabad hospitals from data/hospitals_real.json, where every
+capability comes from a cited public source (see that file's "method").
+--demo:  the original 18 SYNTHETIC facilities (fictional names, real localities).
 
-Run:  python data/seed_facilities.py
+Run:  python data/seed_facilities.py [--demo]
 """
 import json
 import sys
@@ -13,6 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from backend.db import (  # noqa: E402
     DB_PATH, FACILITY_TYPES, SPECIALTIES, get_connection, init_db, list_facilities,
 )
+
+REAL_FILE = Path(__file__).resolve().parent / "hospitals_real.json"
 
 DISTRICT = "Hyderabad"
 
@@ -85,23 +88,46 @@ def validate(rows) -> None:
             assert not r[8], f"{r[0]}: private type must not be empanelled"
 
 
-def seed() -> None:
-    validate(FACILITIES)
+def validate_real(data: dict) -> None:
+    for h in data["hospitals"]:
+        name = h["name"]
+        assert h["type"] in FACILITY_TYPES, f"{name}: bad type"
+        assert not set(h["specialties"]) - set(SPECIALTIES), f"{name}: unknown specialty"
+        assert 0 <= h["trauma_level"] <= 3, f"{name}: bad trauma level"
+        assert 17.2 < h["lat"] < 17.6 and 78.3 < h["lng"] < 78.6, f"{name}: outside Hyderabad"
+        assert h["sources"], f"{name}: every real hospital needs at least one source"
+        emp, ev = h["aarogyasri_empanelled"], h["aarogyasri_evidence"]
+        assert (emp is None) == (ev is None), f"{name}: empanelment status and evidence must go together"
+        if h["type"] == "empanelled_private":
+            assert emp and ev == "official", f"{name}: empanelled_private needs official evidence"
+
+
+def seed(demo: bool = False) -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if demo:
+        validate(FACILITIES)
+        rows = [(n, loc, lat, lng, t, json.dumps(s), lvl, int(er), int(ars), None, "[]", None, 1)
+                for n, loc, lat, lng, t, s, lvl, er, ars in FACILITIES]
+    else:
+        data = json.loads(REAL_FILE.read_text(encoding="utf-8"))
+        validate_real(data)
+        rows = [(h["name"], h["locality"], h["lat"], h["lng"], h["type"], json.dumps(h["specialties"]),
+                 h["trauma_level"], int(h["emergency_24x7"]),
+                 None if h["aarogyasri_empanelled"] is None else int(h["aarogyasri_empanelled"]),
+                 h["aarogyasri_evidence"], json.dumps(h["sources"]), data["checked_on"], 0)
+                for h in data["hospitals"]]
     with get_connection() as conn:
         init_db(conn)
-        conn.execute("DELETE FROM facilities")
         conn.executemany(
             """INSERT INTO facilities
-               (name, locality, district, lat, lng, type, specialties, trauma_level,
-                emergency_24x7, aarogyasri_empanelled, is_synthetic)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
-            [(n, loc, DISTRICT, lat, lng, t, json.dumps(s), lvl, int(er), int(ars))
-             for n, loc, lat, lng, t, s, lvl, er, ars in FACILITIES],
+               (name, locality, district, lat, lng, type, specialties, trauma_level, emergency_24x7,
+                aarogyasri_empanelled, aarogyasri_evidence, sources, checked_on, is_synthetic)
+               VALUES (?, ?, 'Hyderabad', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            rows,
         )
         count = len(list_facilities(conn))
-    print(f"Seeded {count} synthetic facilities into {DB_PATH}")
+    print(f"Seeded {count} {'SYNTHETIC demo' if demo else 'real'} facilities into {DB_PATH}")
 
 
 if __name__ == "__main__":
-    seed()
+    seed(demo="--demo" in sys.argv)

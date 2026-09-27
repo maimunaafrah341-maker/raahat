@@ -121,6 +121,9 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .hero__title { font-size: clamp(1
 .emp-badge { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .8rem; color: #fff; }
 .emp-badge--yes { background: #16a34a; }
 .emp-badge--no { background: #9aa8b0; }
+.emp-badge--unknown { background: #fff; color: var(--muted); border: 1.5px dashed #9aa8b0; }
+.fac__sources a { color: var(--primary-ink); }
+.fac__sources li { margin-top: 4px; }
 .preview__foot { display: flex; align-items: center; gap: 8px; padding: 12px 20px; background: var(--sage); font-size: .82rem; color: var(--primary-ink); font-weight: 600; }
 
 /* ---------- buttons & fields ---------- */

@@ -246,7 +246,8 @@ def build_situation_query(injury_label: str, facility: dict | None, situation: s
     parts = [f"{situation}." if situation else "",
              f"Medical emergency: {injury_label}. My rights to emergency treatment and any help with costs."]
     if facility:
-        emp = "is Aarogyasri-empanelled" if facility["aarogyasri_empanelled"] else "is NOT Aarogyasri-empanelled"
+        emp = {True: "is Aarogyasri-empanelled", False: "is NOT Aarogyasri-empanelled",
+               None: "has an unverified Aarogyasri empanelment status"}[facility["aarogyasri_empanelled"]]
         parts.append(f"Hospital: {facility['type'].replace('_', ' ')}, {emp}.")
     return " ".join(p for p in parts if p)
 
@@ -304,8 +305,9 @@ def generate_explanation(injury_label: str, situation: str | None, facility: dic
     if facility:
         fac = f"CHOSEN HOSPITAL: {facility['name']} ({facility['type'].replace('_', ' ')})"
         if any(c["metadata"]["doc_id"] == "telangana_aarogyasri" for c in chunks):
-            fac += (f"; Aarogyasri-empanelled: {'yes' if facility['aarogyasri_empanelled'] else 'no'}"
-                    " (from demo data; tell them to confirm it at the hospital)")
+            status = {True: "yes", False: "no", None: "not verified"}[facility["aarogyasri_empanelled"]]
+            fac += (f"; Aarogyasri-empanelled: {status}"
+                    " (from public sources that may be out of date; tell them to confirm it at the hospital)")
         lines.append(fac)
     prompt = "\n".join(lines) + f"\n\nCONTEXT:\n{format_context(chunks)}"
     allowed = {c["metadata"]["title"] for c in chunks}
@@ -333,7 +335,7 @@ def explain(injury_label: str, facility: dict | None = None, situation: str | No
     # Ticked situations first, then the user's free text, in one description.
     situation = ". ".join([*phrases, *([situation] if situation else [])]) or None
     query = build_situation_query(injury_label, facility, situation)
-    # A non-empanelled facility voids Aarogyasri entirely -- always surface that warning.
+    # A non-empanelled (or unverified) facility may void Aarogyasri -- always surface that warning.
     if facility and not facility["aarogyasri_empanelled"]:
         must = (*must, "telangana_aarogyasri")
     chunks = retrieve(query, must_include=must, exclude=exclude)

@@ -1,0 +1,173 @@
+{
+  "checked_on": "2026-09-27",
+  "method": "Only capabilities stated in a cited public source are listed; anything not confirmed is left out, so a hospital may be more capable than shown. Coordinates from OpenStreetMap (Nominatim). aarogyasri_evidence: 'official' = stated on the hospital's own website; 'reported' = stated by secondary sources only; null = not verified.",
+  "hospitals": [
+    {
+      "name": "Osmania General Hospital",
+      "locality": "Afzalgunj",
+      "lat": 17.3729544, "lng": 78.4742700,
+      "type": "govt",
+      "specialties": ["emergency_medicine", "general_medicine", "general_surgery", "orthopedics", "neurosurgery", "plastic_surgery", "burns", "cardiology", "pediatrics", "obstetrics"],
+      "trauma_level": 3,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": true,
+      "aarogyasri_evidence": "reported",
+      "sources": [
+        {"label": "Wikipedia: Osmania General Hospital (1,168 beds, emergency department)", "url": "https://en.wikipedia.org/wiki/Osmania_General_Hospital"},
+        {"label": "Telangana Today: OGH plastic surgery dept, burns skin allograft", "url": "https://telanganatoday.com/osmania-general-hospital-first-in-telangana-to-conduct-skin-allograft"},
+        {"label": "Zospital: OGH departments and Aarogyasri", "url": "https://zospital.com/blogs/osmania-general-hospital-appointment-opd-registration-guide"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/238302531"}
+      ]
+    },
+    {
+      "name": "Gandhi Hospital",
+      "locality": "Musheerabad, Secunderabad",
+      "lat": 17.4231228, "lng": 78.5034539,
+      "type": "govt",
+      "specialties": ["emergency_medicine", "general_medicine", "general_surgery", "orthopedics", "neurosurgery", "plastic_surgery"],
+      "trauma_level": 3,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": true,
+      "aarogyasri_evidence": "reported",
+      "sources": [
+        {"label": "Wikipedia: Gandhi Medical College and Hospital (casualty department)", "url": "https://en.wikipedia.org/wiki/Gandhi_Medical_College_and_Hospital"},
+        {"label": "Gandhi Medical College: Neurosurgery", "url": "http://gmcsecunderabad.org/neuro-surgery/"},
+        {"label": "Gandhi Medical College: General Surgery", "url": "http://gmcsecunderabad.org/general-surgery/"},
+        {"label": "Gandhi Medical College: About (M.Ch Neurosurgery and Plastic Surgery)", "url": "https://gmcsecunderabad.org/about-gmc/"},
+        {"label": "Angiocare: Aarogyasri hospitals in Hyderabad", "url": "https://angiocare.in/aarogyasri-hospitals-in-hyderbad/"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/319567708"}
+      ]
+    },
+    {
+      "name": "Nizam's Institute of Medical Sciences (NIMS)",
+      "locality": "Punjagutta",
+      "lat": 17.4221754, "lng": 78.4518215,
+      "type": "govt",
+      "specialties": ["emergency_medicine", "general_medicine", "obstetrics", "orthopedics", "plastic_surgery", "hand_surgery"],
+      "trauma_level": 3,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": true,
+      "aarogyasri_evidence": "reported",
+      "sources": [
+        {"label": "NIMS: Orthopaedics department and NIMS Hand Center (orthopaedics + plastic surgery)", "url": "https://nims.edu.in/depart_details?dep_id=NTE%3D"},
+        {"label": "TrueCare: NIMS emergency ward, tier-1 trauma care, Aarogyasri registration", "url": "https://www.truecarehealth.in/blog/nims-hospital-hyderabad/"},
+        {"label": "Wikipedia: Nizam's Institute of Medical Sciences", "url": "https://en.wikipedia.org/wiki/Nizam's_Institute_of_Medical_Sciences"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/237976870"}
+      ]
+    },
+    {
+      "name": "Sarojini Devi Eye Hospital",
+      "locality": "Mehdipatnam",
+      "lat": 17.3987932, "lng": 78.4433792,
+      "type": "govt",
+      "specialties": ["ophthalmology"],
+      "trauma_level": 0,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "sources": [
+        {"label": "Wikipedia: Sarojini Devi Eye Hospital (state government eye hospital)", "url": "https://en.wikipedia.org/wiki/Sarojini_Devi_Eye_Hospital"},
+        {"label": "Life in Hyderabad: 24-hour eye casualty", "url": "https://lifeinhyderabad.com/sarojini-devi-eye-hospital-timings-booking-mehdipatnam-hyderabad/"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/node/6546607643"}
+      ]
+    },
+    {
+      "name": "Owaisi Hospital and Research Centre",
+      "locality": "Kanchanbagh",
+      "lat": 17.3408480, "lng": 78.5067444,
+      "type": "empanelled_private",
+      "specialties": ["emergency_medicine", "general_surgery", "obstetrics", "cardiology", "pediatrics"],
+      "trauma_level": 2,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": true,
+      "aarogyasri_evidence": "official",
+      "sources": [
+        {"label": "Owaisi Hospital: Aarogyasri services since 2007", "url": "https://owaisihospital.com/aarogyasri/"},
+        {"label": "Owaisi Hospital: departments", "url": "https://owaisihospital.com/ct-mega-menu/departments/"},
+        {"label": "Bajaj Finserv Health: Accident & Emergency unit, 24x7", "url": "https://www.bajajfinservhealth.in/hospitals/rangareddy/owaisi-hospital-and-research-centre-kanchan-bagh"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/364871053"}
+      ]
+    },
+    {
+      "name": "Mahavir Hospital and Research Centre",
+      "locality": "Masab Tank",
+      "lat": 17.4029577, "lng": 78.4583929,
+      "type": "charitable",
+      "specialties": ["emergency_medicine", "general_medicine"],
+      "trauma_level": 2,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": true,
+      "aarogyasri_evidence": "official",
+      "sources": [
+        {"label": "Mahavir Hospital: trust hospital, Accident Emergency & Trauma Centre, Aarogyasri since 2007", "url": "https://themahavirhospital.in/"},
+        {"label": "Mahavir Hospital: chairman's message", "url": "https://themahavirhospital.in/about/message_from_chairman.php"},
+        {"label": "OpenStreetMap location (Mahavir Hospital stop, AC Guards)", "url": "https://www.openstreetmap.org/node/2712439279"}
+      ]
+    },
+    {
+      "name": "Yashoda Hospitals, Somajiguda",
+      "locality": "Somajiguda",
+      "lat": 17.4245627, "lng": 78.4569401,
+      "type": "private",
+      "specialties": ["emergency_medicine", "general_medicine", "orthopedics", "neurosurgery", "plastic_surgery", "cardiology"],
+      "trauma_level": 3,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": true,
+      "aarogyasri_evidence": "reported",
+      "sources": [
+        {"label": "Yashoda Hospitals: Somajiguda (24/7 emergency, specialities)", "url": "https://www.yashodahospitals.com/locations/somajiguda/"},
+        {"label": "Yashoda Hospitals: Plastic & Reconstructive Surgery", "url": "https://www.yashodahospitals.com/specialities/plastic-reconstructive-surgery/disease-conditions/"},
+        {"label": "HealthyWayCare: Aarogyasri hospitals in Hyderabad", "url": "https://healthywaycare.com/aarogyasri-hospitals-in-hyderabad/"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/1409986482"}
+      ]
+    },
+    {
+      "name": "KIMS Hospitals, Secunderabad",
+      "locality": "Minister Road, Secunderabad",
+      "lat": 17.4372705, "lng": 78.4826822,
+      "type": "private",
+      "specialties": ["emergency_medicine", "general_surgery", "orthopedics", "neurosurgery"],
+      "trauma_level": 3,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": true,
+      "aarogyasri_evidence": "reported",
+      "sources": [
+        {"label": "KIMS: 24-hour Accident & Emergency, trauma team (orthopaedics, neurosurgery, trauma surgeons)", "url": "https://www.kimshospitals.com/secunderabad/speciality/accident/"},
+        {"label": "Wikipedia: KIMS hospital group", "url": "https://en.wikipedia.org/wiki/Krishna_Institute_of_Medical_Sciences_(hospital_group)"},
+        {"label": "TelanganaWeb: Rajiv Aarogyasri hospital list", "url": "https://telanganaweb.com/rajiv-aarogyasri-scheme-telangana/"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/274482470"}
+      ]
+    },
+    {
+      "name": "CARE Hospitals, Banjara Hills",
+      "locality": "Banjara Hills",
+      "lat": 17.4125284, "lng": 78.4504035,
+      "type": "private",
+      "specialties": ["emergency_medicine"],
+      "trauma_level": 2,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "sources": [
+        {"label": "CARE Hospitals: Banjara Hills services (24-hour emergency for accident victims, critical care)", "url": "https://www.carehospitals.com/service-and-facility/care-hospital-banjara-hills"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/337928613"}
+      ]
+    },
+    {
+      "name": "Apollo Hospitals, Jubilee Hills",
+      "locality": "Jubilee Hills",
+      "lat": 17.4149358, "lng": 78.4131784,
+      "type": "private",
+      "specialties": ["emergency_medicine"],
+      "trauma_level": 3,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "sources": [
+        {"label": "Apollo Hospitals: Jubilee Hills emergency medicine (24x7 trauma centre)", "url": "https://www.apollohospitals.com/region/hyderabad/hospitals/jubilee-hills/specialities/emergency-medicine/"},
+        {"label": "Apollo Hospitals: Jubilee Hills", "url": "https://www.apollohospitals.com/hospitals/apollo-health-city-jubilee-hills"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/860344899"}
+      ]
+    }
+  ]
+}

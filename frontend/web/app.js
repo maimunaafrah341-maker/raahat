@@ -220,7 +220,7 @@ function renderPreview() {
         <div class="preview__name">${esc(f.name)}</div>
         <div class="preview__meta">${tierPill(f)}<span>${Number(f.distance_km).toFixed(1)} km</span></div>
       </div>
-      <span class="emp-badge emp-badge--${f.aarogyasri_empanelled ? "yes" : "no"}" title="Aarogyasri">${f.aarogyasri_empanelled ? "✓" : "✕"}</span>
+      <span class="emp-badge emp-badge--${empKey(f)}" title="Aarogyasri">${EMP_MARK[empKey(f)]}</span>
     </li>`).join("");
   $("preview-foot").textContent = `${state.sources.length} ${t("stat.sources")}`;
 }
@@ -237,7 +237,7 @@ function renderSteps() {
     `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}</div></li>`,
     `<li><div>${go}</div></li>`,
     `<li><div>${esc(t("steps.ask"))}${citePill("clinical_establishments_act")}</div></li>`,
-    `<li><div>${esc(t(f.aarogyasri_empanelled ? "steps.emp_yes" : "steps.emp_no"))}${citePill("telangana_aarogyasri")}</div></li>`,
+    `<li><div>${esc(t(`steps.emp_${empKey(f)}`))}${citePill("telangana_aarogyasri")}</div></li>`,
   ];
   if (worker) steps.push(`<li><div>${esc(t("steps.bocw"))}${citePill("telangana_bocw")}</div></li>`);
   steps.push(`<li><div><a href="#entitlements">${esc(t("steps.more"))}</a></div></li>`);
@@ -253,7 +253,15 @@ function renderSteps() {
   $("share-btn").addEventListener("click", () => shareFacility(f));
 }
 
-function empLine(f) { return t(f.aarogyasri_empanelled ? "emp.yes" : "emp.no"); }
+// Aarogyasri status is tri-state: true, false, or null (not verified in our sources).
+function empKey(f) { return f.aarogyasri_empanelled === true ? "yes" : f.aarogyasri_empanelled === false ? "no" : "unknown"; }
+const EMP_MARK = { yes: "✓", no: "✕", unknown: "?" };
+function empLine(f) { return t(`emp.${empKey(f)}`); }
+function sourcesBlock(f) {
+  if (!f.sources?.length) return "";
+  return `<details class="fac__sources"><summary>${esc(t("sources_checked", { date: f.checked_on || "" }))}</summary><ul>${
+    f.sources.map((x) => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a></li>`).join("")}</ul></details>`;
+}
 function typeLine(f) { return `${t(`type.${f.type}`)} · ${f.locality} · ${Number(f.distance_km).toFixed(1)} km`; }
 
 function renderResults() {
@@ -264,7 +272,7 @@ function renderResults() {
   const specialists = results.filter((f) => f.tier === "specialist");
   $("m-specialists").textContent = specialists.length;
   $("m-nearest").textContent = specialists.length ? Math.min(...specialists.map((f) => f.distance_km)).toFixed(1) : "—";
-  $("m-empanelled").textContent = specialists.filter((f) => f.aarogyasri_empanelled).length;
+  $("m-empanelled").textContent = specialists.filter((f) => f.aarogyasri_empanelled === true).length;
 
   const note = state.lang !== "en" ? `<p class="small">${esc(t("reasons_english_note"))}</p>` : "";
   $("facility-list").innerHTML = results.slice(0, 8).map((f) => `
@@ -279,6 +287,7 @@ function renderResults() {
       <details><summary>${esc(t("why_ranking"))}</summary>${note}
         <ul>${(f.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("") || `<li>${esc(t("no_reasons"))}</li>`}</ul>
       </details>
+      ${sourcesBlock(f)}
     </li>`).join("");
 
   renderSteps();
@@ -302,7 +311,7 @@ function drawMap(origin, results) {
   for (const f of results) {
     const icon = L.divIcon({
       className: "",
-      html: `<div class="pin" style="--tier:${TIER_COLOR[f.tier]}"><span>${f.aarogyasri_empanelled ? "✓" : "✕"}</span></div>`,
+      html: `<div class="pin" style="--tier:${TIER_COLOR[f.tier]}"><span>${EMP_MARK[empKey(f)]}</span></div>`,
       iconSize: [34, 34], iconAnchor: [17, 34], popupAnchor: [0, -30],
     });
     const m = L.marker([f.lat, f.lng], { icon, title: `#${f.rank} ${f.name}` })
@@ -322,7 +331,7 @@ function drawMap(origin, results) {
 function renderLegend() {
   $("legend").innerHTML = TIERS.map((k) =>
     `<span class="legend__item"><span class="swatch" style="background:${TIER_COLOR[k]}"></span>${esc(t(`tier.${k}`))}</span>`).join("")
-    + `<span class="legend__item">✓ / ✕ Aarogyasri</span>`;
+    + `<span class="legend__item">✓ / ✕ / ? Aarogyasri</span>`;
 }
 
 function selectFacility(id, fromList = true) {

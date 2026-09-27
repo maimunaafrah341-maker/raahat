@@ -93,7 +93,7 @@ def assess(facility: dict, injury: dict, distance_km: float, radius_km: float) -
         score += 20
         reasons.append("Related specialty only: " + ", ".join(s.replace("_", " ") for s in secondary_hits))
     else:
-        reasons.append("No relevant specialty for this injury")
+        reasons.append("No relevant specialty listed in our sources for this injury")
 
     shortfall = injury["min_trauma"] - facility["trauma_level"]
     if trauma_ok:

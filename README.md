@@ -9,14 +9,18 @@ explains, in plain language, what the person *may* be eligible for (Clinical Est
 Paschim Banga judgment, Aarogyasri, Telangana BOCW Welfare Board) — always with citations and
 "how to confirm" steps, never as a guarantee.
 
-> Facility data is **synthetic**: names are fictional, localities are real Hyderabad areas.
+> **Hospital data is real but deliberately conservative.** `data/hospitals_real.json` lists 10 Hyderabad
+> hospitals. Every specialty, emergency capability and Aarogyasri status comes from a cited public source
+> (checked 27 Sep 2026); anything not confirmed is left out, so a hospital may be more capable than shown.
+> Aarogyasri status is `official` (hospital's own site), `reported` (secondary sources) or unverified (`?`).
+> Locations are from OpenStreetMap. The original synthetic set is still available: `python data/seed_facilities.py --demo`.
 
 ## Run
 
 ```bash
 pip install -r requirements.txt
 echo GEMINI_API_KEY=your-key > .env
-python data/seed_facilities.py          # builds data/healthcare.db
+python data/seed_facilities.py          # builds data/healthcare.db from the real, sourced hospital list
 python -m backend.rag build              # embeds corpus/ into chroma_db/ (also auto-built on first use)
 python -m backend.app                    # app + API on http://127.0.0.1:5000
 ```
