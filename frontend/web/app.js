@@ -14,7 +14,7 @@ const TIER_COLOR = { specialist: "#16a34a", can_manage: "#f59e0b", stabilize: "#
 
 const state = {
   strings: {}, languages: {}, rtl: [], lang: "en",
-  injuries: [], situations: [],
+  injuries: [], situations: [], sources: [], preview: null,
   injury: null, chosenSituations: new Set(),
   triage: null, selectedId: null, entitlements: null, understood: null,
   map: null, markers: {},
@@ -96,9 +96,11 @@ function applyLanguage() {
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => (el.placeholder = t(el.dataset.i18nPh)));
   const [a, b] = t("tagline").split(/\s+—\s+/);
   $("title-a").textContent = a || "";
-  $("title-b").textContent = b ? `— ${b}` : "";
+  $("title-b").textContent = b || "";
   renderInjuryControls();
   renderLegend();
+  renderPreview();
+  renderSteps();
   renderUnderstood();
   if (state.triage) renderResults();
   if (state.triage) renderEntitlementForm();
@@ -145,6 +147,7 @@ async function onDescribe(e) {
     busy(btn, false);
   }
   renderUnderstood();
+  renderSteps();
   if (state.understood?.injury) $("search-form").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 function renderUnderstood() {
@@ -192,6 +195,64 @@ async function onSearch(e) {
   }
 }
 
+function directionsUrl(f) { return `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}`; }
+function sourceTitle(docId) { return state.sources.find((x) => x.doc_id === docId)?.title || ""; }
+function citePill(docId) { const title = sourceTitle(docId); return title ? `<br><span class="cite">${esc(title)}</span>` : ""; }
+function tierPill(f) { return `<span class="pill pill--tier" style="--tier:${TIER_COLOR[f.tier]}">${esc(t(`tier.${f.tier}`))}</span>`; }
+
+async function shareFacility(f) {
+  const text = t("share_text", { name: f.name, url: directionsUrl(f) });
+  try {
+    if (navigator.share) { await navigator.share({ text }); return; }
+  } catch { return; /* user cancelled */ }
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+}
+
+function renderPreview() {
+  const box = $("preview-list");
+  if (!state.preview) { box.innerHTML = ""; return; }
+  const item = state.injuries.find((i) => i.key === state.preview.injury.key);
+  $("preview-injury").textContent = item ? injuryLabel(item) : "";
+  box.innerHTML = state.preview.results.slice(0, 4).map((f) => `
+    <li class="preview__row">
+      <span class="preview__rank">${f.rank}</span>
+      <div>
+        <div class="preview__name">${esc(f.name)}</div>
+        <div class="preview__meta">${tierPill(f)}<span>${Number(f.distance_km).toFixed(1)} km</span></div>
+      </div>
+      <span class="emp-badge emp-badge--${f.aarogyasri_empanelled ? "yes" : "no"}" title="Aarogyasri">${f.aarogyasri_empanelled ? "✓" : "✕"}</span>
+    </li>`).join("");
+  $("preview-foot").textContent = `${state.sources.length} ${t("stat.sources")}`;
+}
+
+function renderSteps() {
+  const box = $("next-steps");
+  const f = state.triage?.results.find((x) => x.id === state.selectedId);
+  if (!f) { box.innerHTML = ""; return; }
+  const urgent = state.understood?.life_threatening_signs;
+  const worker = state.chosenSituations.has("construction_worker") || state.chosenSituations.has("informal_worker");
+  const go = inlineMd(t("steps.go", { name: f.name, km: Number(f.distance_km).toFixed(1), tier: "%TIER%" }))
+    .replace("%TIER%", tierPill(f));
+  const steps = [
+    `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}</div></li>`,
+    `<li><div>${go}</div></li>`,
+    `<li><div>${esc(t("steps.ask"))}${citePill("clinical_establishments_act")}</div></li>`,
+    `<li><div>${esc(t(f.aarogyasri_empanelled ? "steps.emp_yes" : "steps.emp_no"))}${citePill("telangana_aarogyasri")}</div></li>`,
+  ];
+  if (worker) steps.push(`<li><div>${esc(t("steps.bocw"))}${citePill("telangana_bocw")}</div></li>`);
+  steps.push(`<li><div><a href="#entitlements">${esc(t("steps.more"))}</a></div></li>`);
+  box.innerHTML = `
+    <div class="steps__head">
+      <div><h3>${esc(t("steps.title"))}</h3><p class="steps__for">${esc(t("steps.for", { name: f.name }))}</p></div>
+      <div class="steps__actions">
+        <a class="btn btn--primary btn--sm" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
+        <button type="button" class="btn btn--ghost btn--sm" id="share-btn"><svg class="ico"><use href="#i-share"/></svg>${esc(t("share"))}</button>
+      </div>
+    </div>
+    <ol>${steps.join("")}</ol>`;
+  $("share-btn").addEventListener("click", () => shareFacility(f));
+}
+
 function empLine(f) { return t(f.aarogyasri_empanelled ? "emp.yes" : "emp.no"); }
 function typeLine(f) { return `${t(`type.${f.type}`)} · ${f.locality} · ${Number(f.distance_km).toFixed(1)} km`; }
 
@@ -208,17 +269,19 @@ function renderResults() {
   const note = state.lang !== "en" ? `<p class="small">${esc(t("reasons_english_note"))}</p>` : "";
   $("facility-list").innerHTML = results.slice(0, 8).map((f) => `
     <li class="fac" style="--tier:${TIER_COLOR[f.tier]}" data-id="${f.id}" tabindex="0" aria-current="${f.id === state.selectedId}">
-      <div class="fac__top">
-        <div class="fac__name"><span class="fac__rank">#${f.rank}</span>${esc(f.name)}</div>
-      </div>
+      <div class="fac__name"><span class="fac__rank">#${f.rank}</span>${esc(f.name)}</div>
       <span class="pill pill--tier">${esc(t(`tier.${f.tier}`))}</span>
       <p class="fac__meta">${esc(typeLine(f))}</p>
       <p class="fac__emp">${esc(empLine(f))}</p>
+      <div class="fac__actions">
+        <a class="btn btn--ghost btn--sm" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
+      </div>
       <details><summary>${esc(t("why_ranking"))}</summary>${note}
         <ul>${(f.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("") || `<li>${esc(t("no_reasons"))}</li>`}</ul>
       </details>
     </li>`).join("");
 
+  renderSteps();
   drawMap(origin, results);
 }
 
@@ -268,6 +331,7 @@ function selectFacility(id, fromList = true) {
   $("ent-facility").value = String(id);
   const m = state.markers[id];
   if (m && fromList) { state.map.panTo(m.getLatLng()); m.openPopup(); }
+  renderSteps();
   if (state.entitlements && state.entitlements.facility_id !== id) { state.entitlements = null; renderEntitlementResult(); }
 }
 
@@ -330,10 +394,11 @@ async function onExplain(e) {
 /* ---------- boot ---------- */
 async function init() {
   try {
-    const [i18n, injuries, situations, facilities] = await Promise.all([
-      api("/api/i18n"), api("/api/injuries"), api("/api/situations"), api("/api/facilities"),
+    const [i18n, injuries, situations, facilities, sources] = await Promise.all([
+      api("/api/i18n"), api("/api/injuries"), api("/api/situations"), api("/api/facilities"), api("/api/sources"),
     ]);
-    Object.assign(state, { strings: i18n.strings, languages: i18n.languages, rtl: i18n.rtl, injuries, situations });
+    Object.assign(state, { strings: i18n.strings, languages: i18n.languages, rtl: i18n.rtl, injuries, situations, sources });
+    $("sources-band").innerHTML = sources.map((x) => `<li>${esc(x.title)}</li>`).join("");
     $("stat-injuries").textContent = injuries.length;
     $("stat-facilities").textContent = facilities.length;
   } catch (err) {
@@ -369,9 +434,10 @@ async function init() {
     const k = chip.dataset.key;
     state.chosenSituations.has(k) ? state.chosenSituations.delete(k) : state.chosenSituations.add(k);
     chip.setAttribute("aria-pressed", String(state.chosenSituations.has(k)));
+    renderSteps();
   });
   $("facility-list").addEventListener("click", (ev) => {
-    if (ev.target.closest("details")) return;
+    if (ev.target.closest("details, a")) return;
     const li = ev.target.closest(".fac");
     if (li) selectFacility(Number(li.dataset.id));
   });
@@ -385,6 +451,10 @@ async function init() {
   $("ent-form").addEventListener("submit", onExplain);
 
   applyLanguage();
+
+  // Hero preview shows a real ranking (first injury type, Charminar) rather than a mock.
+  const [pla, plng] = LOCALITIES.Charminar;
+  api("/api/triage", { injury: state.injury, lat: pla, lng: plng }).then((res) => { state.preview = res; renderPreview(); }).catch(() => {});
 }
 
 init();

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Raahat — Emergency Care Finder</title>
   <meta name="description" content="Find a Hyderabad hospital that can actually treat your injury, and understand what help you may be eligible for.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d4ed8'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='white'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e7c7b'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='white'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -27,6 +27,8 @@
       <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/></symbol>
       <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
       <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-nav" viewBox="0 0 24 24"><path d="m3 11 19-9-9 19-2-8-8-2z"/></symbol>
+      <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></symbol>
       <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
     </defs>
   </svg>
@@ -51,12 +53,9 @@
     <section class="hero">
       <div class="container hero__grid">
         <div class="hero__copy">
-          <p class="eyebrow"><svg class="ico"><use href="#i-pin"/></svg><span data-i18n="caption"></span></p>
-          <h1 class="hero__title"><span id="title-a"></span><span id="title-b" class="accent"></span></h1>
-          <div class="alert alert--emergency" role="note">
-            <svg class="ico"><use href="#i-phone"/></svg>
-            <span data-i18n-md="banner_108"></span>
-          </div>
+          <p class="eyebrow"><span class="eyebrow__dot"></span><span data-i18n="caption"></span></p>
+          <h1 class="hero__title"><span id="title-a"></span> <span id="title-b" class="accent"></span></h1>
+          <p class="hero__sub" data-i18n="hero_sub"></p>
 
           <form id="describe-form" class="describe">
             <label for="describe-text" class="describe__label">
@@ -70,29 +69,25 @@
             </div>
           </form>
           <div id="understood" class="understood" aria-live="polite"></div>
-        </div>
 
-        <div class="hero__art" aria-hidden="true">
-          <div class="art-card">
-            <svg viewBox="0 0 400 300" class="art-map">
-              <rect width="400" height="300" rx="18" fill="#eef4fb"/>
-              <path d="M0 90 C120 70 180 130 400 100" stroke="#fff" stroke-width="14" fill="none"/>
-              <path d="M60 0 C90 120 70 200 120 300" stroke="#fff" stroke-width="12" fill="none"/>
-              <path d="M0 220 C140 200 260 240 400 210" stroke="#fff" stroke-width="10" fill="none"/>
-              <path d="M280 0 C260 100 300 190 260 300" stroke="#fff" stroke-width="12" fill="none"/>
-              <circle cx="190" cy="150" r="46" fill="#1d4ed8" opacity=".08"/>
-              <circle cx="190" cy="150" r="9" fill="#1d4ed8" stroke="#fff" stroke-width="4"/>
-              <g><path d="M300 70c0 14-16 28-16 28s-16-14-16-28a16 16 0 0 1 32 0z" fill="#16a34a"/><path d="M277 70l5 5 9-9" stroke="#fff" stroke-width="3" fill="none"/></g>
-              <g><path d="M110 120c0 14-16 28-16 28s-16-14-16-28a16 16 0 0 1 32 0z" fill="#16a34a"/><path d="M87 120l5 5 9-9" stroke="#fff" stroke-width="3" fill="none"/></g>
-              <g><path d="M250 215c0 14-16 28-16 28s-16-14-16-28a16 16 0 0 1 32 0z" fill="#f59e0b"/><path d="M227 215l5 5 9-9" stroke="#fff" stroke-width="3" fill="none"/></g>
-              <g><path d="M345 170c0 14-16 28-16 28s-16-14-16-28a16 16 0 0 1 32 0z" fill="#dc2626"/><path d="M324 165l10 10M334 165l-10 10" stroke="#fff" stroke-width="3"/></g>
-              <g><path d="M150 250c0 14-16 28-16 28s-16-14-16-28a16 16 0 0 1 32 0z" fill="#94a3b8"/></g>
-            </svg>
-            <div class="float float--a"><span class="dot dot--green"></span><span>✓ Aarogyasri</span></div>
-            <div class="float float--b"><svg class="ico"><use href="#i-shield"/></svg><span>CEA · BOCW · PMJAY</span></div>
-            <div class="float float--c"><svg class="ico"><use href="#i-phone"/></svg><span>108</span></div>
+          <div class="alert alert--emergency" role="note">
+            <svg class="ico"><use href="#i-phone"/></svg>
+            <span data-i18n-md="banner_108"></span>
+            <a class="alert__call" href="tel:108">108</a>
           </div>
         </div>
+
+        <aside class="preview" aria-label="Preview">
+          <div class="preview__head">
+            <span class="preview__title" data-i18n="preview_title"></span>
+            <span class="preview__injury" id="preview-injury"></span>
+          </div>
+          <ol class="preview__list" id="preview-list"></ol>
+          <div class="preview__foot">
+            <svg class="ico"><use href="#i-shield"/></svg>
+            <span id="preview-foot"></span>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -121,6 +116,20 @@
           </div>
         </details>
       </form>
+    </section>
+
+    <section class="container sources-band" aria-label="Sources">
+      <span class="sources-band__label" data-i18n="grounded_in"></span>
+      <ul id="sources-band" class="sources-band__list"></ul>
+    </section>
+
+    <section class="container section">
+      <h2 class="section__title" data-i18n="how.title"></h2>
+      <div class="how">
+        <div class="how__item"><span class="how__num">01</span><h3 data-i18n="how.1.title"></h3><p data-i18n="how.1.body"></p></div>
+        <div class="how__item"><span class="how__num">02</span><h3 data-i18n="how.2.title"></h3><p data-i18n="how.2.body"></p></div>
+        <div class="how__item"><span class="how__num">03</span><h3 data-i18n="how.3.title"></h3><p data-i18n="how.3.body"></p></div>
+      </div>
     </section>
 
     <section class="container section">
@@ -152,6 +161,9 @@
         <div class="metric"><span data-i18n="metric_nearest"></span><b id="m-nearest"></b></div>
         <div class="metric"><span data-i18n="metric_empanelled"></span><b id="m-empanelled"></b></div>
       </div>
+
+      <div id="next-steps" class="steps card"></div>
+
       <div class="results__grid">
         <div class="map-wrap card">
           <div id="map" dir="ltr"></div>

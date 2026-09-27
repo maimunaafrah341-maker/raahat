@@ -184,7 +184,38 @@ Hard rules:
 
 # Situations the user can tick. `phrase` feeds retrieval and the generator; `include` forces
 # documents that are always relevant to that situation.
+# Ordered for display: situations anyone can be in first, worker-specific ones last.
 SITUATIONS = {
+    "cant_pay": {
+        "label": "Can't pay right now / worried about the cost",
+        "phrase": "I cannot afford to pay for emergency treatment right now",
+        "include": ["clinical_establishments_act"],
+    },
+    "asked_to_pay_first": {
+        "label": "Asked to pay before emergency treatment",
+        "phrase": "The hospital asked me to pay before giving emergency treatment",
+        "include": ["clinical_establishments_act"],
+    },
+    "turned_away": {
+        "label": "Was turned away or told to wait by a hospital",
+        "phrase": "A hospital turned me away or told me to wait instead of treating my emergency",
+        "include": ["clinical_establishments_act", "paschim_banga_case"],
+    },
+    "referred_elsewhere": {
+        "label": "Told to go to another hospital",
+        "phrase": "The hospital wants to transfer or refer me to another hospital",
+        "include": ["clinical_establishments_act"],
+    },
+    "big_bill": {
+        "label": "Already got a large hospital bill",
+        "phrase": "I already received a large hospital bill for emergency treatment",
+        "include": ["clinical_establishments_act"],
+    },
+    "bpl_card": {
+        "label": "Have a BPL ration card / Aarogyasri enrolment",
+        "phrase": "My family has a BPL ration card",
+        "include": ["telangana_aarogyasri"],
+    },
     "construction_worker": {
         "label": "Construction / building worker",
         "phrase": "I am a construction worker injured in building work",
@@ -194,21 +225,6 @@ SITUATIONS = {
         "label": "Daily wage / informal labourer",
         "phrase": "I am an informal daily wage labourer",
         "include": [],
-    },
-    "bpl_card": {
-        "label": "Have a BPL ration card / Aarogyasri enrolment",
-        "phrase": "My family has a BPL ration card",
-        "include": ["telangana_aarogyasri"],
-    },
-    "turned_away": {
-        "label": "Was turned away or told to wait by a hospital",
-        "phrase": "A hospital turned me away or told me to wait instead of treating my emergency",
-        "include": ["clinical_establishments_act", "paschim_banga_case"],
-    },
-    "asked_to_pay_first": {
-        "label": "Asked to pay before emergency treatment",
-        "phrase": "The hospital asked me to pay before giving emergency treatment",
-        "include": ["clinical_establishments_act"],
     },
 }
 

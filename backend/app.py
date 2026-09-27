@@ -38,6 +38,11 @@ def injuries():
     return jsonify([{"key": k, "label": v["label"]} for k, v in INJURIES.items()])
 
 
+@app.get("/api/sources")
+def sources():
+    return jsonify([{"doc_id": k, "title": v} for k, v in rag.DOC_TITLES.items()])
+
+
 @app.get("/api/situations")
 def situations():
     return jsonify([{"key": k, "label": v["label"]} for k, v in rag.SITUATIONS.items()])
