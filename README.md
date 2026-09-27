@@ -43,3 +43,17 @@ streamlit run frontend/streamlit_app.py  # UI (second terminal)
   worker situation is ticked).
 - Gemini output is checked in code: guarantee language or a citation that isn't a retrieved source
   triggers a rewrite. If Gemini is unavailable, the app falls back to listing the relevant sources.
+
+## Languages
+
+The UI and the entitlement explanations are available in English, Hindi, Telugu and Urdu
+(approach adapted from [Athena](https://github.com/maimunaafrah341-maker/Athena)).
+
+- Fixed UI text, including the 108 banner and empanelment warnings, is hand-written in
+  `frontend/i18n.py`, not machine-translated at runtime. `tests/test_i18n.py` checks every key
+  exists in every language and nothing was left in English.
+- Explanations are generated and checked **in English first**, then translated by Gemini. The
+  translation is rejected (English shown instead) unless every source citation and every number
+  or amount survives unchanged. Translations are labelled as machine translation, with the English
+  original one tap away.
+- Not yet reviewed by native speakers. "Why this ranking" reasons are still English only.

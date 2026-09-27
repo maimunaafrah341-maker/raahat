@@ -262,18 +262,21 @@ def _problems(text: str, allowed_titles: set[str]) -> list[str]:
     return issues
 
 
-def _generate(prompt: str) -> tuple[str, str]:
+def _generate_with(prompt: str, config: types.GenerateContentConfig) -> tuple[str, str]:
     """Return (text, model_used), falling back to lighter models if the primary is unavailable."""
     last_err = None
     for model in [GEN_MODEL, *GEN_FALLBACK_MODELS]:
         try:
             resp = _with_retry(lambda: client().models.generate_content(
-                model=model, contents=prompt,
-                config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=0.2)), attempts=2)
-            return resp.text.strip(), model
+                model=model, contents=prompt, config=config), attempts=2)
+            return (resp.text or "").strip(), model
         except genai_errors.APIError as e:  # overloaded, retired (404) etc. -> try the next model
             last_err = e
     raise last_err
+
+
+def _generate(prompt: str) -> tuple[str, str]:
+    return _generate_with(prompt, types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=0.2))
 
 
 def generate_explanation(injury_label: str, situation: str | None, facility: dict | None,

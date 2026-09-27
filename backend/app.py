@@ -7,6 +7,7 @@ from google.genai import errors as genai_errors
 
 from backend import rag
 from backend.db import get_connection, list_facilities
+from backend.translation import LANGUAGE_NAMES, translate_explanation
 from backend.triage import DEFAULT_RADIUS_KM, INJURIES, rank_facilities
 
 app = Flask(__name__)
@@ -69,8 +70,16 @@ def entitlements():
     tags = body.get("situations") or []
     if not isinstance(tags, list) or any(t not in rag.SITUATIONS for t in tags):
         return {"error": f"situations must be a list drawn from {list(rag.SITUATIONS)}"}, 400
+    language = body.get("language") or "en"
+    if language not in LANGUAGE_NAMES:
+        return {"error": f"language must be one of {list(LANGUAGE_NAMES)}"}, 400
     try:
-        return jsonify(rag.explain(INJURIES[injury]["label"], facility, situation, tags))
+        result = rag.explain(INJURIES[injury]["label"], facility, situation, tags)
+        # English stays authoritative; the translation is an extra, checked field.
+        result["language"] = language
+        result["explanation_translated"] = (
+            translate_explanation(result["explanation"], language) if result["generated"] else None)
+        return jsonify(result)
     except genai_errors.APIError:
         return {"error": "The AI service is busy. Please try again in a moment."}, 503
 
