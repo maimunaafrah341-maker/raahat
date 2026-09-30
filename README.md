@@ -2,6 +2,9 @@
 
 Build with AI: Code for Communities — Track 3 (Smart Health & Supply Chain Resilience).
 
+- **Demo video:** https://youtu.be/JqOIDOfVCZs
+- **Live app:** https://raahat-9g7r.onrender.com (free Render plan: the first load after it has been idle can take about 50 seconds to wake up)
+
 Given an injury and a location, Raahat ranks nearby facilities by whether they can
 actually treat that injury (specialty + trauma capability + 24x7 emergency), then by
 distance, and shows Aarogyasri empanelment on a colour-coded map. A Gemini RAG layer then
