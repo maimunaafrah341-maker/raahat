@@ -15,7 +15,7 @@ const TIER_COLOR = { specialist: "#16a34a", can_manage: "#f59e0b", stabilize: "#
 const state = {
   strings: {}, languages: {}, rtl: [], lang: "en",
   injuries: [], situations: [], sources: [], preview: null,
-  injury: null, chosenSituations: new Set(),
+  injury: null, chosenSituations: new Set(), conditionList: [], conditions: new Set(),
   triage: null, selectedId: null, understood: null,
   caseData: null, pending: false, restored: false,
   map: null, markers: {},
@@ -111,16 +111,28 @@ function applyLanguage() {
 
 /* ---------- injury choice (select + tiles stay in sync) ---------- */
 function injuryLabel(item) { return t(`injury.${item.key}`) || item.label; }
+const GROUPS = ["injury", "illness"];
 function renderInjuryControls() {
   const sel = $("injury");
-  sel.innerHTML = state.injuries.map((i) => `<option value="${esc(i.key)}">${esc(injuryLabel(i))}</option>`).join("");
+  const inGroup = (g) => state.injuries.filter((i) => i.group === g);
+  sel.innerHTML = GROUPS.map((g) => `<optgroup label="${esc(t(`group.${g}`))}">${
+    inGroup(g).map((i) => `<option value="${esc(i.key)}">${esc(injuryLabel(i))}</option>`).join("")}</optgroup>`).join("");
   sel.value = state.injury;
-  $("injury-tiles").innerHTML = state.injuries.map((i) => `
-    <button type="button" class="tile" role="listitem" data-key="${esc(i.key)}" aria-pressed="${i.key === state.injury}">
-      <span class="tile__icon"><svg class="ico"><use href="#i-${esc(i.key)}"/></svg></span>
-      <span class="tile__label">${esc(injuryLabel(i))}</span>
-    </button>`).join("");
+  $("injury-tiles").innerHTML = GROUPS.map((g) => `<h3 class="tiles__group">${esc(t(`group.${g}`))}</h3>
+    <div class="tiles" role="list">${inGroup(g).map((i) => `
+      <button type="button" class="tile" role="listitem" data-key="${esc(i.key)}" aria-pressed="${i.key === state.injury}">
+        <span class="tile__icon"><svg class="ico"><use href="#i-${esc(i.key)}"/></svg></span>
+        <span class="tile__label">${esc(injuryLabel(i))}</span>
+      </button>`).join("")}</div>`).join("");
+  renderConditionChips();
 }
+// Who the patient is (pregnant, on chemotherapy...): adds danger-sign cards and tells the crew.
+function renderConditionChips() {
+  $("cond-chips").innerHTML = state.conditionList.map((c) =>
+    `<button type="button" class="chip" data-key="${esc(c.key)}" aria-pressed="${state.conditions.has(c.key)}">${esc(t(`condition.${c.key}`) || c.label)}</button>`).join("");
+}
+// An emergency that already says who the patient is.
+const IMPLIED_CONDITION = { pregnancy_problem: "pregnant", child_unwell: "young_child", chemo_fever: "chemotherapy", low_blood_sugar: "diabetes" };
 function setInjury(key) {
   state.injury = key;
   $("injury").value = key;
@@ -139,6 +151,8 @@ async function onDescribe(e) {
     state.understood = { ...res, text };
     if (res.injury) setInjury(res.injury);
     state.chosenSituations = new Set(res.situations || []);
+    state.conditions = new Set([...(res.conditions || []), ...(IMPLIED_CONDITION[res.injury] ? [IMPLIED_CONDITION[res.injury]] : [])]);
+    renderConditionChips();
     $("situation-text").value = text.slice(0, 500);
     renderChips();
   } catch (err) {
@@ -160,8 +174,8 @@ function renderUnderstood() {
   else if (u.injury) {
     const item = state.injuries.find((i) => i.key === u.injury);
     html += `<p class="note note--ok">${inlineMd(t("understood", { injury: item ? injuryLabel(item) : u.injury, button: t("find_button") }))}</p>`;
-    html += firstAidCard(u.injury);
-  } else html += `<p class="note note--info">${esc(t("not_understood"))}</p>`;
+    html += guideCards(u.injury);
+  } else html += `<p class="note note--info">${esc(t("not_understood"))}</p>${guideCards(null)}`;
   box.innerHTML = html;
 }
 
@@ -178,7 +192,9 @@ async function runSearch({ scroll = true, selectId = null } = {}) {
   const [lat, lng] = searchOrigin();
   busy(btn, true);
   try {
-    state.triage = await api("/api/triage", { injury: state.injury, lat, lng, radius_km: Number($("radius").value) });
+    state.triage = await api("/api/triage", {
+      injury: state.injury, lat, lng, radius_km: Number($("radius").value), conditions: [...state.conditions],
+    });
     const ids = state.triage.results.map((f) => f.id);
     state.selectedId = ids.includes(selectId) ? selectId : (ids[0] ?? null);
     $("start-info").hidden = true;
@@ -228,24 +244,39 @@ function renderPreview() {
   $("preview-foot").textContent = `${state.sources.filter((x) => x.kind === "legal").length} ${t("stat.sources")}`;
 }
 
-const firstAidCache = {};
-function firstAidCard(injuryKey) {
-  if (!injuryKey) return "";
-  const key = `${injuryKey}:${state.lang}`;
-  const card = firstAidCache[key];
-  if (card === undefined) {
-    firstAidCache[key] = null; // loading
-    api(`/api/first_aid?injury=${encodeURIComponent(injuryKey)}&language=${state.lang}`, undefined, 90000)
-      .then((c) => { firstAidCache[key] = c; renderSteps(); renderUnderstood(); })
-      .catch(() => { delete firstAidCache[key]; });
-    return "";
+// Sourced cards: first aid for the emergency, danger signs for who the patient is. Never generated.
+const guideCache = {};
+function loadGuide(kind, key) {
+  const cacheKey = `${kind}:${key}:${state.lang}`;
+  if (guideCache[cacheKey] === undefined) {
+    guideCache[cacheKey] = null; // loading
+    const q = kind === "injury" ? `first_aid?injury=` : `danger_signs?condition=`;
+    api(`/api/${q}${encodeURIComponent(key)}&language=${state.lang}`, undefined, 90000)
+      .then((c) => { guideCache[cacheKey] = c; renderSteps(); renderUnderstood(); })
+      .catch(() => { delete guideCache[cacheKey]; });
   }
-  if (!card) return "";
-  return `<div class="firstaid">
-    <div class="firstaid__head"><p class="firstaid__title"><svg class="ico"><use href="#i-sparkle"/></svg>${esc(t("firstaid.title"))}</p>${speakButton(".firstaid")}</div>
-    <ol class="firstaid__steps">${card.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
+  return guideCache[cacheKey];
+}
+function guideCards(injuryKey) {
+  const wanted = [...(injuryKey ? [["injury", injuryKey]] : []), ...[...state.conditions].map((c) => ["condition", c])];
+  const seen = new Set();
+  let html = "";
+  for (const [kind, key] of wanted) {
+    const card = loadGuide(kind, key);
+    if (!card || seen.has(card.doc_id)) continue; // e.g. pregnancy problem + pregnant: one card
+    seen.add(card.doc_id);
+    html += guideCardHtml(card);
+  }
+  return html;
+}
+function guideCardHtml(card) {
+  const danger = card.kind === "danger";
+  const list = danger ? "ul" : "ol";
+  return `<div class="firstaid${danger ? " firstaid--danger" : ""}">
+    <div class="firstaid__head"><p class="firstaid__title"><svg class="ico"><use href="#i-${danger ? "alert" : "sparkle"}"/></svg>${esc(t(danger ? "danger.title" : "firstaid.title"))}</p>${speakButton(".firstaid")}</div>
+    <${list} class="firstaid__steps">${card.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</${list}>
     <p class="firstaid__dont"><b>${esc(t("firstaid.dont"))}:</b> ${card.cautions.map(esc).join(" ")}</p>
-    ${card.translated ? `<details><summary>${esc(t("show_english"))}</summary><ol class="firstaid__steps english">${card.steps_en.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></details>` : ""}
+    ${card.translated ? `<details><summary>${esc(t("show_english"))}</summary><${list} class="firstaid__steps english">${card.steps_en.map((x) => `<li>${esc(x)}</li>`).join("")}</${list}></details>` : ""}
     <p class="firstaid__note">${esc(t("firstaid.note"))} <span class="cite">${esc(card.title)}</span></p>
   </div>`;
 }
@@ -258,8 +289,10 @@ function renderSteps() {
   const worker = state.chosenSituations.has("construction_worker") || state.chosenSituations.has("informal_worker");
   const go = inlineMd(t("steps.go", { name: f.name, km: Number(f.distance_km).toFixed(1), tier: "%TIER%" }))
     .replace("%TIER%", tierPill(f));
+  const who = [...state.conditions].map((c) => t(`condition.${c}`)).join(", ");
+  const tell = who ? `<p class="steps__tell">${esc(t("steps.tell", { who }))}</p>` : "";
   const steps = [
-    `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}${firstAidCard(state.triage.injury.key)}</div></li>`,
+    `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}${tell}${guideCards(state.triage.injury.key)}</div></li>`,
     `<li><div>${go}</div></li>`,
     `<li><div>${esc(t("steps.ask"))}${citePill("clinical_establishments_act")}</div></li>`,
     `<li><div>${esc(t(`steps.emp_${empKey(f)}`))}${citePill("telangana_aarogyasri")}</div></li>`,
@@ -294,6 +327,9 @@ function renderResults() {
   const { results, origin, injury } = state.triage;
   const item = state.injuries.find((i) => i.key === injury.key);
   $("found").innerHTML = inlineMd(t("found", { label: item ? injuryLabel(item) : injury.label, n: results.length }));
+  $("spec-note").hidden = injury.specialist_data;
+  $("spec-note").textContent = t("no_specialist_data");
+  document.querySelector(".metrics").hidden = !injury.specialist_data;
 
   const specialists = results.filter((f) => f.tier === "specialist");
   $("m-specialists").textContent = specialists.length;
@@ -396,6 +432,7 @@ function syncCase() {
     locality: $("locality").value,
     facilityId: state.selectedId,
     situations: [...state.chosenSituations],
+    conditions: [...state.conditions],
     notes: $("situation-text").value.trim(),
   };
 }
@@ -403,9 +440,11 @@ function newCase() {
   state.caseData = null;
   try { localStorage.removeItem(CASE_KEY); } catch { /* storage blocked */ }
   state.chosenSituations = new Set();
+  state.conditions = new Set();
   $("situation-text").value = "";
   state.restored = false;
   renderChips();
+  renderConditionChips();
   renderSteps();
   renderChat();
 }
@@ -533,7 +572,8 @@ async function ask(question, shownText) {
   try {
     const body = {
       injury: state.caseData.injury, facility_id: state.caseData.facilityId,
-      situations: state.caseData.situations, language: state.lang, history: previous,
+      situations: state.caseData.situations, conditions: state.caseData.conditions || [],
+      language: state.lang, history: previous,
     };
     if (question) body.question = question;
     if (state.caseData.notes) body.situation = state.caseData.notes;
@@ -567,6 +607,8 @@ async function restoreCase() {
   setInjury(c.injury);
   if (LOCALITIES[c.locality]) { $("locality").value = c.locality; $("locality").dispatchEvent(new Event("change")); }
   state.chosenSituations = new Set(c.situations || []);
+  state.conditions = new Set(c.conditions || []);
+  renderConditionChips();
   $("situation-text").value = c.notes || "";
   await runSearch({ scroll: false, selectId: c.facilityId });
 }
@@ -574,10 +616,11 @@ async function restoreCase() {
 /* ---------- boot ---------- */
 async function init() {
   try {
-    const [i18n, injuries, situations, facilities, sources] = await Promise.all([
+    const [i18n, injuries, situations, facilities, sources, conditionList] = await Promise.all([
       api("/api/i18n"), api("/api/injuries"), api("/api/situations"), api("/api/facilities"), api("/api/sources"),
+      api("/api/conditions"),
     ]);
-    Object.assign(state, { strings: i18n.strings, languages: i18n.languages, rtl: i18n.rtl, injuries, situations, sources });
+    Object.assign(state, { strings: i18n.strings, languages: i18n.languages, rtl: i18n.rtl, injuries, situations, sources, conditionList });
     $("sources-band").innerHTML = sources.filter((x) => x.kind === "legal").map((x) => `<li>${esc(x.title)}</li>`).join("");
     $("stat-injuries").textContent = injuries.length;
     $("stat-facilities").textContent = facilities.length;
@@ -607,6 +650,16 @@ async function init() {
     if (!tile) return;
     setInjury(tile.dataset.key);
     $("search-form").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  $("cond-chips").addEventListener("click", (ev) => {
+    const chip = ev.target.closest(".chip");
+    if (!chip) return;
+    const k = chip.dataset.key;
+    state.conditions.has(k) ? state.conditions.delete(k) : state.conditions.add(k);
+    chip.setAttribute("aria-pressed", String(state.conditions.has(k)));
+    renderUnderstood();
+    // Conditions change the ranking (e.g. pregnant -> hospitals with obstetrics first).
+    if (state.triage) runSearch({ scroll: false, selectId: state.selectedId });
   });
   $("chips").addEventListener("click", (ev) => {
     const chip = ev.target.closest(".chip");

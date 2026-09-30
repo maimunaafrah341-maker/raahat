@@ -8,7 +8,7 @@ sys.path.insert(0, str(ROOT))
 
 from backend.i18n import LANGUAGES, STRINGS  # noqa: E402
 from backend.rag import SITUATIONS  # noqa: E402
-from backend.triage import INJURIES  # noqa: E402
+from backend.triage import CONDITIONS, INJURIES  # noqa: E402
 
 EN = STRINGS["en"]
 
@@ -43,3 +43,5 @@ def test_every_backend_injury_and_situation_has_a_label():
         assert f"injury.{key}" in EN, key
     for key in SITUATIONS:
         assert f"situation.{key}" in EN, key
+    for key in CONDITIONS:
+        assert f"condition.{key}" in EN, key

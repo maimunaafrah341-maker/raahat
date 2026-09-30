@@ -44,12 +44,20 @@ _cache: dict[tuple[str, str], dict] = {}
 
 def first_aid(injury_key: str, language: str = "en") -> dict | None:
     doc_id = rag.FIRST_AID_DOCS.get(injury_key)
-    if not doc_id:
-        return None
-    if (injury_key, language) in _cache:
-        return _cache[(injury_key, language)]
+    return card_for(doc_id, language) if doc_id else None
+
+
+def danger_signs(condition: str, language: str = "en") -> dict | None:
+    doc_id = rag.CONDITION_DOCS.get(condition)
+    return card_for(doc_id, language) if doc_id else None
+
+
+def card_for(doc_id: str, language: str = "en") -> dict:
+    if (doc_id, language) in _cache:
+        return _cache[(doc_id, language)]
     card = _parse(doc_id)
-    card.update(language="en", translated=False)
+    # "danger" cards list warning signs to act on; "first_aid" cards list steps to take.
+    card.update(kind="danger" if doc_id.startswith("danger_") else "first_aid", language="en", translated=False)
     if language in LANGUAGE_NAMES and language != "en":
         steps, cautions = _translate_list(card["steps"], language), _translate_list(card["cautions"], language)
         if steps is not None and cautions is not None:
@@ -57,5 +65,5 @@ def first_aid(injury_key: str, language: str = "en") -> dict | None:
                         language=language, translated=True)
     # Cache only final results, so a temporary translation failure is retried next time.
     if language == "en" or card["translated"]:
-        _cache[(injury_key, language)] = card
+        _cache[(doc_id, language)] = card
     return card

@@ -11,7 +11,7 @@ from google.genai import types
 from pydantic import BaseModel
 
 from backend import rag
-from backend.triage import INJURIES
+from backend.triage import CONDITIONS, INJURIES
 
 # Native-script ranges from Athena's understanding.detect_script().
 _NATIVE_RANGES = {
@@ -21,6 +21,7 @@ _NATIVE_RANGES = {
 }
 
 InjuryKey = enum.Enum("InjuryKey", {k: k for k in [*INJURIES, "unclear"]}, type=str)
+ConditionKey = enum.Enum("ConditionKey", {k: k for k in CONDITIONS}, type=str)
 SituationKey = enum.Enum("SituationKey", {k: k for k in rag.SITUATIONS}, type=str)
 LanguageKey = enum.Enum("LanguageKey", {k: k for k in ["en", "hi", "te", "ur", "other"]}, type=str)
 
@@ -28,6 +29,7 @@ LanguageKey = enum.Enum("LanguageKey", {k: k for k in ["en", "hi", "te", "ur", "
 class Understanding(BaseModel):
     injury: InjuryKey
     situations: list[SituationKey]
+    conditions: list[ConditionKey]
     life_threatening_signs: bool
     language: LanguageKey
 
@@ -35,15 +37,19 @@ class Understanding(BaseModel):
 _PROMPT = """Classify an emergency description written by someone in Hyderabad, India. It may be in English, \
 Hindi, Telugu or Urdu, in native script or romanized (Latin letters), or mixed.
 
-injury -- pick exactly one key, or "unclear" if the text doesn't describe an injury or fits none well:
+injury -- the emergency: pick exactly one key, or "unclear" if the text doesn't describe an emergency or fits none well:
 {injuries}
+
+conditions -- facts about the PATIENT that the text clearly states (empty list if none; never guess):
+{conditions}
 
 situations -- pick ONLY those the text clearly states (empty list if none; never guess):
 {situations}
 
 life_threatening_signs -- true only if the text mentions: unconscious / not responding, not breathing or \
-struggling to breathe, very heavy bleeding that won't stop, seizure, severe chest pain, or a large burn. \
-Otherwise false.
+struggling to breathe, very heavy bleeding that won't stop, seizure, severe chest pain, a large burn, stroke signs \
+(face drooping, arm weakness, slurred speech), throat or tongue swelling, poison swallowed, a snake bite, \
+heavy bleeding in pregnancy, or a baby that is floppy, blue or won't wake. Otherwise false.
 
 language -- the language the text is written in.
 
@@ -60,10 +66,11 @@ def script_language(text: str) -> str | None:
 
 
 def understand(text: str) -> dict | None:
-    """Return {injury, situations, life_threatening_signs, language}, or None if Gemini is unavailable."""
+    """Return {injury, situations, conditions, life_threatening_signs, language}, or None if Gemini is unavailable."""
     prompt = _PROMPT.format(
         injuries="\n".join(f"- {k}: {v['label']}" for k, v in INJURIES.items()),
         situations="\n".join(f"- {k}: {v['label']}" for k, v in rag.SITUATIONS.items()),
+        conditions="\n".join(f"- {k}: {v['label']}" for k, v in CONDITIONS.items()),
         text=text,
     )
     config = types.GenerateContentConfig(
@@ -77,6 +84,7 @@ def understand(text: str) -> dict | None:
     return {
         "injury": None if injury == "unclear" else injury,
         "situations": list(dict.fromkeys(s.value for s in parsed.situations)),
+        "conditions": list(dict.fromkeys(c.value for c in parsed.conditions)),
         "life_threatening_signs": parsed.life_threatening_signs,
         # A native script is certain; otherwise trust Gemini's reading of romanized text.
         "language": script_language(text) or parsed.language.value,

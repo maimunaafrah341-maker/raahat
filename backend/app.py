@@ -9,9 +9,9 @@ from backend import rag
 from backend.db import get_connection, list_facilities
 from backend.i18n import LANGUAGES, RTL, STRINGS
 from backend.translation import LANGUAGE_NAMES, translate_explanation
-from backend.first_aid import first_aid
+from backend.first_aid import danger_signs, first_aid
 from backend.understanding import understand
-from backend.triage import DEFAULT_RADIUS_KM, INJURIES, rank_facilities
+from backend.triage import CONDITIONS, DEFAULT_RADIUS_KM, INJURIES, rank_facilities
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "frontend" / "web"
 
@@ -35,7 +35,13 @@ def i18n():
 
 @app.get("/api/injuries")
 def injuries():
-    return jsonify([{"key": k, "label": v["label"]} for k, v in INJURIES.items()])
+    return jsonify([{"key": k, "label": v["label"], "group": v["group"],
+                     "specialist_data": bool(v["primary"])} for k, v in INJURIES.items()])
+
+
+@app.get("/api/conditions")
+def conditions():
+    return jsonify([{"key": k, "label": v["label"]} for k, v in CONDITIONS.items()])
 
 
 @app.get("/api/sources")
@@ -52,6 +58,23 @@ def first_aid_card():
     if injury not in INJURIES or language not in LANGUAGE_NAMES:
         return {"error": "injury and language must be valid keys"}, 400
     return jsonify(first_aid(injury, language))
+
+
+@app.get("/api/danger_signs")
+def danger_signs_card():
+    """Fixed, sourced danger signs for a patient condition (pregnant, chemotherapy, ...)."""
+    condition = request.args.get("condition")
+    language = request.args.get("language", "en")
+    if condition not in CONDITIONS or language not in LANGUAGE_NAMES:
+        return {"error": "condition and language must be valid keys"}, 400
+    return jsonify(danger_signs(condition, language))
+
+
+def _conditions(body: dict) -> list[str] | None:
+    conds = body.get("conditions") or []
+    if not isinstance(conds, list) or any(c not in CONDITIONS for c in conds):
+        return None
+    return list(dict.fromkeys(conds))
 
 
 @app.get("/api/situations")
@@ -76,10 +99,15 @@ def triage():
         radius = float(body.get("radius_km", DEFAULT_RADIUS_KM))
     except (KeyError, TypeError, ValueError):
         return {"error": "lat and lng are required numbers"}, 400
+    conds = _conditions(body)
+    if conds is None:
+        return {"error": f"conditions must be a list drawn from {list(CONDITIONS)}"}, 400
 
     with get_connection() as conn:
-        ranked = rank_facilities(list_facilities(conn), injury, lat, lng, radius)
-    return jsonify({"injury": {"key": injury, "label": INJURIES[injury]["label"]},
+        ranked = rank_facilities(list_facilities(conn), injury, lat, lng, radius, tuple(conds))
+    return jsonify({"injury": {"key": injury, "label": INJURIES[injury]["label"],
+                               "specialist_data": bool(INJURIES[injury]["primary"])},
+                    "conditions": conds,
                     "origin": {"lat": lat, "lng": lng},
                     "results": ranked})
 
@@ -122,8 +150,11 @@ def entitlements():
     language = body.get("language") or "en"
     if language not in LANGUAGE_NAMES:
         return {"error": f"language must be one of {list(LANGUAGE_NAMES)}"}, 400
+    conds = _conditions(body)
+    if conds is None:
+        return {"error": f"conditions must be a list drawn from {list(CONDITIONS)}"}, 400
     try:
-        result = rag.explain(INJURIES[injury]["label"], facility, situation, tags, question, history, injury)
+        result = rag.explain(INJURIES[injury]["label"], facility, situation, tags, question, history, injury, conds)
         # English stays authoritative; the translation is an extra, checked field.
         result["language"] = language
         result["explanation_translated"] = (

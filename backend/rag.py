@@ -26,6 +26,7 @@ EMBED_MODEL = os.getenv("GEMINI_EMBED_MODEL", "gemini-embedding-001")
 GEN_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 # Tried in order when the primary model is overloaded (503) or rate-limited (429).
 GEN_FALLBACK_MODELS = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-flash-lite-latest"]
+GEMINI_TIMEOUT_MS = 25_000  # per request
 
 # Documents whose best chunk is within this cosine similarity of the top document are kept.
 # Tuned on sample situations: 0.04 keeps 1-3 of the 4 documents.
@@ -46,6 +47,15 @@ DOC_TITLES = {
     "first_aid_spinal_fall": "First aid: fall with possible spinal injury (St John Ambulance)",
     "first_aid_eye": "First aid: eye injury (NHS, St John Ambulance)",
     "first_aid_heart_attack": "First aid: heart attack (British Red Cross, St John Ambulance, BHF)",
+    "first_aid_stroke": "First aid: stroke (NHS)",
+    "first_aid_seizure": "First aid: seizure or fit (NHS)",
+    "first_aid_anaphylaxis": "First aid: severe allergic reaction (NHS)",
+    "first_aid_snake_bite": "First aid: snake bite (Govt of India snakebite guidelines, NHS)",
+    "first_aid_poisoning": "First aid: poisoning (NHS)",
+    "first_aid_low_blood_sugar": "First aid: low blood sugar (NHS)",
+    "danger_pregnancy": "Danger signs: pregnancy (NHS)",
+    "danger_chemo": "Danger signs: during chemotherapy (Macmillan Cancer Support)",
+    "danger_child": "Danger signs: baby or young child (NHS)",
 }
 LEGAL_DOCS = ("clinical_establishments_act", "paschim_banga_case", "telangana_aarogyasri", "telangana_bocw")
 
@@ -59,7 +69,24 @@ FIRST_AID_DOCS = {
     "fall_polytrauma": "first_aid_spinal_fall",
     "eye_injury": "first_aid_eye",
     "chest_pain": "first_aid_heart_attack",
+    "pregnancy_problem": "danger_pregnancy",
+    "child_unwell": "danger_child",
+    "chemo_fever": "danger_chemo",
+    "stroke": "first_aid_stroke",
+    "seizure": "first_aid_seizure",
+    "severe_allergy": "first_aid_anaphylaxis",
+    "snake_bite": "first_aid_snake_bite",
+    "poisoning": "first_aid_poisoning",
+    "low_blood_sugar": "first_aid_low_blood_sugar",
 }
+# Patient condition (backend.triage.CONDITIONS) -> its danger-signs document.
+CONDITION_DOCS = {
+    "pregnant": "danger_pregnancy",
+    "chemotherapy": "danger_chemo",
+    "diabetes": "first_aid_low_blood_sugar",
+    "young_child": "danger_child",
+}
+MEDICAL_DOCS = tuple(d for d in DOC_TITLES if d not in LEGAL_DOCS)
 
 # Each corpus file is a sequence of labelled sections. The label decides the chunk kind.
 SECTION_LABELS = [
@@ -78,7 +105,9 @@ AI_ERRORS = (genai_errors.APIError, requests.exceptions.RequestException)
 def client() -> genai.Client:
     global _client
     if _client is None:
-        _client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+        # A hung call would hold a server thread forever; time out and fall through to the next model.
+        _client = genai.Client(api_key=os.environ["GEMINI_API_KEY"],
+                               http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS))
     return _client
 
 
@@ -87,7 +116,9 @@ def _with_retry(fn, attempts: int = 3):
         try:
             return fn()
         except AI_ERRORS as e:
-            retryable = not isinstance(e, genai_errors.APIError) or e.code in _RETRYABLE
+            # A timeout isn't retried on the same model: the caller moves on to the next one.
+            retryable = (e.code in _RETRYABLE if isinstance(e, genai_errors.APIError)
+                         else not isinstance(e, requests.exceptions.Timeout))
             if not retryable or i == attempts - 1:
                 raise
             time.sleep(1.5 * (i + 1))
@@ -204,12 +235,13 @@ Hard rules:
 - For every source you use, keep EVERY point of its CAVEAT (e.g. registration or empanelment requirements, stabilization-only limits, and any "you can still register for the future" advice).
 - Every bullet must end with its source in square brackets, using the document title given in the CONTEXT.
 - CONTEXT sections marked GUIDANCE tell you how to use a source; follow them but do not quote them.
-- First-aid sources (titles starting "First aid:"): repeat only steps written there, in their words. Never add, \
+- First-aid and danger-sign sources (titles starting "First aid:" or "Danger signs:"): repeat only steps written there, in their words. Never add, \
 change or combine steps, times or doses, and never give medical advice beyond them. Mention calling 108 when relevant.
+- Never write section labels such as "Key fact:" or "Limits of this advice:" in your answer.
 - CAVEAT text can also contain notes addressed to you (e.g. "the most important thing to surface", "the app should"); follow them but never quote that wording.
 - If a source clearly doesn't apply to this person's situation, leave it out.
 - If a QUESTION is given, your first bullet must answer that exact question directly. If it contains several \
-questions, answer each one, in order. Only include other points that help with what they asked.
+questions, answer each one, in order. Only include other points that help with what they asked: if they only ask about first aid or symptoms, leave out rights and payment; if they only ask about rights or payment, leave out first aid.
 - CONVERSATION SO FAR is only for understanding follow-ups (e.g. "what about that hospital?", "and if I already paid?"). \
 Do not repeat points you already made unless they ask again.
 - Only when a QUESTION is given: if it needs something the CONTEXT does not cover (medical advice, other laws or schemes, phone numbers, \
@@ -303,6 +335,9 @@ _GUARANTEE_RX = re.compile(
     r"\b(you are entitled|you will (get|receive|be (paid|covered|treated free))|guarantee[sd]?|"
     r"you have (the|a) right|definitely|must pay you|is free of cost for you)\b", re.I)
 _CITATION_RX = re.compile(r"\[([^\]]+)\]")
+# Corpus scaffolding that must never reach the person (section labels, notes addressed to the model).
+_LEAK_RX = re.compile(r"\b(caveat( to preserve in the app)?|key fact|limits of this advice|usage guidance)\s*:"
+                      r"|\bthe app should\b|most important thing to surface", re.I)
 
 
 def _problems(text: str, allowed_titles: set[str]) -> list[str]:
@@ -310,6 +345,9 @@ def _problems(text: str, allowed_titles: set[str]) -> list[str]:
     issues = []
     if _GUARANTEE_RX.search(text):
         issues.append("Your answer sounded like a guarantee. Use only 'may be eligible' / 'may be able to' language.")
+    if _LEAK_RX.search(text):
+        issues.append("You copied section labels or notes (e.g. 'Caveat:', 'Limits of this advice:') into the answer. "
+                      "Rewrite in your own plain sentences, only the points that answer the question, one idea per bullet.")
     bad = {c for c in _CITATION_RX.findall(text) if c not in allowed_titles}
     if bad:
         issues.append(f"These citations are not valid sources: {sorted(bad)}. "
@@ -353,6 +391,11 @@ def generate_explanation(injury_label: str, situation: str | None, facility: dic
         lines.append(f"\nCONVERSATION SO FAR:\n{convo}")
     if question:
         lines.append(f"\nQUESTION: {question}")
+        doc_ids = {c["metadata"]["doc_id"] for c in chunks}
+        if doc_ids & set(LEGAL_DOCS) and doc_ids & set(MEDICAL_DOCS):
+            lines.append("(Use the law/scheme sources ONLY if the question asks about money, bills, payment, being "
+                         "refused or sent away, or schemes. Use the First aid / Danger signs sources ONLY if it asks "
+                         "about symptoms, what to do, or first aid. Leave out every source the question doesn't need.)")
     prompt = "\n".join(lines) + f"\n\nCONTEXT:\n{format_context(chunks)}"
     allowed = {c["metadata"]["title"] for c in chunks}
     for _ in range(2):
@@ -361,6 +404,7 @@ def generate_explanation(injury_label: str, situation: str | None, facility: dic
         if not issues:
             return text, model
         prompt += "\n\nFix these problems in your previous answer and rewrite it:\n- " + "\n- ".join(issues)
+    text = _LEAK_RX.sub("", text)  # last resort: never show the labels themselves
     return text + "\n\n_These are possibilities, not guarantees — please confirm each one._", model
 
 
@@ -376,7 +420,8 @@ MAX_HISTORY = 6  # most recent messages given to the model for follow-ups
 
 def explain(injury_label: str, facility: dict | None = None, situation: str | None = None,
             situation_tags: list[str] | None = None, question: str | None = None,
-            history: list[dict] | None = None, injury_key: str | None = None) -> dict:
+            history: list[dict] | None = None, injury_key: str | None = None,
+            conditions: list[str] | None = None) -> dict:
     ensure_index()
     tags = [t for t in dict.fromkeys(situation_tags or []) if t in SITUATIONS]
     phrases, must, exclude = situation_rules(tags)
@@ -387,11 +432,19 @@ def explain(injury_label: str, facility: dict | None = None, situation: str | No
     # A non-empanelled (or unverified) facility may void Aarogyasri -- always surface that warning.
     if facility and not facility["aarogyasri_empanelled"]:
         must = (*must, "telangana_aarogyasri")
-    # First aid: only the document for this injury, and only when a question is asked
-    # (the overview is about entitlements; the app shows first aid as its own card).
-    own_fa = FIRST_AID_DOCS.get(injury_key) if question else None
-    exclude = (*exclude, *(d for d in FIRST_AID_DOCS.values() if d != own_fa))
-    chunks = retrieve(query, must_include=must, exclude=exclude)
+    # First aid / danger signs: only the documents for this emergency and this patient, and only
+    # when a question is asked (the overview is about entitlements; the app shows them as cards).
+    own = ({FIRST_AID_DOCS.get(injury_key), *(CONDITION_DOCS.get(c) for c in conditions or [])} - {None}
+           if question else set())
+    exclude = (*exclude, *(d for d in MEDICAL_DOCS if d not in own))
+    if own:
+        # In one ranking a first-aid match always outscores the law, so "is 37.8 dangerous? and can
+        # they refuse if we can't pay?" would lose its legal half. Rank each pool on its own; the
+        # generator answers only the parts that were asked.
+        chunks = (retrieve(query, must_include=must, exclude=(*exclude, *own))
+                  + retrieve(query, exclude=(*exclude, *LEGAL_DOCS), max_docs=len(own), margin=1.0))
+    else:
+        chunks = retrieve(query, must_include=must, exclude=exclude)
     sources = {}
     for c in chunks:
         m = c["metadata"]

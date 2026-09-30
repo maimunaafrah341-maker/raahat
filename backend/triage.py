@@ -57,6 +57,83 @@ INJURIES = {
         "secondary": ["emergency_medicine", "general_medicine"],
         "min_trauma": 1,
     },
+    # Illnesses and special emergencies. An empty `primary` means our sources don't say which
+    # hospitals have the specialist team (e.g. a stroke unit), so these rank on 24x7 emergency
+    # care and distance only, and the app says so.
+    "pregnancy_problem": {
+        "label": "Pregnancy problem (bleeding, severe pain or headache, waters breaking, baby moving less)",
+        "group": "illness",
+        "primary": ["obstetrics"],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "child_unwell": {
+        "label": "Baby or young child seriously unwell (breathing, fever, rash, won't wake)",
+        "group": "illness",
+        "primary": ["pediatrics"],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "chemo_fever": {
+        "label": "Fever or feeling very unwell during cancer treatment (chemotherapy)",
+        "group": "illness",
+        "primary": [],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "stroke": {
+        "label": "Stroke signs (face drooping, arm weakness, slurred speech)",
+        "group": "illness",
+        "primary": [],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "seizure": {
+        "label": "Seizure / fit",
+        "group": "illness",
+        "primary": [],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "severe_allergy": {
+        "label": "Severe allergic reaction (swelling, can't breathe)",
+        "group": "illness",
+        "primary": [],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "snake_bite": {
+        "label": "Snake bite",
+        "group": "illness",
+        "primary": [],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "poisoning": {
+        "label": "Poisoning (pesticide, chemicals, medicines, fumes)",
+        "group": "illness",
+        "primary": [],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "low_blood_sugar": {
+        "label": "Low blood sugar (diabetes: shaking, sweating, confused)",
+        "group": "illness",
+        "primary": [],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+}
+for _i in INJURIES.values():
+    _i.setdefault("group", "injury")
+
+# Who the patient is, alongside any emergency. Each brings its own sourced danger-signs card
+# (rag.CONDITION_DOCS); `prefer` nudges hospitals with that department up within their tier.
+CONDITIONS = {
+    "pregnant": {"label": "Pregnant", "prefer": "obstetrics"},
+    "chemotherapy": {"label": "Having cancer treatment (chemotherapy)", "prefer": None},
+    "diabetes": {"label": "Has diabetes", "prefer": None},
+    "young_child": {"label": "A baby or young child", "prefer": "pediatrics"},
 }
 
 # Tiers drive both sort order and map colour.
@@ -77,7 +154,8 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return 2 * r * math.asin(math.sqrt(a))
 
 
-def assess(facility: dict, injury: dict, distance_km: float, radius_km: float) -> dict:
+def assess(facility: dict, injury: dict, distance_km: float, radius_km: float,
+           conditions: tuple[str, ...] = ()) -> dict:
     specs = set(facility["specialties"])
     primary_hits = [s for s in injury["primary"] if s in specs]
     secondary_hits = [s for s in injury["secondary"] if s in specs]
@@ -91,7 +169,10 @@ def assess(facility: dict, injury: dict, distance_km: float, radius_km: float) -
         reasons.append("Has " + ", ".join(s.replace("_", " ") for s in primary_hits))
     elif secondary_hits:
         score += 20
-        reasons.append("Related specialty only: " + ", ".join(s.replace("_", " ") for s in secondary_hits))
+        if injury["primary"]:
+            reasons.append("Related specialty only: " + ", ".join(s.replace("_", " ") for s in secondary_hits))
+        else:
+            reasons.append("Emergency medicine (our sources don't list a specialist team for this)")
     else:
         reasons.append("No relevant specialty listed in our sources for this injury")
 
@@ -108,6 +189,12 @@ def assess(facility: dict, injury: dict, distance_km: float, radius_km: float) -
     else:
         score -= 15
         reasons.append("No 24x7 emergency — may be closed at night")
+
+    for c in conditions:
+        dept = CONDITIONS[c]["prefer"]
+        if dept and dept in specs:
+            score += 15
+            reasons.append(f"Has {dept} ({CONDITIONS[c]['label'].lower()})")
 
     # Distance only fine-tunes within a tier: at most -20 at the edge of the radius.
     score -= 20 * min(distance_km / radius_km, 1.0)
@@ -128,14 +215,14 @@ def assess(facility: dict, injury: dict, distance_km: float, radius_km: float) -
 
 
 def rank_facilities(facilities: list[dict], injury_key: str, lat: float, lng: float,
-                    radius_km: float = DEFAULT_RADIUS_KM) -> list[dict]:
+                    radius_km: float = DEFAULT_RADIUS_KM, conditions: tuple[str, ...] = ()) -> list[dict]:
     injury = INJURIES[injury_key]
     results = []
     for f in facilities:
         d = haversine_km(lat, lng, f["lat"], f["lng"])
         if d > radius_km:
             continue
-        results.append({**f, "distance_km": round(d, 2), **assess(f, injury, d, radius_km)})
+        results.append({**f, "distance_km": round(d, 2), **assess(f, injury, d, radius_km, conditions)})
     results.sort(key=lambda r: (TIER_ORDER.index(r["tier"]), -r["score"]))
     for i, r in enumerate(results, 1):
         r["rank"] = i

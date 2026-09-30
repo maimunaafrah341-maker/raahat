@@ -51,12 +51,31 @@ reading Telugu/Urdu with an English voice. Support depends on the browser and ph
 
 ## First aid
 
-`corpus/first_aid_*.md` holds first-aid steps for all 8 injury types, taken only from NHS, British Red Cross,
-St John Ambulance and British Heart Foundation guidance (sources listed in each file; 999 replaced by 108).
+`corpus/first_aid_*.md` and `corpus/danger_*.md` hold first-aid steps and danger signs for all 17 emergency types,
+taken only from NHS, British Red Cross, St John Ambulance, British Heart Foundation, Macmillan and Government of India
+guidance (sources listed in each file; 999 replaced by 108).
 The app shows these steps as a fixed card — never generated — as soon as the injury is understood and in
 "Your next steps"; Gemini only translates them (translation rejected unless numbers and step count survive).
 They are also in the vector store, so follow-up questions like "should I put the finger in ice?" are answered
 from them with a citation. Anything beyond them gets "ask a doctor or call 108".
+
+## Illness, pregnancy and other emergencies
+
+Besides injuries, Raahat covers pregnancy problems, a seriously unwell baby or child, fever during
+chemotherapy, stroke, seizures, severe allergic reactions, snake bites, poisoning and low blood sugar
+(17 emergency types). The patient can also be tagged as **pregnant, on chemotherapy, diabetic or a young
+child** — typed, spoken ("amma ki chemo nadustundi, 38.5 jwaram") or ticked. Each tag adds a fixed
+**danger-signs card** ("get help now if you see any of these"), tells the person what to tell the
+ambulance crew, and moves hospitals with the relevant department (obstetrics, pediatrics) up within their tier.
+
+- Sources: NHS (pregnancy, baby/child, stroke, seizure, anaphylaxis, poisoning, low blood sugar),
+  Macmillan Cancer Support (sepsis during chemotherapy), and the Government of India's Standard Treatment
+  Guidelines for Snakebite (MoHFW, 2016), which warns against tourniquets, cutting and herbal remedies.
+- Where our hospital sources don't say which hospitals have the specialist team (e.g. a stroke unit), the app
+  says so and ranks by 24x7 emergency care and distance instead of implying a specialist match.
+- For follow-up questions, legal and medical sources are retrieved as separate pools (a first-aid match
+  otherwise always outranks the law), so "is 37.8 dangerous? and can they refuse if we can't pay?" gets both
+  halves answered, while a purely medical question gets no unasked legal points.
 
 ## Conversation memory
 
@@ -64,7 +83,7 @@ Each person's case (injury, hospital, situations, notes) and their questions and
 their own browser** (`localStorage`), never on the server, so they can close the page and come back to ask a
 follow-up. Each question sends the case plus the last 6 messages; the model answers the question asked (each
 one, if several), uses the history only to resolve follow-ups, and says plainly when something is outside its
-four sources instead of guessing. "Start a new case" clears it.
+sources instead of guessing. "Start a new case" clears it.
 
 ## How the RAG layer stays accurate
 
