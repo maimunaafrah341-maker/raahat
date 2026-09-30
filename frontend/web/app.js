@@ -118,12 +118,6 @@ function renderInjuryControls() {
   sel.innerHTML = GROUPS.map((g) => `<optgroup label="${esc(t(`group.${g}`))}">${
     inGroup(g).map((i) => `<option value="${esc(i.key)}">${esc(injuryLabel(i))}</option>`).join("")}</optgroup>`).join("");
   sel.value = state.injury;
-  $("injury-tiles").innerHTML = GROUPS.map((g) => `<h3 class="tiles__group">${esc(t(`group.${g}`))}</h3>
-    <div class="tiles" role="list">${inGroup(g).map((i) => `
-      <button type="button" class="tile" role="listitem" data-key="${esc(i.key)}" aria-pressed="${i.key === state.injury}">
-        <span class="tile__icon"><svg class="ico"><use href="#i-${esc(i.key)}"/></svg></span>
-        <span class="tile__label">${esc(injuryLabel(i))}</span>
-      </button>`).join("")}</div>`).join("");
   renderConditionChips();
 }
 // Who the patient is (pregnant, on chemotherapy...): adds danger-sign cards and tells the crew.
@@ -136,7 +130,14 @@ const IMPLIED_CONDITION = { pregnancy_problem: "pregnant", child_unwell: "young_
 function setInjury(key) {
   state.injury = key;
   $("injury").value = key;
-  document.querySelectorAll(".tile").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.key === key)));
+}
+// Choosing from the list shows that emergency's first-aid card right away, like describing it does.
+function pickInjury(key) {
+  setInjury(key);
+  const u = state.understood || {};
+  state.understood = { injury: key, picked: true, life_threatening_signs: u.life_threatening_signs };
+  renderUnderstood();
+  renderSteps();
 }
 
 /* ---------- describe (free text -> suggestions) ---------- */
@@ -162,7 +163,7 @@ async function onDescribe(e) {
   }
   renderUnderstood();
   renderSteps();
-  if (state.understood?.injury) $("search-form").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("understood").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function renderUnderstood() {
   const u = state.understood;
@@ -173,13 +174,29 @@ function renderUnderstood() {
   if (u.error) html += `<p class="note note--warn">${esc(u.error)}</p>`;
   else if (u.injury) {
     const item = state.injuries.find((i) => i.key === u.injury);
-    html += `<p class="note note--ok">${inlineMd(t("understood", { injury: item ? injuryLabel(item) : u.injury, button: t("find_button") }))}</p>`;
+    if (!u.picked) html += `<p class="note note--ok">${inlineMd(t("understood", { injury: item ? injuryLabel(item) : u.injury, button: t("find_button") }))}</p>`;
     html += guideCards(u.injury);
   } else html += `<p class="note note--info">${esc(t("not_understood"))}</p>${guideCards(null)}`;
   box.innerHTML = html;
 }
 
 /* ---------- search ---------- */
+// The phone's own location is the most accurate start point; the area list is the fallback.
+function useMyLocation() {
+  const status = $("geo-status");
+  if (!navigator.geolocation) { toast(t("flow.geo_fail")); return; }
+  status.hidden = false;
+  status.textContent = t("flow.locating");
+  navigator.geolocation.getCurrentPosition((pos) => {
+    $("lat").value = pos.coords.latitude.toFixed(5);
+    $("lng").value = pos.coords.longitude.toFixed(5);
+    $("use-coords").checked = true;
+    status.textContent = `✓ ${t("flow.located")}`;
+  }, () => {
+    status.hidden = true;
+    toast(t("flow.geo_fail"));
+  }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+}
 function searchOrigin() {
   if ($("use-coords").checked) {
     const lat = parseFloat($("lat").value), lng = parseFloat($("lng").value);
@@ -197,9 +214,7 @@ async function runSearch({ scroll = true, selectId = null } = {}) {
     });
     const ids = state.triage.results.map((f) => f.id);
     state.selectedId = ids.includes(selectId) ? selectId : (ids[0] ?? null);
-    $("start-info").hidden = true;
     $("results").hidden = false;
-    $("results-map").hidden = false;
     $("entitlements").hidden = !state.triage.results.length;
     renderResults();
     renderEntitlementForm();
@@ -327,9 +342,11 @@ function renderResults() {
   const { results, origin, injury } = state.triage;
   const item = state.injuries.find((i) => i.key === injury.key);
   $("found").innerHTML = inlineMd(t("found", { label: item ? injuryLabel(item) : injury.label, n: results.length }));
-  $("spec-note").hidden = injury.specialist_data;
-  $("spec-note").textContent = t("no_specialist_data");
-  document.querySelector(".metrics").hidden = !injury.specialist_data;
+  const none = !results.length;
+  $("spec-note").hidden = injury.specialist_data && !none;
+  $("spec-note").textContent = none ? t("flow.none_near", { km: $("radius").value }) : t("no_specialist_data");
+  document.querySelector(".metrics").hidden = !injury.specialist_data || none;
+  document.querySelector(".results__grid").hidden = none;
 
   const specialists = results.filter((f) => f.tier === "specialist");
   $("m-specialists").textContent = specialists.length;
@@ -692,15 +709,14 @@ async function init() {
   syncCoords();
 
   $("lang").addEventListener("change", () => { if ("speechSynthesis" in window) stopSpeaking(); state.lang = $("lang").value; store.set("raahat.lang", state.lang); applyLanguage(); });
-  $("locality").addEventListener("change", syncCoords);
-  $("radius").addEventListener("input", () => ($("radius-val").textContent = $("radius").value));
-  $("injury").addEventListener("change", () => setInjury($("injury").value));
-  $("injury-tiles").addEventListener("click", (ev) => {
-    const tile = ev.target.closest(".tile");
-    if (!tile) return;
-    setInjury(tile.dataset.key);
-    $("search-form").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("locality").addEventListener("change", () => {
+    syncCoords();
+    $("use-coords").checked = false; // an area picked by hand replaces "my location"
+    $("geo-status").hidden = true;
   });
+  $("radius").addEventListener("input", () => ($("radius-val").textContent = $("radius").value));
+  $("injury").addEventListener("change", () => pickInjury($("injury").value));
+  $("geo-btn").addEventListener("click", useMyLocation);
   $("cond-chips").addEventListener("click", (ev) => {
     const chip = ev.target.closest(".chip");
     if (!chip) return;

@@ -69,22 +69,6 @@
           <h1 class="hero__title"><span id="title-a"></span> <span id="title-b" class="accent"></span></h1>
           <p class="hero__sub" data-i18n="hero_sub"></p>
 
-          <form id="describe-form" class="describe">
-            <label for="describe-text" class="describe__label">
-              <svg class="ico"><use href="#i-sparkle"/></svg>
-              <span data-i18n="describe_header"></span>
-            </label>
-            <p class="describe__hint" data-i18n="describe_label"></p>
-            <div class="describe__row">
-              <textarea id="describe-text" rows="2" maxlength="1000" data-i18n-ph="describe_placeholder"></textarea>
-              <div class="describe__buttons">
-                <button type="button" class="btn btn--ghost mic" id="mic-btn" hidden><svg class="ico"><use href="#i-mic"/></svg><span id="mic-label" data-i18n="voice.speak"></span></button>
-                <button type="submit" class="btn btn--primary" id="describe-btn"><span data-i18n="understand_button"></span></button>
-              </div>
-            </div>
-          </form>
-          <div id="understood" class="understood" aria-live="polite"></div>
-
           <div class="alert alert--emergency" role="note">
             <svg class="ico"><use href="#i-phone"/></svg>
             <span data-i18n-md="banner_108"></span>
@@ -106,61 +90,60 @@
       </div>
     </section>
 
-    <section class="container searchbar-wrap" aria-labelledby="find-title">
-      <form id="search-form" class="searchbar card">
-        <h2 id="find-title" class="sr-only" data-i18n="find_care"></h2>
-        <label class="field">
-          <span class="field__label" data-i18n="injury"></span>
-          <select id="injury"></select>
-        </label>
-        <label class="field">
-          <span class="field__label" data-i18n="location"></span>
-          <select id="locality"></select>
-        </label>
-        <label class="field field--radius">
-          <span class="field__label"><span data-i18n="radius"></span>: <b id="radius-val">20</b></span>
-          <input id="radius" type="range" min="2" max="30" value="20">
-        </label>
-        <button type="submit" class="btn btn--primary btn--lg" id="search-btn"><span data-i18n="find_button"></span></button>
-        <div class="conds">
-          <span class="field__label" data-i18n="conditions_label"></span>
-          <div id="cond-chips" class="chips"></div>
-        </div>
-        <details class="coords">
-          <summary data-i18n="exact_coords"></summary>
-          <div class="coords__row">
-            <label class="check"><input type="checkbox" id="use-coords"> <span data-i18n="override_coords"></span></label>
-            <label class="field field--sm"><span class="field__label" data-i18n="latitude"></span><input id="lat" type="number" step="0.0001"></label>
-            <label class="field field--sm"><span class="field__label" data-i18n="longitude"></span><input id="lng" type="number" step="0.0001"></label>
+    <section class="container flow-wrap" aria-labelledby="flow-what">
+      <div class="flow card">
+        <div class="flow__step">
+          <h2 class="flow__title" id="flow-what"><span class="flow__num">1</span><span data-i18n="flow.what"></span></h2>
+          <form id="describe-form" class="describe">
+            <p class="describe__hint" data-i18n="describe_label"></p>
+            <div class="describe__row">
+              <textarea id="describe-text" rows="2" maxlength="1000" data-i18n-ph="describe_placeholder"></textarea>
+              <div class="describe__buttons">
+                <button type="button" class="btn btn--ghost mic" id="mic-btn" hidden><svg class="ico"><use href="#i-mic"/></svg><span id="mic-label" data-i18n="voice.speak"></span></button>
+                <button type="submit" class="btn btn--primary" id="describe-btn"><span data-i18n="understand_button"></span></button>
+              </div>
+            </div>
+          </form>
+          <div class="flow__pick">
+            <label class="field">
+              <span class="field__label" data-i18n="flow.or_choose"></span>
+              <select id="injury"></select>
+            </label>
+            <div class="conds">
+              <span class="field__label" data-i18n="conditions_label"></span>
+              <div id="cond-chips" class="chips"></div>
+            </div>
           </div>
-        </details>
-      </form>
-    </section>
+          <div id="understood" class="understood" aria-live="polite"></div>
+        </div>
 
-    <section class="container sources-band" aria-label="Sources">
-      <span class="sources-band__label" data-i18n="grounded_in"></span>
-      <ul id="sources-band" class="sources-band__list"></ul>
-    </section>
-
-    <section class="container section">
-      <h2 class="section__title" data-i18n="how.title"></h2>
-      <div class="how">
-        <div class="how__item"><span class="how__num">01</span><h3 data-i18n="how.1.title"></h3><p data-i18n="how.1.body"></p></div>
-        <div class="how__item"><span class="how__num">02</span><h3 data-i18n="how.2.title"></h3><p data-i18n="how.2.body"></p></div>
-        <div class="how__item"><span class="how__num">03</span><h3 data-i18n="how.3.title"></h3><p data-i18n="how.3.body"></p></div>
+        <form id="search-form" class="flow__step">
+          <h2 class="flow__title"><span class="flow__num">2</span><span data-i18n="flow.where"></span></h2>
+          <div class="where">
+            <button type="button" class="btn btn--ghost where__geo" id="geo-btn"><svg class="ico"><use href="#i-pin"/></svg><span data-i18n="flow.use_location"></span></button>
+            <span class="where__or" data-i18n="flow.or"></span>
+            <label class="field where__area">
+              <span class="field__label" data-i18n="location"></span>
+              <select id="locality"></select>
+            </label>
+          </div>
+          <p id="geo-status" class="geo-status" hidden></p>
+          <button type="submit" class="btn btn--primary btn--lg btn--block" id="search-btn"><span data-i18n="find_button"></span></button>
+          <details class="coords">
+            <summary data-i18n="flow.more"></summary>
+            <div class="coords__row">
+              <label class="field field--radius">
+                <span class="field__label"><span data-i18n="radius"></span>: <b id="radius-val">20</b></span>
+                <input id="radius" type="range" min="2" max="30" value="20">
+              </label>
+              <label class="check"><input type="checkbox" id="use-coords"> <span data-i18n="override_coords"></span></label>
+              <label class="field field--sm"><span class="field__label" data-i18n="latitude"></span><input id="lat" type="number" step="0.0001"></label>
+              <label class="field field--sm"><span class="field__label" data-i18n="longitude"></span><input id="lng" type="number" step="0.0001"></label>
+            </div>
+          </details>
+        </form>
       </div>
     </section>
-
-    <section class="container section">
-      <h2 class="section__title" data-i18n="injury"></h2>
-      <div id="injury-tiles"></div>
-    </section>
-
-
-    <div class="container">
-      <p class="demo-note" data-i18n="demo_warning"></p>
-      <p id="start-info" class="empty" data-i18n="start_info"></p>
-    </div>
 
     <section id="results" class="container section" hidden aria-live="polite">
       <div class="results__head">
@@ -173,9 +156,17 @@
         <div class="metric"><span data-i18n="metric_nearest"></span><b id="m-nearest"></b></div>
         <div class="metric"><span data-i18n="metric_empanelled"></span><b id="m-empanelled"></b></div>
       </div>
-
+      <div class="results__grid">
+        <div class="map-wrap card">
+          <div id="map" dir="ltr"></div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div>
+          <h3 class="list-title" data-i18n="nearby"></h3>
+          <ol id="facility-list" class="facility-list"></ol>
+        </div>
+      </div>
       <div id="next-steps" class="steps card"></div>
-
     </section>
 
     <section id="entitlements" class="container section" hidden>
@@ -203,18 +194,23 @@
         <div class="ent__result" id="ent-result" aria-live="polite"></div>
       </div>
     </section>
-    <section id="results-map" class="container section" hidden>
-      <div class="results__grid">
-        <div class="map-wrap card">
-          <div id="map" dir="ltr"></div>
-          <div class="legend" id="legend"></div>
-        </div>
-        <div>
-          <h3 class="list-title" data-i18n="nearby"></h3>
-          <ol id="facility-list" class="facility-list"></ol>
-        </div>
+    <section class="container sources-band" aria-label="Sources">
+      <span class="sources-band__label" data-i18n="grounded_in"></span>
+      <ul id="sources-band" class="sources-band__list"></ul>
+    </section>
+
+    <section class="container section">
+      <h2 class="section__title" data-i18n="how.title"></h2>
+      <div class="how">
+        <div class="how__item"><span class="how__num">01</span><h3 data-i18n="how.1.title"></h3><p data-i18n="how.1.body"></p></div>
+        <div class="how__item"><span class="how__num">02</span><h3 data-i18n="how.2.title"></h3><p data-i18n="how.2.body"></p></div>
+        <div class="how__item"><span class="how__num">03</span><h3 data-i18n="how.3.title"></h3><p data-i18n="how.3.body"></p></div>
       </div>
     </section>
+
+    <div class="container">
+      <p class="demo-note" data-i18n="demo_warning"></p>
+    </div>
 
     <section class="stats">
       <div class="container stats__grid">
