@@ -28,6 +28,8 @@
       <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
       <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
       <symbol id="i-nav" viewBox="0 0 24 24"><path d="m3 11 19-9-9 19-2-8-8-2z"/></symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/></symbol>
+      <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></symbol>
       <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></symbol>
       <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
     </defs>
@@ -65,7 +67,10 @@
             <p class="describe__hint" data-i18n="describe_label"></p>
             <div class="describe__row">
               <textarea id="describe-text" rows="2" maxlength="1000" data-i18n-ph="describe_placeholder"></textarea>
-              <button type="submit" class="btn btn--primary" id="describe-btn"><span data-i18n="understand_button"></span></button>
+              <div class="describe__buttons">
+                <button type="button" class="btn btn--ghost mic" id="mic-btn" hidden><svg class="ico"><use href="#i-mic"/></svg><span id="mic-label" data-i18n="voice.speak"></span></button>
+                <button type="submit" class="btn btn--primary" id="describe-btn"><span data-i18n="understand_button"></span></button>
+              </div>
             </div>
           </form>
           <div id="understood" class="understood" aria-live="polite"></div>

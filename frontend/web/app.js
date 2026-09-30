@@ -242,7 +242,7 @@ function firstAidCard(injuryKey) {
   }
   if (!card) return "";
   return `<div class="firstaid">
-    <p class="firstaid__title"><svg class="ico"><use href="#i-sparkle"/></svg>${esc(t("firstaid.title"))}</p>
+    <div class="firstaid__head"><p class="firstaid__title"><svg class="ico"><use href="#i-sparkle"/></svg>${esc(t("firstaid.title"))}</p>${speakButton(".firstaid")}</div>
     <ol class="firstaid__steps">${card.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
     <p class="firstaid__dont"><b>${esc(t("firstaid.dont"))}:</b> ${card.cautions.map(esc).join(" ")}</p>
     ${card.translated ? `<details><summary>${esc(t("show_english"))}</summary><ol class="firstaid__steps english">${card.steps_en.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></details>` : ""}
@@ -272,6 +272,7 @@ function renderSteps() {
       <div class="steps__actions">
         <a class="btn btn--primary btn--sm" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
         <button type="button" class="btn btn--ghost btn--sm" id="share-btn"><svg class="ico"><use href="#i-share"/></svg>${esc(t("share"))}</button>
+        ${speakButton(".steps")}
       </div>
     </div>
     <ol>${steps.join("")}</ol>`;
@@ -409,12 +410,88 @@ function newCase() {
   renderChat();
 }
 
+/* ---------- voice: speak the description, hear the guidance ---------- */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SPEECH_LANG = { en: "en-IN", hi: "hi-IN", te: "te-IN", ur: "ur-IN" };
+let speakingBtn = null;
+
+function speakButton(rootSelector) {
+  if (!("speechSynthesis" in window)) return "";
+  return `<button type="button" class="speak-btn" data-speak="${rootSelector}"><svg class="ico"><use href="#i-speaker"/></svg><span>${esc(t("voice.read"))}</span></button>`;
+}
+
+function voiceFor(lang) {
+  const voices = window.speechSynthesis.getVoices();
+  const want = SPEECH_LANG[lang].toLowerCase();
+  return voices.find((v) => v.lang.replace("_", "-").toLowerCase() === want)
+    || voices.find((v) => v.lang.toLowerCase().startsWith(lang));
+}
+
+// Text a person should hear: skip citation badges, buttons, notes and collapsed English originals.
+function speakableText(root) {
+  const clone = root.cloneNode(true);
+  clone.querySelectorAll(".cite, details, button, .firstaid__note, .mt-label, .model, .steps__for, .steps__actions")
+    .forEach((n) => n.remove());
+  // A detached clone has no layout, so separate list items and paragraphs explicitly (gives the voice a pause).
+  clone.querySelectorAll("li, p, h3").forEach((n) => n.append(" "));
+  return clone.textContent.replace(/\s+/g, " ").trim();
+}
+
+function stopSpeaking() {
+  window.speechSynthesis.cancel();
+  if (speakingBtn) speakingBtn.querySelector("span").textContent = t("voice.read");
+  speakingBtn = null;
+}
+
+function toggleSpeak(btn) {
+  const wasThis = speakingBtn === btn;
+  stopSpeaking();
+  if (wasThis) return;
+  const root = btn.closest(btn.dataset.speak);
+  const voice = voiceFor(state.lang);
+  // Never read Telugu/Hindi/Urdu text with an English voice: it would be unintelligible.
+  if (!voice && state.lang !== "en") { toast(t("voice.no_voice")); return; }
+  const u = new SpeechSynthesisUtterance(speakableText(root));
+  u.lang = SPEECH_LANG[state.lang];
+  if (voice) u.voice = voice;
+  u.rate = 0.9;
+  u.onend = u.onerror = () => { if (speakingBtn === btn) stopSpeaking(); };
+  speakingBtn = btn;
+  btn.querySelector("span").textContent = t("voice.stop");
+  window.speechSynthesis.speak(u);
+}
+
+let recognition = null;
+function toggleListening() {
+  if (recognition) { recognition.stop(); return; }
+  const rec = new SpeechRec();
+  rec.lang = SPEECH_LANG[state.lang];
+  rec.interimResults = true;
+  let heard = "";
+  rec.onresult = (ev) => {
+    heard = [...ev.results].map((r) => r[0].transcript).join(" ");
+    $("describe-text").value = heard;
+  };
+  rec.onerror = () => toast(t("voice.no_mic"));
+  rec.onend = () => {
+    recognition = null;
+    $("mic-btn").classList.remove("is-listening");
+    $("mic-label").textContent = t("voice.speak");
+    // Spoken description goes straight to "understand" -- no extra button to find under stress.
+    if (heard.trim()) $("describe-form").requestSubmit();
+  };
+  recognition = rec;
+  $("mic-btn").classList.add("is-listening");
+  $("mic-label").textContent = t("voice.listening");
+  rec.start();
+}
+
 function renderAnswer(m) {
   const translated = m.lang === state.lang ? m.translated : null;
   let html = "";
   if (translated) html += `<p class="mt-label"><svg class="ico"><use href="#i-sparkle"/></svg>${esc(t("mt_label"))}</p>`;
   else if (state.lang !== "en" && m.generated) html += `<p class="mt-label">${esc(t("translation_failed"))}</p>`;
-  html += `<div class="explanation">${renderExplanation(translated || m.content)}</div>`;
+  html += `<div class="explanation">${renderExplanation(translated || m.content)}</div>${speakButton(".msg--ai")}`;
   if (translated) html += `<details><summary>${esc(t("show_english"))}</summary><div class="explanation english">${renderExplanation(m.content)}</div></details>`;
   if (m.sources?.length) html += `<details><summary>${esc(t("sources_used"))}</summary><div class="sources">${m.sources.map((x) =>
     `<div><b>${esc(x.title)}</b>${esc(x.citation)}</div>`).join("")}</div></details>`;
@@ -521,7 +598,7 @@ async function init() {
   const syncCoords = () => { const [la, ln] = LOCALITIES[$("locality").value]; $("lat").value = la; $("lng").value = ln; };
   syncCoords();
 
-  $("lang").addEventListener("change", () => { state.lang = $("lang").value; store.set("raahat.lang", state.lang); applyLanguage(); });
+  $("lang").addEventListener("change", () => { if ("speechSynthesis" in window) stopSpeaking(); state.lang = $("lang").value; store.set("raahat.lang", state.lang); applyLanguage(); });
   $("locality").addEventListener("change", syncCoords);
   $("radius").addEventListener("input", () => ($("radius-val").textContent = $("radius").value));
   $("injury").addEventListener("change", () => setInjury($("injury").value));
@@ -550,6 +627,12 @@ async function init() {
   });
   $("ent-facility").addEventListener("change", () => selectFacility(Number($("ent-facility").value)));
   $("describe-form").addEventListener("submit", onDescribe);
+  if (SpeechRec) { $("mic-btn").hidden = false; $("mic-btn").addEventListener("click", toggleListening); }
+  document.addEventListener("click", (ev) => {
+    const btn = ev.target.closest(".speak-btn");
+    if (btn) { ev.stopPropagation(); toggleSpeak(btn); }
+  });
+  if ("speechSynthesis" in window) window.speechSynthesis.getVoices(); // voices load asynchronously
   $("search-form").addEventListener("submit", onSearch);
   $("ent-form").addEventListener("submit", onExplain);
   $("ent-result").addEventListener("submit", (ev) => {

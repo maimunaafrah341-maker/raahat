@@ -41,6 +41,14 @@ Peak memory for a full session is well inside the free tier's 512 MB (the API al
 - `GET  /api/situations` — situation tags the user can tick
 - `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 3, "situations": ["cant_pay"], "situation": "optional notes", "question": "optional", "history": [{"role": "user", "content": "..."}], "language": "te"}`
 
+## Voice
+
+For people who can't comfortably read or type: a mic button takes the description by voice (Telugu, Hindi,
+Urdu or English, via the browser's speech recognition) and goes straight to understanding it — no extra tap.
+"Read aloud" buttons on the first-aid card, the next-steps guide and each answer use the phone's own voice for
+that language, skipping citation labels. If the phone has no voice for the language, the app says so instead of
+reading Telugu/Urdu with an English voice. Support depends on the browser and phone (Chrome on Android works).
+
 ## First aid
 
 `corpus/first_aid_*.md` holds first-aid steps for all 8 injury types, taken only from NHS, British Red Cross,
