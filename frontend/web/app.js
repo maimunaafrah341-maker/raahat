@@ -500,29 +500,79 @@ function toggleSpeak(btn) {
   window.speechSynthesis.speak(u);
 }
 
+// Someone in an emergency may be breathless and pause mid-sentence. Browsers end recognition at
+// the first pause, so keep restarting it and only finish after a real silence, a tap, or a time cap.
+const SILENCE_MS = 4000;       // quiet this long after speaking = done
+const FIRST_WORD_MS = 10000;   // time allowed before the first word
+const MAX_LISTEN_MS = 90000;
 let recognition = null;
-function toggleListening() {
-  if (recognition) { recognition.stop(); return; }
+const listen = { finals: "", interim: "", started: 0, lastHeard: 0, stop: false, timer: null };
+
+function showHeard() { $("describe-text").value = `${listen.finals} ${listen.interim}`.replace(/\s+/g, " ").trim(); }
+
+function startRecognition() {
   const rec = new SpeechRec();
   rec.lang = SPEECH_LANG[state.lang];
   rec.interimResults = true;
-  let heard = "";
+  rec.continuous = true;
   rec.onresult = (ev) => {
-    heard = [...ev.results].map((r) => r[0].transcript).join(" ");
-    $("describe-text").value = heard;
+    let interim = "";
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const r = ev.results[i];
+      if (r.isFinal) listen.finals += ` ${r[0].transcript}`;
+      else interim += ` ${r[0].transcript}`;
+    }
+    listen.interim = interim;
+    listen.lastHeard = Date.now();
+    showHeard();
   };
-  rec.onerror = () => toast(t("voice.no_mic"));
+  rec.onerror = (ev) => {
+    // "no-speech"/"aborted" just mean a pause or a restart; only a blocked mic is fatal.
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed" || ev.error === "audio-capture") {
+      listen.stop = true;
+      toast(t("voice.no_mic"));
+    }
+  };
   rec.onend = () => {
-    recognition = null;
-    $("mic-btn").classList.remove("is-listening");
-    $("mic-label").textContent = t("voice.speak");
-    // Spoken description goes straight to "understand" -- no extra button to find under stress.
-    if (heard.trim()) $("describe-form").requestSubmit();
+    if (rec !== recognition) return;
+    listen.finals += ` ${listen.interim}`; // keep words that never became "final" before the cut-off
+    listen.interim = "";
+    if (!listen.stop && Date.now() - listen.started < MAX_LISTEN_MS) {
+      try { startRecognition(); return; } catch { /* fall through and finish */ }
+    }
+    finishListening();
   };
   recognition = rec;
+  rec.start();
+}
+
+function finishListening() {
+  clearInterval(listen.timer);
+  recognition = null;
+  $("mic-btn").classList.remove("is-listening");
+  $("mic-label").textContent = t("voice.speak");
+  showHeard();
+  // Spoken description goes straight to "understand" -- no extra button to find under stress.
+  if ($("describe-text").value.trim()) $("describe-form").requestSubmit();
+}
+
+function stopListening() {
+  listen.stop = true;
+  try { recognition?.stop(); } catch { finishListening(); }
+}
+
+function toggleListening() {
+  if (recognition) { stopListening(); return; }
+  Object.assign(listen, { finals: "", interim: "", started: Date.now(), lastHeard: 0, stop: false });
+  $("describe-text").value = "";
   $("mic-btn").classList.add("is-listening");
   $("mic-label").textContent = t("voice.listening");
-  rec.start();
+  listen.timer = setInterval(() => {
+    const now = Date.now();
+    const quiet = listen.lastHeard ? now - listen.lastHeard > SILENCE_MS : now - listen.started > FIRST_WORD_MS;
+    if (quiet || now - listen.started > MAX_LISTEN_MS) stopListening();
+  }, 500);
+  startRecognition();
 }
 
 function renderAnswer(m) {
