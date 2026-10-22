@@ -6,7 +6,7 @@ import os
 import time
 from pathlib import Path
 
-from flask import Flask, Response, abort, jsonify, request, send_from_directory
+from flask import Flask, Response, abort, jsonify, redirect, request, send_from_directory
 
 
 from backend import analytics, rag
@@ -27,6 +27,14 @@ app = Flask(__name__, static_folder=str(WEB_DIR), static_url_path="")
 @app.get("/")
 def index():
     return send_from_directory(WEB_DIR, "index.html")
+
+
+@app.errorhandler(404)
+def not_found(err):
+    """A mistyped or old link opens the app, never an error page: people reach Raahat from shared links."""
+    if request.path.startswith("/api/"):
+        return {"error": "not found"}, 404
+    return redirect("/", code=302)
 
 
 @app.get("/api/health")

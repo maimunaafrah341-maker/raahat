@@ -101,6 +101,18 @@ def test_spoken_place_names_match_areas():
     assert match_area("Mumbai") is None and match_area("") is None
 
 
+def test_any_wrong_link_opens_the_app():
+    from backend.app import app
+    client = app.test_client()
+    for path in ("/hom", "/index", "/hospitals/osmania", "/api/admin/stats"):
+        res = client.get(path)
+        if path.startswith("/api/"):
+            assert res.status_code == 404  # hidden admin pages stay hidden, as a short JSON answer
+        else:
+            assert res.status_code == 302 and res.headers["Location"].endswith("/"), path
+    assert client.get("/").status_code == 200
+
+
 def test_scrub_removes_numbers_and_emails():
     text = analytics.scrub("call me on 98480 22338 or a@b.com, aadhaar 1234 5678 9012, age 45")
     assert "98480" not in text and "a@b.com" not in text and "9012" not in text
