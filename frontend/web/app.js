@@ -4,8 +4,9 @@
 // Area name -> [lat, lng], loaded from /api/localities (data/localities.json, OpenStreetMap coordinates).
 let LOCALITIES = {};
 const ZONES = ["central", "old_city", "secunderabad", "west", "east", "south"];
-const TIERS = ["specialist", "can_manage", "stabilize", "unsuitable"];
-const TIER_COLOR = { specialist: "#16a34a", can_manage: "#f59e0b", stabilize: "#dc2626", unsuitable: "#94a3b8", offline: "#64748b" };
+const TIERS = ["specialist", "can_manage", "stabilize", "unchecked", "unsuitable"];
+const TIER_COLOR = { specialist: "#16a34a", can_manage: "#f59e0b", stabilize: "#dc2626", unchecked: "#6b7f99",
+  unsuitable: "#94a3b8", offline: "#64748b" };
 
 const state = {
   strings: {}, languages: {}, rtl: [], lang: "en",
@@ -442,7 +443,7 @@ function renderSteps() {
   const tell = who ? `<p class="steps__tell">${esc(t("steps.tell", { who }))}</p>` : "";
   const steps = [
     `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}${tell}${guideCards(state.triage.injury.key)}</div></li>`,
-    `<li><div>${go}</div></li>`,
+    `<li><div>${go}${f.phone ? callScript(f, f.data_level === "unchecked") : ""}</div></li>`,
     ...(state.checklistRules ? [`<li><div>${checklistHtml(f)}</div></li>`] : []),
     `<li><div>${esc(t("steps.ask"))}${citePill("clinical_establishments_act")}</div></li>`,
     `<li><div>${esc(t(`steps.emp_${empKey(f)}`))}${citePill("telangana_aarogyasri")}${payCardHtml()}</div></li>`,
@@ -567,12 +568,27 @@ function sourcesBlock(f) {
 }
 function typeLine(f) { return `${t(`type.${f.type}`)} · ${f.locality} · ${Number(f.distance_km).toFixed(1)} km`; }
 
-// How fresh this hospital's details are: a date, and a warning once they're old.
+// How much Raahat has checked this hospital (phone / public sources / not yet), and how long ago.
 function checkedLine(f) {
+  if (f.data_level === "unchecked") return `<p class="checked checked--unchecked">${esc(t("trust.unchecked"))}</p>`;
   const days = daysSince(f.checked_on);
   if (days === null) return "";
-  const stale = days > STALE_DAYS;
-  return `<p class="checked${stale ? " checked--stale" : ""}">${esc(stale ? t("checked.stale", { days }) : t("checked.on", { date: fmtDate(f.checked_on) }))}</p>`;
+  if (days > STALE_DAYS) return `<p class="checked checked--stale">${esc(t("checked.stale", { days }))}</p>`;
+  const key = f.data_level === "phone_verified" ? "trust.phone_verified" : "trust.public";
+  return `<p class="checked">${esc(t(key, { date: fmtDate(f.checked_on) }))}</p>`;
+}
+
+// "What to ask when you call": useful for every hospital, essential for ones we haven't checked.
+function callScript(f, open = false) {
+  const injury = state.triage?.injury;
+  if (!injury) return "";
+  const item = state.injuries.find((i) => i.key === injury.key);
+  const need = injury.needs?.length ? injury.needs.map((s) => t(`spec.${s}`)).join(" / ") : t("call.need_default");
+  const text = t("call.script", { emergency: item ? injuryLabel(item) : injury.label, need });
+  return `<details class="callscript"${open ? " open" : ""}><summary>${esc(t("call.title"))}</summary>
+    <p class="callscript__text">${esc(text)}</p>
+    <div class="callscript__actions"><button type="button" class="btn btn--ghost btn--sm copy-btn" data-text="${esc(text)}">${esc(t("call.copy"))}</button>${speakButton(".callscript")}</div>
+  </details>`;
 }
 // Does the scheme registry list this hospital for the specialist team this emergency needs?
 // A registry list can be incomplete, so a missing speciality means "ask", never "not covered".
@@ -616,7 +632,15 @@ function renderResults() {
   $("m-empanelled").textContent = specialists.filter((f) => f.aarogyasri_empanelled === true).length;
 
   const note = state.lang !== "en" ? `<p class="small">${esc(t("reasons_english_note"))}</p>` : "";
-  $("facility-list").innerHTML = results.slice(0, 8).map((f) => `
+  // Researched hospitals first. Then, only where they'd help (e.g. on the city's edge, where the
+  // researched ones are far), up to 4 not-yet-checked hospitals that are closer than the best options.
+  const capable = results.filter((f) => f.tier !== "unchecked" && f.tier !== "unsuitable");
+  // "Not equipped" hospitals only when nothing better is within reach.
+  const researched = capable.length ? capable : results.filter((f) => f.tier === "unsuitable");
+  const best = researched.slice(0, 3).map((f) => f.distance_km);
+  const nearer = best.length ? Math.min(...best) : Infinity;
+  const closer = results.filter((f) => f.tier === "unchecked" && f.distance_km < nearer).slice(0, 4);
+  const card = (f) => `
     <li class="fac" style="--tier:${TIER_COLOR[f.tier]}" data-id="${f.id}" tabindex="0" aria-current="${f.id === state.selectedId}">
       <div class="fac__name"><span class="fac__rank">#${f.rank}</span>${esc(f.name)}</div>
       <span class="pill pill--tier">${esc(t(`tier.${f.tier}`))}</span>
@@ -629,6 +653,7 @@ function renderResults() {
         <a class="btn btn--ghost btn--sm dir-link" data-id="${f.id}" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
         ${appleMapsLink(f)}
       </div>
+      ${f.data_level === "unchecked" && f.phone ? callScript(f) : ""}
       <details class="fac__more"><summary>${esc(t("fac.more"))}</summary>
         ${phoneNote(f)}
         ${schemeList(f)}
@@ -637,7 +662,9 @@ function renderResults() {
         ${sourcesBlock(f)}
         ${reportBlock(f)}
       </details>
-    </li>`).join("");
+    </li>`;
+  $("facility-list").innerHTML = researched.slice(0, 6).map(card).join("")
+    + (closer.length ? `<li class="fac-group">${esc(t("list.closer_unchecked"))}</li>${closer.map(card).join("")}` : "");
   $("results-feedback").innerHTML = results.length
     ? feedbackHtml(t("helpful.results_q"), state.resultsFeedback, 'data-target="results"') : "";
 
@@ -1128,7 +1155,7 @@ async function init() {
     LOCALITIES = Object.fromEntries(localities.map((l) => [l.name, [l.lat, l.lng]]));
     $("sources-band").innerHTML = sources.filter((x) => x.kind === "legal").map((x) => `<li>${esc(x.title)}</li>`).join("");
     $("stat-injuries").textContent = injuries.length;
-    $("stat-facilities").textContent = facilities.length;
+    $("stat-facilities").textContent = facilities.filter((f) => f.data_level !== "unchecked").length; // researched only
   } catch (err) {
     document.querySelector("main").insertAdjacentHTML("afterbegin",
       `<div class="container"><p class="demo-note">${esc(err.message || "Cannot connect to the Raahat server.")}</p></div>`);
@@ -1189,6 +1216,14 @@ async function init() {
       const f = state.triage?.results.find((x) => x.id === Number(a.dataset.id));
       track("action", "directions", { facility_id: f?.id, tier: f?.tier });
     }
+  });
+  // Copy the call script (to paste into WhatsApp or read from the screen while calling).
+  document.addEventListener("click", async (ev) => {
+    const btn = ev.target.closest(".copy-btn");
+    if (!btn) return;
+    ev.stopPropagation();
+    try { await navigator.clipboard.writeText(btn.dataset.text); btn.textContent = `✓ ${t("call.copied")}`; }
+    catch { toast(btn.dataset.text); } // no clipboard access: show the text so it can be read out
   });
   // "Was this helpful?" on results and on answers.
   document.addEventListener("click", (ev) => {

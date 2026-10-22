@@ -6,7 +6,10 @@ from pathlib import Path
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "healthcare.db"
 
 # Controlled vocabularies — the stage-2 injury matcher keys off these exact strings.
-FACILITY_TYPES = ("govt", "charitable", "empanelled_private", "private")
+FACILITY_TYPES = ("govt", "charitable", "empanelled_private", "private", "unknown")
+
+# How much Raahat has checked a hospital, strongest first (shown on every card).
+DATA_LEVELS = ("phone_verified", "public", "unchecked")
 
 SPECIALTIES = (
     "emergency_medicine",
@@ -39,7 +42,7 @@ CREATE TABLE IF NOT EXISTS facilities (
     district               TEXT    NOT NULL,
     lat                    REAL    NOT NULL,
     lng                    REAL    NOT NULL,
-    type                   TEXT    NOT NULL CHECK (type IN ('govt','charitable','empanelled_private','private')),
+    type                   TEXT    NOT NULL CHECK (type IN ('govt','charitable','empanelled_private','private','unknown')),
     specialties            TEXT    NOT NULL,  -- JSON list drawn from SPECIALTIES
     trauma_level           INTEGER NOT NULL CHECK (trauma_level BETWEEN 0 AND 3),
     emergency_24x7         INTEGER CHECK (emergency_24x7 IN (0,1)),  -- NULL = not confirmed by a source
@@ -51,8 +54,11 @@ CREATE TABLE IF NOT EXISTS facilities (
     scheme_specialties     TEXT,
     scheme_source          TEXT,                            -- JSON {label, url} for that list
     pmjay_id               TEXT,                            -- registry ID, to look the hospital up by hand
-    phone                  TEXT,                            -- JSON {number, kind: emergency|main|helpline, source}; NULL = none verified
+    phone                  TEXT,                            -- JSON {number, kind: emergency|main|helpline|unverified, source}; NULL = none
     checked_on             TEXT,
+    -- phone_verified: someone called and asked; public: researched from cited public sources;
+    -- unchecked: only listed (OpenStreetMap), capabilities unknown -- "call first".
+    data_level             TEXT    NOT NULL DEFAULT 'public' CHECK (data_level IN ('phone_verified','public','unchecked')),
     is_synthetic           INTEGER NOT NULL DEFAULT 1
 );
 """

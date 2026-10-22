@@ -123,6 +123,57 @@ def test_slow_models_never_outlast_the_time_budget(monkeypatch):
     assert _time.monotonic() - started < 5.5  # stopped by the budget, not after all ten
 
 
+def test_research_spreadsheet_import(tmp_path, monkeypatch, capsys):
+    import json
+    import shutil
+    sys.path.insert(0, str(ROOT / "data"))
+    import import_research as ir
+    real = tmp_path / "hospitals_real.json"
+    shutil.copy(ROOT / "data" / "hospitals_real.json", real)
+    monkeypatch.setattr(ir, "REAL_FILE", real)
+    before = len(json.loads(real.read_text(encoding="utf-8"))["hospitals"])
+    csv_file = tmp_path / "research.csv"
+    header = (ROOT / "data" / "research_template.csv").read_text(encoding="utf-8").splitlines()[0]
+    csv_file.write_text("\n".join([
+        header,
+        "Test Care Hospital,Kukatpally,17.49,78.40,private,yes,2,emergency_medicine;orthopedics,unknown,,"
+        "040 1234 5678,emergency,https://test.example/contact,Website: 24x7 casualty|https://test.example,2026-10-25,yes",
+        "Bad Specialty Hospital,Ameerpet,17.43,78.44,private,yes,2,brain_magic,unknown,,,,,Site|https://x.example,,no",
+        "No Source Hospital,Ameerpet,17.43,78.44,private,yes,2,,unknown,,,,,,,no",
+    ]), encoding="utf-8")
+    assert ir.main(str(csv_file)) == 0
+    out = capsys.readouterr().out
+    assert "unknown specialties" in out and "needs at least one source" in out
+    data = json.loads(real.read_text(encoding="utf-8"))
+    added = next(h for h in data["hospitals"] if h["name"] == "Test Care Hospital")
+    assert len(data["hospitals"]) == before + 1
+    assert added["phone"]["number"] == "+914012345678" and added["data_level"] == "phone_verified"
+    ir.validate_real(data)
+
+
+def test_unchecked_hospitals_rank_after_researched_and_say_call_first():
+    from backend.triage import rank_facilities
+    researched = {"id": 1, "name": "R", "lat": 17.40, "lng": 78.48, "specialties": ["orthopedics", "emergency_medicine"],
+                  "trauma_level": 2, "trauma_label": "intermediate", "emergency_24x7": True, "data_level": "public"}
+    unchecked = [{"id": 10 + i, "name": f"U{i}", "lat": 17.3616, "lng": 78.4747 + i * 0.001, "specialties": [],
+                  "trauma_level": 0, "trauma_label": "none", "emergency_24x7": None, "data_level": "unchecked"}
+                 for i in range(15)]
+    ranked = rank_facilities([*unchecked, researched], "fracture", 17.3616, 78.4747)
+    assert ranked[0]["name"] == "R"  # the researched hospital first, though 4 km further
+    rest = ranked[1:]
+    assert len(rest) == 10 and all(r["tier"] == "unchecked" for r in rest)  # nearest 10 only
+    assert all("call before going" in r["reasons"][0] for r in rest)  # never "not equipped"
+
+
+def test_hospital_list_is_gzipped_for_phones():
+    import gzip
+    import json
+    from backend.app import app
+    res = app.test_client().get("/api/facilities", headers={"Accept-Encoding": "gzip"})
+    assert res.headers.get("Content-Encoding") == "gzip"
+    assert len(json.loads(gzip.decompress(res.data))) > 19
+
+
 def test_any_wrong_link_opens_the_app():
     from backend.app import app
     client = app.test_client()

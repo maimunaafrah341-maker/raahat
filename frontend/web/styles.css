@@ -369,8 +369,15 @@ html[dir="rtl"] .msg--user { border-radius: 16px 16px 16px 4px; }
 
 /* ---------- freshness, scheme approvals, reports ---------- */
 .checked { font-size: .82rem; color: var(--muted); margin-top: 4px; }
-.checked::before { content: "🕑 "; }
+.checked--stale::before { content: "⚠️ "; }
 .checked--stale { color: #8a5a00; font-weight: 700; }
+.checked.checked--unchecked { color: #44546a; font-weight: 700; }
+.fac-group { list-style: none; margin-top: 6px; font-weight: 800; color: #44546a; font-size: .95rem; }
+.callscript { margin-top: 10px; background: #f4f7fb; border: 1px solid #d9e2ee; border-radius: 12px; padding: 8px 12px; }
+.callscript summary { cursor: pointer; font-weight: 700; color: #2f4a6b; }
+.callscript__text { margin-top: 6px; font-size: .95rem; color: var(--ink); }
+.callscript__actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.callscript__actions .speak-btn { margin-top: 0; }
 .scheme { font-size: .86rem; margin-top: 4px; }
 .scheme a { color: var(--primary-ink); text-decoration: none; font-weight: 700; }
 .scheme--ok { color: #15803d; font-weight: 700; }

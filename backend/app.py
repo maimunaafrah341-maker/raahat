@@ -1,5 +1,6 @@
 """Flask app: JSON API under /api, plus the web page.  Run:  python -m backend.app"""
 import csv
+import gzip
 import hmac
 import io
 import os
@@ -27,6 +28,19 @@ app = Flask(__name__, static_folder=str(WEB_DIR), static_url_path="")
 @app.get("/")
 def index():
     return send_from_directory(WEB_DIR, "index.html")
+
+
+@app.after_request
+def compress(resp):
+    """Gzip big JSON (the hospital list is ~470 KB raw, ~30 KB gzipped): matters on slow phone data."""
+    if (resp.mimetype == "application/json" and resp.status_code == 200 and not resp.direct_passthrough
+            and "gzip" in request.headers.get("Accept-Encoding", "") and "Content-Encoding" not in resp.headers):
+        body = resp.get_data()
+        if len(body) > 20_000:
+            resp.set_data(gzip.compress(body, compresslevel=6))
+            resp.headers["Content-Encoding"] = "gzip"
+            resp.headers["Vary"] = "Accept-Encoding"
+    return resp
 
 
 @app.errorhandler(404)

@@ -17,6 +17,7 @@ from backend.db import (  # noqa: E402
 )
 
 REAL_FILE = Path(__file__).resolve().parent / "hospitals_real.json"
+OSM_FILE = Path(__file__).resolve().parent / "hospitals_osm.json"  # from fetch_osm_hospitals.py
 
 DISTRICT = "Hyderabad"
 
@@ -113,13 +114,38 @@ def validate_real(data: dict) -> None:
             assert phone.get("source", {}).get("url"), f"{name}: a phone number needs a source"
         if "checked_on" in h:
             assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", h["checked_on"]), f"{name}: checked_on must be YYYY-MM-DD"
+        assert h.get("data_level", "public") in ("phone_verified", "public"), f"{name}: bad data_level"
+        if h.get("data_level") == "phone_verified":
+            assert h.get("checked_on"), f"{name}: a phone-verified hospital needs the date it was called"
+
+
+def osm_rows() -> list[tuple]:
+    """Hospitals only listed on OpenStreetMap: shown as "not yet checked -- call first", never ranked
+    above a researched hospital, and with nothing claimed about what they can treat."""
+    if not OSM_FILE.exists():
+        return []
+    data = json.loads(OSM_FILE.read_text(encoding="utf-8"))
+    rows = []
+    for h in data["hospitals"]:
+        govt = (h.get("operator_type") or "").lower() in ("government", "public")
+        sources = [{"label": "OpenStreetMap listing (community-edited)", "url": h["osm"]}]
+        if h.get("website"):
+            sources.append({"label": "Hospital website (not yet reviewed by Raahat)", "url": h["website"]})
+        phone = ({"number": h["phone"], "kind": "unverified",
+                  "source": {"label": "OpenStreetMap (community-edited, not verified)", "url": h["osm"]}}
+                 if h.get("phone") else None)
+        rows.append((h["name"], h["locality"], h["lat"], h["lng"], "govt" if govt else "unknown", "[]", 0, None,
+                     None, None, json.dumps(sources), None, None, None,
+                     json.dumps(phone) if phone else None, data["fetched_on"], "unchecked", 0))
+    return rows
 
 
 def seed(demo: bool = False) -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     if demo:
         validate(FACILITIES)
-        rows = [(n, loc, lat, lng, t, json.dumps(s), lvl, int(er), int(ars), None, "[]", None, None, None, None, None, 1)
+        rows = [(n, loc, lat, lng, t, json.dumps(s), lvl, int(er), int(ars), None, "[]", None, None, None, None, None,
+                 "public", 1)
                 for n, loc, lat, lng, t, s, lvl, er, ars in FACILITIES]
     else:
         data = json.loads(REAL_FILE.read_text(encoding="utf-8"))
@@ -132,20 +158,23 @@ def seed(demo: bool = False) -> None:
                  dump(h.get("scheme_specialties")), dump(h.get("scheme_source")), h.get("pmjay_id"),
                  dump(h.get("phone")),
                  # A hospital re-checked on its own carries its own date; the rest share the file's.
-                 h.get("checked_on", data["checked_on"]), 0)
+                 h.get("checked_on", data["checked_on"]), h.get("data_level", "public"), 0)
                 for h in data["hospitals"]]
+        rows += osm_rows()
     with get_connection() as conn:
         init_db(conn)
         conn.executemany(
             """INSERT INTO facilities
                (name, locality, district, lat, lng, type, specialties, trauma_level, emergency_24x7,
                 aarogyasri_empanelled, aarogyasri_evidence, sources, scheme_specialties, scheme_source,
-                pmjay_id, phone, checked_on, is_synthetic)
-               VALUES (?, ?, 'Hyderabad', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                pmjay_id, phone, checked_on, data_level, is_synthetic)
+               VALUES (?, ?, 'Hyderabad', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             rows,
         )
-        count = len(list_facilities(conn))
-    print(f"Seeded {count} {'SYNTHETIC demo' if demo else 'real'} facilities into {DB_PATH}")
+        facilities = list_facilities(conn)
+    unchecked = sum(f["data_level"] == "unchecked" for f in facilities)
+    print(f"Seeded {len(facilities)} {'SYNTHETIC demo' if demo else 'real'} facilities "
+          f"({len(facilities) - unchecked} researched, {unchecked} not yet checked) into {DB_PATH}")
 
 
 if __name__ == "__main__":

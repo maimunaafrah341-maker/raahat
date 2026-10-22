@@ -190,8 +190,10 @@ CONDITIONS = {
 TIER_SPECIALIST = "specialist"   # right specialty + enough trauma capability
 TIER_CAN_MANAGE = "can_manage"   # partial fit: related specialty or weaker trauma setup
 TIER_STABILIZE = "stabilize"     # emergency-capable, but will likely refer onward
+TIER_UNCHECKED = "unchecked"     # only listed (OpenStreetMap): capability unknown, "call first"
 TIER_UNSUITABLE = "unsuitable"
-TIER_ORDER = [TIER_SPECIALIST, TIER_CAN_MANAGE, TIER_STABILIZE, TIER_UNSUITABLE]
+TIER_ORDER = [TIER_SPECIALIST, TIER_CAN_MANAGE, TIER_STABILIZE, TIER_UNCHECKED, TIER_UNSUITABLE]
+MAX_UNCHECKED = 10  # nearest not-yet-checked hospitals shown after the researched ones
 
 DEFAULT_RADIUS_KM = 20.0
 
@@ -206,6 +208,10 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 
 def assess(facility: dict, injury: dict, distance_km: float, radius_km: float,
            conditions: tuple[str, ...] = ()) -> dict:
+    if facility.get("data_level") == "unchecked":
+        # Nothing is known about what it can treat; never call it "not equipped" -- say "call first".
+        return {"score": round(-distance_km, 2), "tier": TIER_UNCHECKED,
+                "reasons": ["Not yet checked by Raahat — call before going to confirm they can treat this"]}
     specs = set(facility["specialties"])
     primary_hits = [s for s in injury["primary"] if s in specs]
     secondary_hits = [s for s in injury["secondary"] if s in specs]
@@ -276,6 +282,10 @@ def rank_facilities(facilities: list[dict], injury_key: str, lat: float, lng: fl
             continue
         results.append({**f, "distance_km": round(d, 2), **assess(f, injury, d, radius_km, conditions)})
     results.sort(key=lambda r: (TIER_ORDER.index(r["tier"]), -r["score"]))
+    unchecked = [r for r in results if r["tier"] == TIER_UNCHECKED][MAX_UNCHECKED:]
+    if unchecked:
+        drop = {id(r) for r in unchecked}
+        results = [r for r in results if id(r) not in drop]
     for i, r in enumerate(results, 1):
         r["rank"] = i
     return results

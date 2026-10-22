@@ -1,0 +1,2 @@
+name,locality,lat,lng,type,emergency_24x7,trauma_level,specialties,aarogyasri,aarogyasri_evidence,phone,phone_kind,phone_source_url,sources,checked_on,verified_by_phone
+Example Hospital (delete this row),Kukatpally,,,private,yes,2,emergency_medicine;orthopedics;general_surgery,unknown,,+914012345678,emergency,https://example-hospital.in/contact,Hospital website: 24x7 emergency and departments|https://example-hospital.in/departments,2026-10-25,no

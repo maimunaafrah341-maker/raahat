@@ -77,6 +77,51 @@ Understanding (typed or spoken) uses fast "lite" models first (`UNDERSTAND_MODEL
 `backend/understanding.py`, ~4-8 s). On the free tier `gemini-3.8-flash` allows only 20 requests a day,
 so for real use enable billing on the API key; the fallback chains keep the app answering meanwhile.
 
+## Researching hospitals yourself
+
+Every hospital card shows how much Raahat has checked it:
+
+- ✅ **Verified by phone** (date): someone called and asked.
+- 📄 **Researched from public sources** (date): every capability is backed by a cited link.
+- ❔ **Not yet checked**: only listed from OpenStreetMap (`data/fetch_osm_hospitals.py`). Shown after
+  every researched hospital, nearest 10 only, with "call first" and a script of what to ask.
+
+To move a hospital from ❔ to 📄 without calling anyone:
+
+1. Copy `data/research_template.csv` and open it in Excel or Google Sheets; one row per hospital.
+2. Research from these sources, and put every link you used in `sources` (`label|https://link`,
+   separated by `;`):
+   - **The hospital's own website**: departments page, "24x7 emergency / casualty / trauma", contact page.
+   - **Google Maps listing**: "Open 24 hours", phone number, photos of an Emergency sign, recent reviews
+     that mention the emergency ward.
+   - **PM-JAY hospital search** (hospitals.pmjay.gov.in, Telangana → Hyderabad; needs a captcha):
+     empanelment and specialities. This counts as `official` for Aarogyasri.
+   - **NABH accredited hospitals list** (nabh.co): accreditation, often lists emergency services.
+   - News reports, for things like new trauma centres or Aarogyasri suspensions.
+3. Fill each column only with what a source says. When unsure, write `unknown` or leave it out;
+   a gap is safer than a guess.
+   - `emergency_24x7`: `yes` only if a source says 24x7 / 24 hours emergency or casualty.
+   - `specialties`: only departments the hospital itself lists, from:
+     `emergency_medicine general_medicine general_surgery orthopedics hand_surgery plastic_surgery
+     neurosurgery burns cardiology pediatrics obstetrics ophthalmology oncology psychiatry`.
+   - `trauma_level`: 3 = major trauma centre (neurosurgery, ICU and blood bank stated), 2 = casualty
+     with surgery/orthopaedics, 1 = basic emergency care, 0 = none.
+   - `aarogyasri`: `yes`/`no` with `aarogyasri_evidence` = `official` (hospital or government site)
+     or `reported` (news, lists); otherwise `unknown`.
+   - `phone` + `phone_kind` (`emergency`, `main` or `helpline`) + `phone_source_url`.
+   - `lat`/`lng`: leave blank if the name matches the OpenStreetMap list; otherwise copy them from
+     Google Maps (right-click the place → the numbers at the top).
+   - `verified_by_phone`: `yes` only if you called and they confirmed the details.
+4. Download as CSV and run:
+   ```
+   python data/import_research.py path/to/your.csv
+   python data/seed_facilities.py
+   ```
+   Bad rows are listed with the reason and skipped. Commit `data/hospitals_real.json` and push to deploy.
+
+Start with the areas people search most (the admin stats show them), and the hospitals that come up
+as ❔ near those areas.
+
 ## Areas
 
 `data/localities.json`: 106 Hyderabad areas in six zones, coordinates from OpenStreetMap (Nominatim).
