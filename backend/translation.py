@@ -53,7 +53,7 @@ def translate_explanation(text: str, language: str) -> str | None:
     for _ in range(2):
         try:
             resp, _model = rag._generate_with(
-                prompt, types.GenerateContentConfig(temperature=0.1))
+                prompt, types.GenerateContentConfig(temperature=0.1), budget_s=25)
         except rag.AI_ERRORS:
             return None
         translated = (resp or "").strip()

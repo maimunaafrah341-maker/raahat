@@ -101,6 +101,28 @@ def test_spoken_place_names_match_areas():
     assert match_area("Mumbai") is None and match_area("") is None
 
 
+def test_slow_models_never_outlast_the_time_budget(monkeypatch):
+    """Ten overloaded models that each take 1 s must not keep a person waiting past the budget."""
+    import time as _time
+
+    import requests
+
+    class Slow:
+        class models:  # noqa: N801 -- mimics client.models
+            @staticmethod
+            def generate_content(**_):
+                _time.sleep(1)
+                raise requests.exceptions.ConnectionError("overloaded")
+
+    monkeypatch.setattr(rag, "client", lambda timeout_ms=0: Slow)
+    started = _time.monotonic()
+    try:
+        rag._generate_with("hi", None, models=[f"m{i}" for i in range(10)], attempts=1, budget_s=5)
+    except rag.AI_ERRORS:
+        pass
+    assert _time.monotonic() - started < 5.5  # stopped by the budget, not after all ten
+
+
 def test_any_wrong_link_opens_the_app():
     from backend.app import app
     client = app.test_client()

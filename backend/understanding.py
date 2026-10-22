@@ -28,6 +28,9 @@ _LOCALITIES = [l["name"] for l in json.loads(
 UNDERSTAND_MODELS = [m for m in os.getenv("GEMINI_UNDERSTAND_MODELS", "").split(",") if m] or [
     "gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite-preview",
     "gemini-3-flash-preview", rag.GEN_MODEL]
+# A person is waiting with the form: give up after ~35 s in total and let them pick from the list.
+UNDERSTAND_TIMEOUT_MS = 15_000
+UNDERSTAND_BUDGET_S = 35
 
 # Native-script ranges from Athena's understanding.detect_script().
 _NATIVE_RANGES = {
@@ -163,7 +166,8 @@ def understand(text: str) -> dict | None:
     config = types.GenerateContentConfig(
         temperature=0, response_mime_type="application/json", response_schema=Understanding)
     try:
-        raw, model = rag._generate_with(_prompt(_TEXT_SOURCE.format(text=text)), config, UNDERSTAND_MODELS, attempts=1)
+        raw, model = rag._generate_with(_prompt(_TEXT_SOURCE.format(text=text)), config, UNDERSTAND_MODELS,
+                                        attempts=1, timeout_ms=UNDERSTAND_TIMEOUT_MS, budget_s=UNDERSTAND_BUDGET_S)
         parsed = Understanding.model_validate(json.loads(raw))
     except (*rag.AI_ERRORS, ValueError):
         return None
@@ -179,7 +183,8 @@ def understand_audio(audio: bytes, mime_type: str, language_hint: str | None = N
     contents = [types.Part.from_bytes(data=audio, mime_type=mime_type),
                 _prompt(_AUDIO_SOURCE, _TRANSCRIPT_RULE + hint)]
     try:
-        raw, model = rag._generate_with(contents, config, UNDERSTAND_MODELS, attempts=1)
+        raw, model = rag._generate_with(contents, config, UNDERSTAND_MODELS,
+                                        attempts=1, timeout_ms=UNDERSTAND_TIMEOUT_MS, budget_s=UNDERSTAND_BUDGET_S)
         parsed = HeardUnderstanding.model_validate(json.loads(raw))
     except (*rag.AI_ERRORS, ValueError):
         return None

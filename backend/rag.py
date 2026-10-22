@@ -126,20 +126,23 @@ SECTION_LABELS = [
     (re.compile(r"^Use this"), "usage_guidance"),
 ]
 
-_client = None
+_clients: dict[int, genai.Client] = {}
 # 429 (out of quota) isn't retried on the same model: waiting doesn't restore quota, the next model is faster.
 _RETRYABLE = (500, 503)
 # Anything that means "Gemini didn't answer": API errors and dropped connections alike.
 AI_ERRORS = (genai_errors.APIError, requests.exceptions.RequestException)
 
 
-def client() -> genai.Client:
-    global _client
-    if _client is None:
-        # A hung call would hold a server thread forever; time out and fall through to the next model.
-        _client = genai.Client(api_key=os.environ["GEMINI_API_KEY"],
-                               http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS))
-    return _client
+class OutOfTime(requests.exceptions.Timeout):
+    """The whole fallback chain ran past its time budget; callers treat it like any Gemini failure."""
+
+
+def client(timeout_ms: int = GEMINI_TIMEOUT_MS) -> genai.Client:
+    # A hung call would hold a server thread forever; time out and fall through to the next model.
+    if timeout_ms not in _clients:
+        _clients[timeout_ms] = genai.Client(api_key=os.environ["GEMINI_API_KEY"],
+                                            http_options=types.HttpOptions(timeout=timeout_ms))
+    return _clients[timeout_ms]
 
 
 def _with_retry(fn, attempts: int = 3, codes: tuple[int, ...] = _RETRYABLE):
@@ -416,12 +419,22 @@ def _problems(text: str, allowed_titles: set[str]) -> list[str]:
 
 
 def _generate_with(prompt, config: types.GenerateContentConfig, models: list[str] | None = None,
-                   attempts: int = 2) -> tuple[str, str]:
-    """Return (text, model_used), falling back to lighter models if the primary is unavailable."""
+                   attempts: int = 2, timeout_ms: int = GEMINI_TIMEOUT_MS, budget_s: float = 80) -> tuple[str, str]:
+    """Return (text, model_used), falling back to lighter models if the primary is unavailable.
+
+    `budget_s` caps the whole chain: no new model is tried after it, and each call's timeout is cut to
+    what is left. Without it, six slow models in a row outlast the server's 120 s request limit and the
+    person waits minutes for nothing; with it they get the "AI is busy" fallback in time.
+    """
     last_err = None
+    deadline = time.monotonic() + budget_s
     for model in models or [GEN_MODEL, *GEN_FALLBACK_MODELS]:
+        left_ms = int((deadline - time.monotonic()) * 1000)
+        if left_ms < 3000:
+            raise OutOfTime("Gemini did not answer within the time budget")
         try:
-            resp = _with_retry(lambda: client().models.generate_content(
+            c = client(min(timeout_ms, left_ms // 1000 * 1000))  # whole seconds: few cached clients
+            resp = _with_retry(lambda: c.models.generate_content(
                 model=model, contents=prompt, config=config), attempts=attempts)
             return (resp.text or "").strip(), model
         except AI_ERRORS as e:  # overloaded, out of quota, retired (404), network drop -> try the next model
@@ -430,7 +443,9 @@ def _generate_with(prompt, config: types.GenerateContentConfig, models: list[str
 
 
 def _generate(prompt: str) -> tuple[str, str]:
-    return _generate_with(prompt, types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=0.2))
+    # Up to two drafts (guardrail retry) + a 25 s translation must fit in the server's 120 s request limit.
+    return _generate_with(prompt, types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=0.2),
+                          budget_s=40)
 
 
 def generate_explanation(injury_label: str, situation: str | None, facility: dict | None,
