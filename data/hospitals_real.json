@@ -1,6 +1,6 @@
 {
   "checked_on": "2026-09-27",
-  "method": "Only capabilities stated in a cited public source are listed; anything not confirmed is left out, so a hospital may be more capable than shown. Coordinates from OpenStreetMap (Nominatim). aarogyasri_evidence: 'official' = stated on the hospital's own website; 'reported' = stated by secondary sources only; null = not verified.",
+  "method": "Only capabilities stated in a cited public source are listed; anything not confirmed is left out, so a hospital may be more capable than shown. Coordinates from OpenStreetMap (Nominatim). aarogyasri_evidence: 'official' = stated on the hospital's own website; 'reported' = stated by secondary sources only; null = not verified. scheme_specialties: specialities the PM-JAY / Aarogyasri registry lists the hospital for (Telangana runs Aarogyasri together with PM-JAY), from our SPECIALTIES vocabulary; absent = not yet checked. The official search is hospitals.pmjay.gov.in (Search > State: Telangana, District: Hyderabad; it needs a captcha, so check by hand and record pmjay_id). checked_on on a hospital overrides the file-wide date.",
   "hospitals": [
     {
       "name": "Osmania General Hospital",
@@ -12,6 +12,9 @@
       "emergency_24x7": true,
       "aarogyasri_empanelled": true,
       "aarogyasri_evidence": "reported",
+      "pmjay_id": "HOSP36G132848",
+      "scheme_specialties": ["general_surgery", "pediatrics", "obstetrics", "orthopedics"],
+      "scheme_source": {"label": "PM-JAY hospital registry entry HOSP36G132848, empanelled 2021 (via Public Services Map; confirm on hospitals.pmjay.gov.in)", "url": "https://www.publicservicesmap.in/hospitals/centre/osmania-general-hospital-hyderabad-telangana-hosp36g132848"},
       "sources": [
         {"label": "Wikipedia: Osmania General Hospital (1,168 beds, emergency department)", "url": "https://en.wikipedia.org/wiki/Osmania_General_Hospital"},
         {"label": "Telangana Today: OGH plastic surgery dept, burns skin allograft", "url": "https://telanganatoday.com/osmania-general-hospital-first-in-telangana-to-conduct-skin-allograft"},
@@ -29,6 +32,7 @@
       "emergency_24x7": true,
       "aarogyasri_empanelled": true,
       "aarogyasri_evidence": "reported",
+      "phone": {"number": "+914027502742", "kind": "main", "source": {"label": "WHO SEARO institute directory: Gandhi Medical College", "url": "https://apps.searo.who.int/PHI/Institute/Details/417"}},
       "sources": [
         {"label": "Wikipedia: Gandhi Medical College and Hospital (casualty department)", "url": "https://en.wikipedia.org/wiki/Gandhi_Medical_College_and_Hospital"},
         {"label": "Gandhi Medical College: Neurosurgery", "url": "http://gmcsecunderabad.org/neuro-surgery/"},
@@ -48,6 +52,7 @@
       "emergency_24x7": true,
       "aarogyasri_empanelled": true,
       "aarogyasri_evidence": "reported",
+      "phone": {"number": "+914023489000", "kind": "main", "source": {"label": "WHO SEARO institute directory: NIMS", "url": "https://apps.searo.who.int/PHI/Institute/Details/328"}},
       "sources": [
         {"label": "NIMS: Orthopaedics department and NIMS Hand Center (orthopaedics + plastic surgery)", "url": "https://nims.edu.in/depart_details?dep_id=NTE%3D"},
         {"label": "TrueCare: NIMS emergency ward, tier-1 trauma care, Aarogyasri registration", "url": "https://www.truecarehealth.in/blog/nims-hospital-hyderabad/"},
@@ -81,6 +86,7 @@
       "emergency_24x7": true,
       "aarogyasri_empanelled": true,
       "aarogyasri_evidence": "official",
+      "phone": {"number": "+914024349999", "kind": "emergency", "source": {"label": "Owaisi Hospital website: Emergency", "url": "https://owaisihospital.com/"}},
       "sources": [
         {"label": "Owaisi Hospital: Aarogyasri services since 2007", "url": "https://owaisihospital.com/aarogyasri/"},
         {"label": "Owaisi Hospital: departments", "url": "https://owaisihospital.com/ct-mega-menu/departments/"},
@@ -98,6 +104,7 @@
       "emergency_24x7": true,
       "aarogyasri_empanelled": true,
       "aarogyasri_evidence": "official",
+      "phone": {"number": "+914023497300", "kind": "emergency", "source": {"label": "Mahavir Hospital website: emergency / road accident call button", "url": "https://themahavirhospital.in/"}},
       "sources": [
         {"label": "Mahavir Hospital: trust hospital, Accident Emergency & Trauma Centre, Aarogyasri since 2007", "url": "https://themahavirhospital.in/"},
         {"label": "Mahavir Hospital: chairman's message", "url": "https://themahavirhospital.in/about/message_from_chairman.php"},
@@ -114,6 +121,7 @@
       "emergency_24x7": true,
       "aarogyasri_empanelled": true,
       "aarogyasri_evidence": "reported",
+      "phone": {"number": "+914045674567", "kind": "helpline", "source": {"label": "Yashoda Hospitals Somajiguda page: 24/7 helpline", "url": "https://www.yashodahospitals.com/locations/somajiguda/"}},
       "sources": [
         {"label": "Yashoda Hospitals: Somajiguda (24/7 emergency, specialities)", "url": "https://www.yashodahospitals.com/locations/somajiguda/"},
         {"label": "Yashoda Hospitals: Plastic & Reconstructive Surgery", "url": "https://www.yashodahospitals.com/specialities/plastic-reconstructive-surgery/disease-conditions/"},
@@ -131,6 +139,7 @@
       "emergency_24x7": true,
       "aarogyasri_empanelled": true,
       "aarogyasri_evidence": "reported",
+      "phone": {"number": "+914046324365", "kind": "emergency", "source": {"label": "KIMS Secunderabad Accident & Emergency page: Emergency", "url": "https://www.kimshospitals.com/secunderabad/speciality/accident/"}},
       "sources": [
         {"label": "KIMS: 24-hour Accident & Emergency, trauma team (orthopaedics, neurosurgery, trauma surgeons)", "url": "https://www.kimshospitals.com/secunderabad/speciality/accident/"},
         {"label": "Wikipedia: KIMS hospital group", "url": "https://en.wikipedia.org/wiki/Krishna_Institute_of_Medical_Sciences_(hospital_group)"},
@@ -148,6 +157,7 @@
       "emergency_24x7": true,
       "aarogyasri_empanelled": null,
       "aarogyasri_evidence": null,
+      "phone": {"number": "+914068106529", "kind": "main", "source": {"label": "CARE Hospitals Banjara Hills page: Tel", "url": "https://www.carehospitals.com/service-and-facility/care-hospital-banjara-hills"}},
       "sources": [
         {"label": "CARE Hospitals: Banjara Hills services (24-hour emergency for accident victims, critical care)", "url": "https://www.carehospitals.com/service-and-facility/care-hospital-banjara-hills"},
         {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/337928613"}
@@ -163,10 +173,172 @@
       "emergency_24x7": true,
       "aarogyasri_empanelled": null,
       "aarogyasri_evidence": null,
+      "phone": {"number": "1066", "kind": "emergency", "source": {"label": "Apollo Jubilee Hills emergency medicine page: toll-free emergency 1066", "url": "https://www.apollohospitals.com/region/hyderabad/hospitals/jubilee-hills/specialities/emergency-medicine/"}},
       "sources": [
         {"label": "Apollo Hospitals: Jubilee Hills emergency medicine (24x7 trauma centre)", "url": "https://www.apollohospitals.com/region/hyderabad/hospitals/jubilee-hills/specialities/emergency-medicine/"},
         {"label": "Apollo Hospitals: Jubilee Hills", "url": "https://www.apollohospitals.com/hospitals/apollo-health-city-jubilee-hills"},
         {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/860344899"}
+      ]
+    },
+    {
+      "name": "Niloufer Hospital (women and children)",
+      "locality": "Red Hills",
+      "lat": 17.3988456,
+      "lng": 78.4614497,
+      "type": "govt",
+      "specialties": ["pediatrics", "obstetrics", "general_surgery"],
+      "trauma_level": 1,
+      "emergency_24x7": null,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "checked_on": "2026-10-22",
+      "sources": [
+        {"label": "Wikipedia: Niloufer Hospital (specialty hospital for women and children, paediatric surgery, maternity; emergency department)", "url": "https://en.wikipedia.org/wiki/Niloufer_Hospital"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/238195448"}
+      ]
+    },
+    {
+      "name": "Institute of Mental Health, Erragadda",
+      "locality": "Erragadda",
+      "lat": 17.4502822,
+      "lng": 78.4359503,
+      "type": "govt",
+      "specialties": ["psychiatry"],
+      "trauma_level": 0,
+      "emergency_24x7": null,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "checked_on": "2026-10-22",
+      "sources": [
+        {"label": "Wikipedia: Institute of Mental Health (Erragadda) (Government of Telangana, 600 beds, emergency department)", "url": "https://en.wikipedia.org/wiki/Institute_of_Mental_Health_(Erragadda)"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/357069873"}
+      ]
+    },
+    {
+      "name": "MNJ Institute of Oncology and Regional Cancer Centre",
+      "locality": "Red Hills",
+      "lat": 17.392244,
+      "lng": 78.4601927,
+      "type": "govt",
+      "specialties": ["oncology"],
+      "trauma_level": 0,
+      "emergency_24x7": null,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "phone": {"number": "+914023397000", "kind": "main", "source": {"label": "Pallium India Telangana directory: MNJIORCC (also listed by AP Health Network)", "url": "https://palliumindia.org/telangana"}},
+      "checked_on": "2026-10-22",
+      "sources": [
+        {"label": "Pallium India: MNJ Institute of Oncology and Regional Cancer Centre (OP / IP / home care)", "url": "https://palliumindia.org/telangana"},
+        {"label": "BioSpectrum: MNJ provides free, multidisciplinary cancer care", "url": "https://biospectrumindia.com/news/86/22958/aurobindo-pharma-injects-rs-80-cr-to-build-oncology-block-for-mnj-hospital-in-hyderabad.html"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/node/11938622049"}
+      ]
+    },
+    {
+      "name": "Basavatarakam Indo-American Cancer Hospital",
+      "locality": "Banjara Hills",
+      "lat": 17.4173334,
+      "lng": 78.4301109,
+      "type": "charitable",
+      "specialties": ["oncology"],
+      "trauma_level": 0,
+      "emergency_24x7": null,
+      "aarogyasri_empanelled": true,
+      "aarogyasri_evidence": "official",
+      "phone": {"number": "+914023551235", "kind": "main", "source": {"label": "Basavatarakam hospital website: contact numbers", "url": "https://basavatarakam.org/?p=252"}},
+      "checked_on": "2026-10-22",
+      "sources": [
+        {"label": "Basavatarakam: Aarogyasri patients have walk-in consultation", "url": "https://basavatarakam.org/?p=252"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/563524286"}
+      ]
+    },
+    {
+      "name": "Continental Hospitals, Gachibowli",
+      "locality": "Nanakramguda, Gachibowli",
+      "lat": 17.4176646,
+      "lng": 78.3391307,
+      "type": "private",
+      "specialties": ["emergency_medicine"],
+      "trauma_level": 2,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "phone": {"number": "+914067000111", "kind": "emergency", "source": {"label": "Continental Hospitals website: Emergency", "url": "https://www.continentalhospitals.com/"}},
+      "checked_on": "2026-10-22",
+      "sources": [
+        {"label": "Continental Hospitals: 24/7 emergency and trauma support with advanced critical care", "url": "https://www.continentalhospitals.com/"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/254295845"}
+      ]
+    },
+    {
+      "name": "Kamineni Hospitals, LB Nagar",
+      "locality": "LB Nagar",
+      "lat": 17.3516371,
+      "lng": 78.5561652,
+      "type": "private",
+      "specialties": ["emergency_medicine", "general_medicine", "general_surgery", "orthopedics", "neurosurgery", "plastic_surgery", "cardiology", "pediatrics", "obstetrics", "ophthalmology", "oncology", "psychiatry"],
+      "trauma_level": 2,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "phone": {"number": "+917036270362", "kind": "helpline", "source": {"label": "Kamineni Hospitals website: 24/7 helpline (LB Nagar)", "url": "https://www.kaminenihospitals.com/"}},
+      "checked_on": "2026-10-22",
+      "sources": [
+        {"label": "Kamineni Hospitals: 24/7 emergency and critical care (MICU, NICU, ICCU) at LB Nagar; departments", "url": "https://www.kaminenihospitals.com/"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/way/146312947"}
+      ]
+    },
+    {
+      "name": "Yashoda Hospitals, Malakpet",
+      "locality": "Malakpet",
+      "lat": 17.3746556,
+      "lng": 78.4998723,
+      "type": "private",
+      "specialties": ["emergency_medicine", "general_medicine", "orthopedics", "plastic_surgery", "cardiology", "pediatrics", "obstetrics", "oncology"],
+      "trauma_level": 2,
+      "emergency_24x7": true,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "phone": {"number": "+914045674567", "kind": "helpline", "source": {"label": "Yashoda Hospitals Malakpet page: 24/7 helpline", "url": "https://www.yashodahospitals.com/locations/malakpet/"}},
+      "checked_on": "2026-10-22",
+      "sources": [
+        {"label": "Yashoda Hospitals Malakpet: trauma and emergencies, available 24/7; specialities", "url": "https://www.yashodahospitals.com/locations/malakpet/"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/node/2429955121"}
+      ]
+    },
+    {
+      "name": "Rainbow Children's Hospital, Banjara Hills",
+      "locality": "Banjara Hills",
+      "lat": 17.4148145,
+      "lng": 78.4475692,
+      "type": "private",
+      "specialties": ["pediatrics"],
+      "trauma_level": 1,
+      "emergency_24x7": null,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "phone": {"number": "+917997079970", "kind": "helpline", "source": {"label": "Rainbow Hospitals website: 24x7 line", "url": "https://www.rainbowhospitals.in/"}},
+      "checked_on": "2026-10-22",
+      "sources": [
+        {"label": "Rainbow Hospitals: children's hospital, Hyderabad branches", "url": "https://www.rainbowhospitals.in/"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/node/894082503"}
+      ]
+    },
+    {
+      "name": "Rainbow Children's Hospital, Hydernagar",
+      "locality": "Hydernagar, Kukatpally",
+      "lat": 17.4997851,
+      "lng": 78.3841534,
+      "type": "private",
+      "specialties": ["pediatrics"],
+      "trauma_level": 1,
+      "emergency_24x7": null,
+      "aarogyasri_empanelled": null,
+      "aarogyasri_evidence": null,
+      "phone": {"number": "+917997079970", "kind": "helpline", "source": {"label": "Rainbow Hospitals website: 24x7 line", "url": "https://www.rainbowhospitals.in/"}},
+      "checked_on": "2026-10-22",
+      "sources": [
+        {"label": "Rainbow Hospitals: children's hospital, Hyderabad branches", "url": "https://www.rainbowhospitals.in/"},
+        {"label": "OpenStreetMap location", "url": "https://www.openstreetmap.org/node/6504110557"}
       ]
     }
   ]

@@ -1,3 +1,4 @@
+Last verified: 2026-09-30
 Source: Ministry of Health and Family Welfare, Government of India, "Standard Treatment Guidelines: Snakebite" (June 2016), first aid section (https://clinicalestablishments.mohfw.gov.in/sites/default/files/standard-treatment-guidelines/3941.pdf); NHS, "Snake bites" (https://www.nhs.uk/conditions/snake-bites/). In India the ambulance number is 108.
 Key fact: First aid for a snake bite:
 - Reassure the person and keep them calm: most snake bites are from non-venomous snakes, and panic makes the heart beat faster.

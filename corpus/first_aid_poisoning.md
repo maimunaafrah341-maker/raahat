@@ -1,3 +1,4 @@
+Last verified: 2026-09-30
 Source: NHS, "Poisoning" (https://www.nhs.uk/conditions/poisoning/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: If someone may have swallowed, touched or breathed in something harmful:
 - Call 108 or go to hospital straight away, especially if they are unconscious, not breathing, struggling to breathe or speak, or having a seizure (fit).

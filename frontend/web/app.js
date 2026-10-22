@@ -1,24 +1,20 @@
 /* Raahat web client. Talks only to the Flask API on the same origin. */
 "use strict";
 
-const LOCALITIES = {
-  "Afzalgunj": [17.3713, 78.4804], "Amberpet": [17.3920, 78.5170], "Banjara Hills": [17.4156, 78.4347],
-  "Begumpet": [17.4440, 78.4630], "Chandrayangutta": [17.3200, 78.4800], "Charminar": [17.3616, 78.4747],
-  "Golconda": [17.3833, 78.4011], "Himayatnagar": [17.4010, 78.4870], "Khairatabad": [17.4120, 78.4610],
-  "Malakpet": [17.3764, 78.5006], "Mehdipatnam": [17.3960, 78.4390], "Musheerabad": [17.4180, 78.5000],
-  "Nampally": [17.3924, 78.4675], "Santoshnagar": [17.3480, 78.5140], "Secunderabad": [17.4399, 78.4983],
-  "Tolichowki": [17.3990, 78.4150],
-};
+// Area name -> [lat, lng], loaded from /api/localities (data/localities.json, OpenStreetMap coordinates).
+let LOCALITIES = {};
+const ZONES = ["central", "old_city", "secunderabad", "west", "east", "south"];
 const TIERS = ["specialist", "can_manage", "stabilize", "unsuitable"];
-const TIER_COLOR = { specialist: "#16a34a", can_manage: "#f59e0b", stabilize: "#dc2626", unsuitable: "#94a3b8" };
+const TIER_COLOR = { specialist: "#16a34a", can_manage: "#f59e0b", stabilize: "#dc2626", unsuitable: "#94a3b8", offline: "#64748b" };
 
 const state = {
   strings: {}, languages: {}, rtl: [], lang: "en",
-  injuries: [], situations: [], sources: [], preview: null,
+  injuries: [], situations: [], sources: [], helplines: null,
   injury: null, chosenSituations: new Set(), conditionList: [], conditions: new Set(),
   triage: null, selectedId: null, understood: null,
   caseData: null, pending: false, restored: false,
   map: null, markers: {},
+  checklistRules: null, docs: new Set(), resultsFeedback: null, reported: {},
 };
 
 const $ = (id) => document.getElementById(id);
@@ -69,6 +65,35 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
 };
 
+/* ---------- anonymous usage events (see backend/analytics.py for what is kept) ---------- */
+// A random id per case, so one person's search, answers and feedback can be grouped
+// without knowing who they are. "Start a new case" makes a new one.
+function newSessionId() {
+  return (crypto.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`).slice(0, 36);
+}
+let session = newSessionId();
+function sessionId() { return session; }
+// Fire-and-forget: a lost event must never slow down or break an emergency lookup.
+function track(kind, value, extra = {}) {
+  const body = JSON.stringify({ kind, value, session: sessionId(), language: state.lang,
+    injury: state.triage?.injury.key || state.injury, ...extra });
+  try {
+    if (navigator.sendBeacon?.("/api/event", new Blob([body], { type: "application/json" }))) return;
+  } catch { /* fall back to fetch */ }
+  fetch("/api/event", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+}
+
+/* ---------- dates: "checked on" labels ---------- */
+const STALE_DAYS = 90; // hospital details older than this get a "may be out of date" warning
+function fmtDate(iso) {
+  if (!iso) return "";
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  try { return d.toLocaleDateString(`${state.lang}-IN`, { day: "numeric", month: "short", year: "numeric" }); }
+  catch { return iso; }
+}
+function daysSince(iso) { return iso ? Math.floor((Date.now() - new Date(`${iso}T00:00:00`).getTime()) / 86400000) : null; }
+
 async function api(path, body, timeoutMs = 30000) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -78,7 +103,9 @@ async function api(path, body, timeoutMs = 30000) {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: ctrl.signal,
     });
   } catch (e) {
-    throw new Error(t(e.name === "AbortError" ? "timeout" : "cannot_connect"));
+    const err = new Error(t(e.name === "AbortError" ? "timeout" : "cannot_connect"));
+    err.network = true; // no answer at all (offline, dropped, timed out) -- callers may fall back to saved data
+    throw err;
   } finally {
     clearTimeout(timer);
   }
@@ -100,8 +127,9 @@ function applyLanguage() {
   $("title-a").textContent = a || "";
   $("title-b").textContent = b || "";
   renderInjuryControls();
+  if (state.localities) renderLocalities();
   renderLegend();
-  renderPreview();
+  renderHelplines();
   renderSteps();
   renderUnderstood();
   if (state.triage) renderResults();
@@ -111,7 +139,7 @@ function applyLanguage() {
 
 /* ---------- injury choice (select + tiles stay in sync) ---------- */
 function injuryLabel(item) { return t(`injury.${item.key}`) || item.label; }
-const GROUPS = ["injury", "illness"];
+const GROUPS = ["urgent", "injury", "illness", "mother_child", "mind"]; // same order as backend triage.GROUPS
 function renderInjuryControls() {
   const sel = $("injury");
   const inGroup = (g) => state.injuries.filter((i) => i.group === g);
@@ -148,36 +176,77 @@ async function onDescribe(e) {
   const btn = $("describe-btn");
   busy(btn, true);
   try {
-    const res = await api("/api/understand", { text }, 60000);
-    state.understood = { ...res, text };
-    if (res.injury) setInjury(res.injury);
-    state.chosenSituations = new Set(res.situations || []);
-    state.conditions = new Set([...(res.conditions || []), ...(IMPLIED_CONDITION[res.injury] ? [IMPLIED_CONDITION[res.injury]] : [])]);
-    renderConditionChips();
-    $("situation-text").value = text.slice(0, 500);
-    renderChips();
+    const res = await api("/api/understand", { text, session: sessionId(), language: state.lang }, 60000);
+    applyUnderstanding(res, text);
   } catch (err) {
     state.understood = { error: err.message };
+    renderUnderstood();
   } finally {
     busy(btn, false);
   }
+}
+
+// One path for typed and spoken descriptions: fill in everything the AI understood (what happened,
+// who the patient is, their situation, their area), show it back so they can correct it, and -- if we
+// know where they are -- search straight away instead of making them find another button.
+function applyUnderstanding(res, text) {
+  state.understood = { ...res, text };
+  if (res.injury) setInjury(res.injury);
+  state.chosenSituations = new Set(res.situations || []);
+  state.conditions = new Set([...(res.conditions || []), ...(IMPLIED_CONDITION[res.injury] ? [IMPLIED_CONDITION[res.injury]] : [])]);
+  renderConditionChips();
+  $("situation-text").value = (text || "").slice(0, 500);
+  renderChips();
+  if (res.area && LOCALITIES[res.area]) {
+    $("locality").value = res.area;
+    $("locality").dispatchEvent(new Event("change")); // a named area replaces "my location"
+  }
+  const knowPlace = !!(res.area && LOCALITIES[res.area]) || $("use-coords").checked;
+  state.understood.autoSearch = !!res.injury && knowPlace;
   renderUnderstood();
   renderSteps();
-  $("understood").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (state.understood.autoSearch) runSearch();
+  else $("understood").scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
 function renderUnderstood() {
   const u = state.understood;
   const box = $("understood");
   if (!u) { box.innerHTML = ""; return; }
   let html = "";
-  if (u.life_threatening_signs) html += `<div class="alert alert--urgent"><svg class="ico"><use href="#i-phone"/></svg><span>${inlineMd(t("urgent"))}</span></div>`;
+  if (u.life_threatening_signs) {
+    html += `<div class="alert alert--urgent"><svg class="ico"><use href="#i-phone"/></svg><span>${inlineMd(t("urgent"))}</span>
+      <a class="alert__call alert__call--light" href="tel:108">108</a></div>`;
+  }
   if (u.error) html += `<p class="note note--warn">${esc(u.error)}</p>`;
   else if (u.injury) {
     const item = state.injuries.find((i) => i.key === u.injury);
-    if (!u.picked) html += `<p class="note note--ok">${inlineMd(t("understood", { injury: item ? injuryLabel(item) : u.injury, button: t("find_button") }))}</p>`;
+    if (!u.picked) {
+      // "What we understood": their own words back (heard or summarised), the emergency, the area.
+      const who = [...state.conditions].map((c) => t(`condition.${c}`)).join(", ");
+      html += `<div class="understood-card">
+        <p class="understood-card__title">${esc(t("understood.title"))}</p>
+        ${u.transcript ? `<p class="understood-card__heard"><b>${esc(t("voice.heard"))}:</b> “${esc(u.transcript)}”</p>` : ""}
+        ${u.summary ? `<p class="understood-card__summary">${esc(u.summary)}</p>` : ""}
+        <p class="understood-card__row"><b>${esc(item ? injuryLabel(item) : u.injury)}</b>${who ? ` · ${esc(who)}` : ""}${
+          u.area ? ` · ${esc(t("understood.area", { area: u.area }))}` : ""}</p>
+        <p class="understood-card__next">${esc(u.autoSearch ? t("understood.searching") : t("understood.need_place"))} ${esc(t("understood.change"))}</p>
+      </div>`;
+    }
     html += guideCards(u.injury);
   } else html += `<p class="note note--info">${esc(t("not_understood"))}</p>${guideCards(null)}`;
   box.innerHTML = html;
+}
+
+// Areas grouped by part of the city, alphabetical within each, so a long list stays easy to scan.
+function renderLocalities() {
+  const sel = $("locality");
+  const current = sel.value;
+  sel.innerHTML = ZONES.map((z) => {
+    const names = state.localities.filter((l) => l.zone === z).map((l) => l.name).sort((a, b) => a.localeCompare(b));
+    return names.length ? `<optgroup label="${esc(t(`zone.${z}`))}">${names.map((n) => `<option>${esc(n)}</option>`).join("")}</optgroup>` : "";
+  }).join("");
+  if (current) sel.value = current;
 }
 
 /* ---------- search ---------- */
@@ -192,6 +261,7 @@ function useMyLocation() {
     $("lng").value = pos.coords.longitude.toFixed(5);
     $("use-coords").checked = true;
     status.textContent = `✓ ${t("flow.located")}`;
+    track("action", "geo_used");
   }, () => {
     status.hidden = true;
     toast(t("flow.geo_fail"));
@@ -211,9 +281,12 @@ async function runSearch({ scroll = true, selectId = null } = {}) {
   try {
     state.triage = await api("/api/triage", {
       injury: state.injury, lat, lng, radius_km: Number($("radius").value), conditions: [...state.conditions],
+      // A named area is logged as-is; GPS is rounded to ~1 km on the server.
+      session: sessionId(), language: state.lang, area: $("use-coords").checked ? null : $("locality").value,
     });
     const ids = state.triage.results.map((f) => f.id);
     state.selectedId = ids.includes(selectId) ? selectId : (ids[0] ?? null);
+    state.resultsFeedback = null;
     $("results").hidden = false;
     $("entitlements").hidden = !state.triage.results.length;
     renderResults();
@@ -221,42 +294,88 @@ async function runSearch({ scroll = true, selectId = null } = {}) {
     renderChat();
     if (scroll) $("results").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (err) {
-    toast(err.message);
+    if (err.network && state.facilities?.length) {
+      showOffline(lat, lng, Number($("radius").value), scroll);
+      track("action", "offline_search");
+    } else toast(err.message);
   } finally {
     busy(btn, false);
   }
 }
+
+/* ---------- offline: the saved hospital list, by distance only ---------- */
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const r = (d) => (d * Math.PI) / 180;
+  const a = Math.sin(r(lat2 - lat1) / 2) ** 2 + Math.cos(r(lat1)) * Math.cos(r(lat2)) * Math.sin(r(lng2 - lng1) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(a));
+}
+// Without the server we can't check which hospitals can treat this emergency, so we don't pretend to:
+// every hospital gets the grey "offline" label and the page says to call 108 if it's serious.
+function showOffline(lat, lng, radius, scroll) {
+  const results = state.facilities
+    .map((f) => ({ ...f, distance_km: haversineKm(lat, lng, f.lat, f.lng), tier: "offline", reasons: [] }))
+    .filter((f) => f.distance_km <= radius)
+    .sort((a, b) => a.distance_km - b.distance_km)
+    .map((f, i) => ({ ...f, rank: i + 1 }));
+  const item = state.injuries.find((i) => i.key === state.injury);
+  state.triage = { offline: true, injury: { key: state.injury, label: item?.label || "", specialist_data: true, needs: [] },
+    conditions: [...state.conditions], origin: { lat, lng }, results };
+  state.selectedId = results[0]?.id ?? null;
+  $("results").hidden = false;
+  $("entitlements").hidden = true; // questions need the server
+  renderResults();
+  if (scroll) $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+}
 function onSearch(e) { e.preventDefault(); runSearch(); }
 
 function directionsUrl(f) { return `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}`; }
+// iPhones get Apple Maps as a second choice; Google Maps stays first because most people here use it.
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+function appleMapsLink(f) {
+  if (!IS_IOS) return "";
+  return `<a class="btn btn--ghost btn--sm dir-link" data-id="${f.id}" href="https://maps.apple.com/?daddr=${f.lat},${f.lng}&dirflg=d" target="_blank" rel="noopener">${esc(t("maps.apple"))}</a>`;
+}
+// A sourced number only: a wrong number in an emergency is worse than none.
+function phoneButton(f, primary = false) {
+  if (!f.phone) return "";
+  return `<a class="btn ${primary ? "btn--primary" : "btn--ghost"} btn--sm call-hospital" data-id="${f.id}" href="tel:${esc(f.phone.number)}"
+    title="${esc(t("phone.source"))}: ${esc(f.phone.source.label)}"><svg class="ico"><use href="#i-phone"/></svg>${esc(t(`phone.${f.phone.kind}`))}</a>`;
+}
+function phoneNote(f) {
+  return f.phone
+    ? `<p class="phone-src">${esc(t("phone.source"))}: <a href="${esc(f.phone.source.url)}" target="_blank" rel="noopener">${esc(f.phone.source.label)}</a> · ${esc(f.phone.number)}</p>`
+    : `<p class="phone-src">${esc(t("phone.none"))}</p>`;
+}
 function sourceTitle(docId) { return state.sources.find((x) => x.doc_id === docId)?.title || ""; }
-function citePill(docId) { const title = sourceTitle(docId); return title ? `<br><span class="cite">${esc(title)}</span>` : ""; }
+function citeText(docId) {
+  const s = state.sources.find((x) => x.doc_id === docId);
+  if (!s) return "";
+  return esc(s.title) + (s.verified ? ` · ${esc(t("answer.verified", { date: fmtDate(s.verified) }))}` : "");
+}
+function citePill(docId) { const c = citeText(docId); return c ? `<br><span class="cite">${c}</span>` : ""; }
 function tierPill(f) { return `<span class="pill pill--tier" style="--tier:${TIER_COLOR[f.tier]}">${esc(t(`tier.${f.tier}`))}</span>`; }
 
+// Family message: what happened, where they're going, directions, and (if GPS was used) where they are now.
 async function shareFacility(f) {
-  const text = t("share_text", { name: f.name, url: directionsUrl(f) });
+  track("action", "share", { facility_id: f.id, tier: f.tier });
+  const item = state.injuries.find((i) => i.key === state.triage?.injury.key);
+  let text = t("share.text_full", { injury: item ? injuryLabel(item) : "", name: f.name, url: directionsUrl(f) });
+  const o = state.triage?.origin;
+  if ($("use-coords").checked && o) text += `\n${t("share.where_am_i", { url: `https://maps.google.com/?q=${o.lat},${o.lng}` })}`;
   try {
     if (navigator.share) { await navigator.share({ text }); return; }
   } catch { return; /* user cancelled */ }
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
 }
 
-function renderPreview() {
-  const box = $("preview-list");
-  if (!state.preview) { box.innerHTML = ""; return; }
-  const item = state.injuries.find((i) => i.key === state.preview.injury.key);
-  $("preview-injury").textContent = t("preview_near", { injury: item ? injuryLabel(item) : "", place: "Charminar" });
-  $("preview-badge").textContent = t("preview_badge");
-  box.innerHTML = state.preview.results.slice(0, 4).map((f) => `
-    <li class="preview__row">
-      <span class="preview__rank">${f.rank}</span>
-      <div>
-        <div class="preview__name">${esc(f.name)}</div>
-        <div class="preview__meta">${tierPill(f)}<span>${Number(f.distance_km).toFixed(1)} km</span></div>
-      </div>
-      <span class="emp-badge emp-badge--${empKey(f)}" title="Aarogyasri">${EMP_MARK[empKey(f)]}</span>
-    </li>`).join("");
-  $("preview-foot").textContent = `${state.sources.filter((x) => x.kind === "legal").length} ${t("stat.sources")}`;
+// Helplines beside 108 (data/helplines.json): every row is a call button, each with its source.
+function prettyNumber(n) { return n.startsWith("+91") ? `0${n.slice(3, 5)} ${n.slice(5, 9)} ${n.slice(9)}` : n; }
+function renderHelplines() {
+  const box = $("helplines");
+  if (!box || !state.helplines) return;
+  box.innerHTML = state.helplines.map((h) => `
+    <li><a class="helpline" href="tel:${esc(h.number)}" title="${esc(h.source.label)}">
+      <b class="helpline__num" dir="ltr">${esc(prettyNumber(h.number))}</b><span>${esc(t(`help.${h.key}`))}</span></a></li>`).join("");
 }
 
 // Sourced cards: first aid for the emergency, danger signs for who the patient is. Never generated.
@@ -284,7 +403,22 @@ function guideCards(injuryKey) {
   }
   return html;
 }
+// Mental health crisis: the helplines come first, as big call buttons, then the sourced steps.
+function crisisCardHtml(card) {
+  return `<div class="firstaid firstaid--crisis">
+    <div class="firstaid__head"><p class="firstaid__title"><svg class="ico"><use href="#i-phone"/></svg>${esc(t("crisis.title"))}</p>${speakButton(".firstaid")}</div>
+    <div class="crisis__calls">
+      <a class="btn btn--sos" href="tel:108"><svg class="ico"><use href="#i-phone"/></svg>${esc(t("call108.button"))}</a>
+      <a class="btn btn--primary helpline-link" href="tel:14416"><svg class="ico"><use href="#i-phone"/></svg>${esc(t("crisis.telemanas"))}</a>
+      <a class="btn btn--ghost helpline-link" href="tel:+914066202000"><svg class="ico"><use href="#i-phone"/></svg>${esc(t("crisis.roshni"))}</a>
+    </div>
+    <ul class="firstaid__steps">${card.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    <p class="firstaid__dont"><b>${esc(t("firstaid.dont"))}:</b> ${card.cautions.map(esc).join(" ")}</p>
+    <p class="firstaid__note"><span class="cite">${esc(card.title)}${card.verified ? ` · ${esc(t("answer.verified", { date: fmtDate(card.verified) }))}` : ""}</span></p>
+  </div>`;
+}
 function guideCardHtml(card) {
+  if (card.kind === "crisis") return crisisCardHtml(card);
   const danger = card.kind === "danger";
   const list = danger ? "ul" : "ol";
   return `<div class="firstaid${danger ? " firstaid--danger" : ""}">
@@ -292,7 +426,7 @@ function guideCardHtml(card) {
     <${list} class="firstaid__steps">${card.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</${list}>
     <p class="firstaid__dont"><b>${esc(t("firstaid.dont"))}:</b> ${card.cautions.map(esc).join(" ")}</p>
     ${card.translated ? `<details><summary>${esc(t("show_english"))}</summary><${list} class="firstaid__steps english">${card.steps_en.map((x) => `<li>${esc(x)}</li>`).join("")}</${list}></details>` : ""}
-    <p class="firstaid__note">${esc(t("firstaid.note"))} <span class="cite">${esc(card.title)}</span></p>
+    <p class="firstaid__note">${esc(t("firstaid.note"))} <span class="cite">${esc(card.title)}${card.verified ? ` · ${esc(t("answer.verified", { date: fmtDate(card.verified) }))}` : ""}</span></p>
   </div>`;
 }
 
@@ -309,22 +443,117 @@ function renderSteps() {
   const steps = [
     `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}${tell}${guideCards(state.triage.injury.key)}</div></li>`,
     `<li><div>${go}</div></li>`,
+    ...(state.checklistRules ? [`<li><div>${checklistHtml(f)}</div></li>`] : []),
     `<li><div>${esc(t("steps.ask"))}${citePill("clinical_establishments_act")}</div></li>`,
-    `<li><div>${esc(t(`steps.emp_${empKey(f)}`))}${citePill("telangana_aarogyasri")}</div></li>`,
+    `<li><div>${esc(t(`steps.emp_${empKey(f)}`))}${citePill("telangana_aarogyasri")}${payCardHtml()}</div></li>`,
   ];
   if (worker) steps.push(`<li><div>${esc(t("steps.bocw"))}${citePill("telangana_bocw")}</div></li>`);
+  if (state.chosenSituations.has("road_accident")) {
+    steps.push(`<li><div>${esc(t("steps.road"))}${citePill("road_accident_cashless")}</div></li>`);
+    steps.push(`<li><div>${esc(t("steps.police"))}${citePill("parmanand_katara_case")}</div></li>`);
+  }
+  if (state.chosenSituations.has("helped_stranger")) steps.push(`<li><div>${esc(t("steps.samaritan"))}${citePill("good_samaritan")}</div></li>`);
   steps.push(`<li><div><a href="#entitlements">${esc(t("steps.more"))}</a></div></li>`);
   box.innerHTML = `
     <div class="steps__head">
       <div><h3>${esc(t("steps.title"))}</h3><p class="steps__for">${esc(t("steps.for", { name: f.name }))}</p></div>
       <div class="steps__actions">
-        <a class="btn btn--primary btn--sm" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
+        ${phoneButton(f, true)}
+        <a class="btn btn--primary btn--sm dir-link" data-id="${f.id}" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
+        ${appleMapsLink(f)}
+        <button type="button" class="btn btn--ghost btn--sm" id="desk-btn"><svg class="ico"><use href="#i-doc"/></svg>${esc(t("desk.button"))}</button>
         <button type="button" class="btn btn--ghost btn--sm" id="share-btn"><svg class="ico"><use href="#i-share"/></svg>${esc(t("share"))}</button>
         ${speakButton(".steps")}
       </div>
     </div>
     <ol>${steps.join("")}</ol>`;
   $("share-btn").addEventListener("click", () => shareFacility(f));
+  $("desk-btn").addEventListener("click", () => openDeskCard(f));
+}
+
+/* ---------- paying for treatment: with a card, and without one ---------- */
+function payCardHtml() {
+  const hasCard = state.chosenSituations.has("bpl_card");
+  const block = (key, open) => `<details class="pay__opt"${open ? " open" : ""}><summary>${esc(t(`pay.${key}_title`))}</summary>
+    <p>${esc(t(`pay.${key}_body`))}${citePill("aarogyasri_how_to_use")}</p></details>`;
+  return `<div class="pay">
+    <p class="pay__title">${esc(t("pay.title"))}</p>
+    <p class="pay__always">${esc(t("pay.always"))}${citePill("clinical_establishments_act")}</p>
+    ${block("have", hasCard)}${block("none", !hasCard)}
+  </div>`;
+}
+
+/* ---------- "show to hospital staff": what to say, when someone can't say it ---------- */
+function tIn(lang, key, params) {
+  let s = state.strings[lang]?.[key] || state.strings.en?.[key] || "";
+  for (const [k, v] of Object.entries(params || {})) s = s.replaceAll(`{${k}}`, v);
+  return s;
+}
+// The same fixed, hand-written sentences as the rest of the page: nothing here is generated.
+function deskLines(lang, f) {
+  const injury = state.triage.injury.key;
+  const who = [...state.conditions].map((c) => tIn(lang, `condition.${c}`)).join(", ");
+  const lines = [`<p class="desk__what">${esc(tIn(lang, `injury.${injury}`))}</p>`];
+  if (who) lines.push(`<p class="desk__who"><b>${esc(tIn(lang, "desk.who"))}:</b> ${esc(who)}</p>`);
+  lines.push(`<p class="desk__ask">${esc(tIn(lang, "desk.stabilise"))}</p>`, `<p>${esc(tIn(lang, "desk.law"))}</p>`);
+  if (state.chosenSituations.has("road_accident") || state.chosenSituations.has("helped_stranger")) {
+    lines.push(`<p>${esc(tIn(lang, "desk.police"))}</p>`);
+  }
+  if (state.chosenSituations.has("road_accident")) lines.push(`<p>${esc(tIn(lang, "desk.road"))}</p>`);
+  if (f.aarogyasri_empanelled !== false && (state.chosenSituations.has("bpl_card") || state.chosenSituations.has("cant_pay"))) {
+    lines.push(`<p>${esc(tIn(lang, "desk.aarogyasri"))}</p>`);
+  }
+  return lines.join("");
+}
+function openDeskCard(f) {
+  const dlg = $("desk");
+  const cites = ["clinical_establishments_act",
+    ...(state.chosenSituations.has("road_accident") ? ["parmanand_katara_case", "road_accident_cashless"] : [])]
+    .map((d) => `<span class="cite">${citeText(d)}</span>`).join(" ");
+  dlg.innerHTML = `<div class="desk">
+    <div class="desk__top"><p class="desk__hint">${esc(t("desk.hint"))}</p>
+      <button type="button" class="btn btn--ghost btn--sm" id="desk-close">${esc(t("desk.close"))}</button></div>
+    <p class="desk__title">🚑 ${esc(t("desk.title"))}</p>
+    <div class="desk__body" lang="${state.lang}">${deskLines(state.lang, f)}</div>
+    ${state.lang !== "en" ? `<div class="desk__body desk__body--en" lang="en" dir="ltr"><p class="desk__label">${esc(t("desk.english"))}</p>${deskLines("en", f)}</div>` : ""}
+    <p class="desk__cites">${cites}</p>
+  </div>`;
+  $("desk-close").addEventListener("click", () => dlg.close());
+  dlg.showModal();
+  track("action", "desk_card", { facility_id: f.id, tier: f.tier });
+}
+
+/* ---------- documents to carry (rules: backend/checklist.py) ---------- */
+function checklistItems() {
+  const r = state.checklistRules;
+  const injury = state.triage?.injury.key || state.injury;
+  const patient = [
+    ...(r.by_injury[injury] || []),
+    ...[...state.conditions].flatMap((c) => r.by_condition[c] || []),
+    ...[...state.chosenSituations].flatMap((s) => r.by_situation[s] || []),
+    ...r.always,
+  ];
+  return { patient: [...new Set(patient)], scheme: r.scheme };
+}
+function docItem(key) {
+  const src = state.checklistRules.items[key]?.source;
+  const ticked = state.docs.has(key);
+  // Cited items show their source; the rest are marked as practical tips (*), never given a made-up citation.
+  return `<li><label class="docs__item"><input type="checkbox" data-doc="${esc(key)}" ${ticked ? "checked" : ""}>
+    <span>${esc(t(`doc.${key}`))}${src ? ` <span class="cite">${citeText(src)}</span>` : '<span class="docs__star" aria-hidden="true">*</span>'}</span></label></li>`;
+}
+function checklistHtml(f) {
+  const { patient, scheme } = checklistItems();
+  return `<div class="docs">
+    <div class="firstaid__head"><p class="docs__title"><svg class="ico"><use href="#i-doc"/></svg>${esc(t("docs.title"))}</p>${speakButton(".docs")}</div>
+    <p class="docs__delay">${esc(t("docs.dont_delay"))}${citePill("clinical_establishments_act")}</p>
+    <p class="docs__group">${esc(t("docs.patient"))}</p>
+    <ul class="docs__list">${patient.map(docItem).join("")}</ul>
+    <p class="docs__group">${esc(t("docs.scheme"))}</p>
+    ${f.aarogyasri_empanelled === false ? `<p class="docs__note">${esc(t("docs.scheme_not_here"))}</p>` : ""}
+    <ul class="docs__list">${scheme.map(docItem).join("")}</ul>
+    <p class="docs__tip">* ${esc(t("docs.tip"))}</p>
+  </div>`;
 }
 
 // Aarogyasri status is tri-state: true, false, or null (not verified in our sources).
@@ -333,19 +562,52 @@ const EMP_MARK = { yes: "✓", no: "✕", unknown: "?" };
 function empLine(f) { return t(`emp.${empKey(f)}`); }
 function sourcesBlock(f) {
   if (!f.sources?.length) return "";
-  return `<details class="fac__sources"><summary>${esc(t("sources_checked", { date: f.checked_on || "" }))}</summary><ul>${
-    f.sources.map((x) => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a></li>`).join("")}</ul></details>`;
+  return `<div class="fac__sources"><p class="fac__sub">${esc(t("sources_checked", { date: fmtDate(f.checked_on) }))}</p><ul>${
+    f.sources.map((x) => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a></li>`).join("")}</ul></div>`;
 }
 function typeLine(f) { return `${t(`type.${f.type}`)} · ${f.locality} · ${Number(f.distance_km).toFixed(1)} km`; }
+
+// How fresh this hospital's details are: a date, and a warning once they're old.
+function checkedLine(f) {
+  const days = daysSince(f.checked_on);
+  if (days === null) return "";
+  const stale = days > STALE_DAYS;
+  return `<p class="checked${stale ? " checked--stale" : ""}">${esc(stale ? t("checked.stale", { days }) : t("checked.on", { date: fmtDate(f.checked_on) }))}</p>`;
+}
+// Does the scheme registry list this hospital for the specialist team this emergency needs?
+// A registry list can be incomplete, so a missing speciality means "ask", never "not covered".
+// Shown on the card only when there's something to say; the full list lives under "More details".
+function schemeVerdict(f) {
+  const needs = state.triage?.injury.needs || [];
+  if (f.aarogyasri_empanelled === false || !f.scheme_specialties || !needs.length) return "";
+  const match = needs.find((s) => f.scheme_specialties.includes(s));
+  return `<p class="scheme ${match ? "scheme--ok" : "scheme--ask"}">${esc(match ? t("scheme.match", { spec: t(`spec.${match}`) }) : t("scheme.nomatch"))}</p>`;
+}
+function schemeList(f) {
+  if (f.aarogyasri_empanelled === false) return "";
+  if (!f.scheme_specialties) return `<p class="scheme scheme--unknown">${esc(t("scheme.unknown"))}</p>`;
+  const list = f.scheme_specialties.map((s) => t(`spec.${s}`)).join(", ");
+  const src = f.scheme_source ? ` <a href="${esc(f.scheme_source.url)}" target="_blank" rel="noopener">${esc(f.scheme_source.label)}</a>` : "";
+  return `<p class="scheme">${esc(t("scheme.listed", { list }))}</p>${src ? `<p class="scheme scheme--src">${src}</p>` : ""}`;
+}
+const REPORTS = ["no_emergency", "wrong_phone", "no_aarogyasri", "closed", "other"];
+function reportBlock(f) {
+  if (state.reported[f.id]) return `<p class="report__thanks">${esc(t("report.thanks"))}</p>`;
+  return `<div class="report"><p class="fac__sub"><svg class="ico"><use href="#i-flag"/></svg>${esc(t("report.title"))}</p>
+    <div class="chips">${REPORTS.map((r) => `<button type="button" class="chip report__btn" data-id="${f.id}" data-value="${r}">${esc(t(`report.${r}`))}</button>`).join("")}</div></div>`;
+}
 
 function renderResults() {
   const { results, origin, injury } = state.triage;
   const item = state.injuries.find((i) => i.key === injury.key);
   $("found").innerHTML = inlineMd(t("found", { label: item ? injuryLabel(item) : injury.label, n: results.length }));
   const none = !results.length;
-  $("spec-note").hidden = injury.specialist_data && !none;
-  $("spec-note").textContent = none ? t("flow.none_near", { km: $("radius").value }) : t("no_specialist_data");
-  document.querySelector(".metrics").hidden = !injury.specialist_data || none;
+  const offline = !!state.triage.offline;
+  $("spec-note").hidden = injury.specialist_data && !none && !offline;
+  $("spec-note").textContent = offline ? t("offline.note")
+    : none ? t("flow.none_near", { km: $("radius").value }) : t("no_specialist_data");
+  $("spec-note").classList.toggle("note--warn", offline);
+  document.querySelector(".metrics").hidden = !injury.specialist_data || none || offline;
   document.querySelector(".results__grid").hidden = none;
 
   const specialists = results.filter((f) => f.tier === "specialist");
@@ -360,14 +622,24 @@ function renderResults() {
       <span class="pill pill--tier">${esc(t(`tier.${f.tier}`))}</span>
       <p class="fac__meta">${esc(typeLine(f))}</p>
       <p class="fac__emp">${esc(empLine(f))}</p>
+      ${schemeVerdict(f)}
+      ${checkedLine(f)}
       <div class="fac__actions">
-        <a class="btn btn--ghost btn--sm" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
+        ${phoneButton(f)}
+        <a class="btn btn--ghost btn--sm dir-link" data-id="${f.id}" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
+        ${appleMapsLink(f)}
       </div>
-      <details><summary>${esc(t("why_ranking"))}</summary>${note}
+      <details class="fac__more"><summary>${esc(t("fac.more"))}</summary>
+        ${phoneNote(f)}
+        ${schemeList(f)}
+        <p class="fac__sub">${esc(t("why_ranking"))}</p>${note}
         <ul>${(f.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("") || `<li>${esc(t("no_reasons"))}</li>`}</ul>
+        ${sourcesBlock(f)}
+        ${reportBlock(f)}
       </details>
-      ${sourcesBlock(f)}
     </li>`).join("");
+  $("results-feedback").innerHTML = results.length
+    ? feedbackHtml(t("helpful.results_q"), state.resultsFeedback, 'data-target="results"') : "";
 
   renderSteps();
   drawMap(origin, results);
@@ -451,11 +723,15 @@ function syncCase() {
     situations: [...state.chosenSituations],
     conditions: [...state.conditions],
     notes: $("situation-text").value.trim(),
+    docs: [...state.docs],
+    session,
   };
 }
 function newCase() {
   state.caseData = null;
   try { localStorage.removeItem(CASE_KEY); } catch { /* storage blocked */ }
+  session = newSessionId();
+  state.docs = new Set();
   state.chosenSituations = new Set();
   state.conditions = new Set();
   $("situation-text").value = "";
@@ -486,7 +762,7 @@ function voiceFor(lang) {
 // Text a person should hear: skip citation badges, buttons, notes and collapsed English originals.
 function speakableText(root) {
   const clone = root.cloneNode(true);
-  clone.querySelectorAll(".cite, details, button, .firstaid__note, .mt-label, .model, .steps__for, .steps__actions")
+  clone.querySelectorAll(".cite, details, button, .firstaid__note, .mt-label, .model, .steps__for, .steps__actions, .from, .feedback, .docs__tip, input")
     .forEach((n) => n.remove());
   // A detached clone has no layout, so separate list items and paragraphs explicitly (gives the voice a pause).
   clone.querySelectorAll("li, p, h3").forEach((n) => n.append(" "));
@@ -592,17 +868,152 @@ function toggleListening() {
   startRecognition();
 }
 
-function renderAnswer(m) {
+/* Voice, understood by Gemini: record, wait for the person to stop talking, send the audio.
+ * The browser's own recognition needs the right language picked in advance and struggles with
+ * Telugu/Hindi/Urdu mixed with English; Gemini hears all four and the mixes, and returns what it
+ * heard plus the filled-in form. Phones that can't record fall back to the browser's recognition. */
+const CAN_RECORD = !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder && (window.AudioContext || window.webkitAudioContext));
+const rec = { stream: null, mr: null, chunks: [], ctx: null, timer: null, started: 0, lastLoud: 0, noise: 0, busy: false };
+
+function micState(mode) {
+  const btn = $("mic-btn");
+  btn.classList.toggle("is-listening", mode === "listening");
+  btn.disabled = mode === "processing";
+  $("mic-label").textContent = t(mode === "listening" ? "voice.listening" : mode === "processing" ? "voice.processing" : "voice.speak");
+}
+
+async function startRecording() {
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  } catch { toast(t("voice.no_mic")); return; }
+  Object.assign(rec, { stream, chunks: [], started: Date.now(), lastLoud: 0, noise: 0, signal: false });
+  rec.mr = new MediaRecorder(stream);
+  rec.mr.ondataavailable = (e) => { if (e.data.size) rec.chunks.push(e.data); };
+  rec.mr.onstop = onRecordingStopped;
+  rec.mr.start(250);
+  micState("listening");
+  // Silence detection: the first half second sets the room's noise level; after that, quiet for
+  // SILENCE_MS after speaking (or FIRST_WORD_MS before any speech, or MAX_LISTEN_MS overall) ends it.
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  rec.ctx = new Ctx();
+  rec.ctx.resume?.();
+  const analyser = rec.ctx.createAnalyser();
+  analyser.fftSize = 1024;
+  rec.ctx.createMediaStreamSource(stream).connect(analyser);
+  const buf = new Float32Array(analyser.fftSize);
+  rec.timer = setInterval(() => {
+    analyser.getFloatTimeDomainData(buf);
+    let sum = 0;
+    for (const x of buf) sum += x * x;
+    const rms = Math.sqrt(sum / buf.length);
+    const now = Date.now();
+    if (rms > 0) rec.signal = true;
+    // Some phones never feed the level meter; then only a tap or the time cap ends the recording.
+    if (!rec.signal && now - rec.started > 2000) { if (now - rec.started > MAX_LISTEN_MS) stopRecording(); return; }
+    if (now - rec.started < 500) { rec.noise = Math.max(rec.noise, rms); return; }
+    if (rms > Math.max(0.012, rec.noise * 2.5)) rec.lastLoud = now;
+    const quiet = rec.lastLoud ? now - rec.lastLoud > SILENCE_MS : now - rec.started > FIRST_WORD_MS;
+    if (quiet || now - rec.started > MAX_LISTEN_MS) stopRecording();
+  }, 100);
+}
+
+function stopRecording() {
+  clearInterval(rec.timer);
+  if (rec.mr?.state === "recording") rec.mr.stop();
+  rec.stream?.getTracks().forEach((tr) => tr.stop());
+}
+
+// Decode whatever the phone recorded (webm/opus, mp4/aac...) and re-encode as 16 kHz mono WAV,
+// a format Gemini accepts on every phone. A minute is about 2 MB.
+async function toWav16k(blob, ctx) {
+  const decoded = await ctx.decodeAudioData(await blob.arrayBuffer());
+  const rate = 16000;
+  const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(decoded.duration * rate)), rate);
+  const src = off.createBufferSource();
+  src.buffer = decoded;
+  src.connect(off.destination);
+  src.start();
+  const pcm = (await off.startRendering()).getChannelData(0);
+  const out = new DataView(new ArrayBuffer(44 + pcm.length * 2));
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) out.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, "RIFF"); out.setUint32(4, 36 + pcm.length * 2, true); str(8, "WAVE"); str(12, "fmt ");
+  out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true);
+  out.setUint32(24, rate, true); out.setUint32(28, rate * 2, true); out.setUint16(32, 2, true); out.setUint16(34, 16, true);
+  str(36, "data"); out.setUint32(40, pcm.length * 2, true);
+  for (let i = 0; i < pcm.length; i++) out.setInt16(44 + i * 2, Math.max(-1, Math.min(1, pcm[i])) * 0x7fff, true);
+  return new Blob([out], { type: "audio/wav" });
+}
+
+async function onRecordingStopped() {
+  const ctx = rec.ctx;
+  rec.ctx = null;
+  const blob = new Blob(rec.chunks, { type: rec.mr.mimeType || "audio/webm" });
+  // Too short to hold any words (an accidental tap): don't send it.
+  if (Date.now() - rec.started < 1200 || !blob.size) { ctx?.close(); micState("idle"); return; }
+  micState("processing");
+  const timer = new AbortController();
+  const stop = setTimeout(() => timer.abort(), 60000);
+  try {
+    const wav = await toWav16k(blob, ctx);
+    const r = await fetch(`/api/understand_audio?language=${state.lang}&session=${encodeURIComponent(sessionId())}`,
+      { method: "POST", headers: { "Content-Type": "audio/wav" }, body: wav, signal: timer.signal });
+    const res = await r.json().catch(() => null);
+    if (!r.ok) throw new Error(res?.error || t("cannot_connect"));
+    if (!res.transcript) { toast(t("voice.nothing")); return; }
+    $("describe-text").value = res.transcript;
+    applyUnderstanding(res, res.transcript);
+  } catch (err) {
+    toast(err.name === "AbortError" ? t("timeout") : err.message || t("cannot_connect"));
+  } finally {
+    clearTimeout(stop);
+    ctx?.close();
+    micState("idle");
+  }
+}
+
+function onMic() {
+  if (CAN_RECORD) {
+    if (rec.mr?.state === "recording") stopRecording();
+    else if (!$("mic-btn").disabled) startRecording();
+  } else toggleListening();
+}
+
+// "Was this helpful?" -- one answer per item; the choice is remembered so it isn't asked twice.
+function feedbackHtml(question, chosen, attrs) {
+  if (chosen) return `<p class="feedback__thanks">${esc(t("helpful.thanks"))}</p>`;
+  return `<div class="feedback__row"><span>${esc(question)}</span>
+    <button type="button" class="chip feedback__btn" ${attrs} data-value="yes">👍 ${esc(t("helpful.yes"))}</button>
+    <button type="button" class="chip feedback__btn" ${attrs} data-value="no">👎 ${esc(t("helpful.no"))}</button></div>`;
+}
+// Which document each answer came from and when it was last checked, always visible.
+function sourceLine(sources) {
+  return `<p class="from"><b>${esc(t("answer.from"))}:</b> ${sources.map((x) =>
+    `<span class="cite">${esc(x.title)}${x.verified ? ` · ${esc(t("answer.verified", { date: fmtDate(x.verified) }))}` : ""}</span>`).join(" ")}</p>`;
+}
+
+function renderAnswer(m, index) {
+  const fb = `<div class="feedback">${feedbackHtml(t("helpful.q"), m.feedback, `data-target="answer" data-msg="${index}"`)}</div>`;
+  if (m.lowConfidence) {
+    // Never shown as an answer: Raahat's sources didn't cover the question, so it says so.
+    return `<div class="unsure"><p class="unsure__title"><svg class="ico"><use href="#i-alert"/></svg>${esc(t("unsure.title"))}</p>
+      <p>${esc(t("unsure.body"))}</p>
+      <a class="btn btn--sos btn--sm" href="tel:108"><svg class="ico"><use href="#i-phone"/></svg>${esc(t("call108.button"))}</a></div>${fb}`;
+  }
   const translated = m.lang === state.lang ? m.translated : null;
   let html = "";
   if (translated) html += `<p class="mt-label"><svg class="ico"><use href="#i-sparkle"/></svg>${esc(t("mt_label"))}</p>`;
   else if (state.lang !== "en" && m.generated) html += `<p class="mt-label">${esc(t("translation_failed"))}</p>`;
-  html += `<div class="explanation">${renderExplanation(translated || m.content)}</div>${speakButton(".msg--ai")}`;
+  html += `<div class="explanation">${renderExplanation(translated || m.content)}</div>`;
+  // Name the documents the answer actually cites (retrieval can bring in ones it didn't use).
+  const cited = (m.sources || []).filter((s) => m.content.includes(`[${s.title}]`));
+  if (cited.length || m.sources?.length) html += sourceLine(cited.length ? cited : m.sources);
+  html += speakButton(".msg--ai");
   if (translated) html += `<details><summary>${esc(t("show_english"))}</summary><div class="explanation english">${renderExplanation(m.content)}</div></details>`;
   if (m.sources?.length) html += `<details><summary>${esc(t("sources_used"))}</summary><div class="sources">${m.sources.map((x) =>
     `<div><b>${esc(x.title)}</b>${esc(x.citation)}</div>`).join("")}</div></details>`;
   if (m.model?.generation) html += `<p class="model">${esc(t("generated_by", { gen: m.model.generation, emb: m.model.embedding }))}</p>`;
-  return html;
+  return html + fb;
 }
 
 function renderChat() {
@@ -613,9 +1024,9 @@ function renderChat() {
   if (!msgs.length && !state.pending) {
     html += `<div class="ent__placeholder"><div><svg class="ico"><use href="#i-shield"/></svg><p>${esc(t("eligible_caption"))}</p></div></div>`;
   }
-  html += `<div class="chat-log">${msgs.map((m) => m.role === "user"
+  html += `<div class="chat-log">${msgs.map((m, i) => m.role === "user"
     ? `<div class="msg msg--user"><span class="msg__who">${esc(t("chat_you"))}</span><p>${esc(m.content)}</p></div>`
-    : `<div class="msg msg--ai">${renderAnswer(m)}</div>`).join("")}`;
+    : `<div class="msg msg--ai">${renderAnswer(m, i)}</div>`).join("")}`;
   if (state.pending) html += `<div class="msg msg--ai"><p class="mt-label">${esc(t("spinner"))}</p><div class="skeleton"><div></div><div></div></div></div>`;
   html += `</div>
     <div class="suggest">${["q.1", "q.2", "q.3", "q.4"].map((k) => `<button type="button" class="chip suggest__q" data-q="${esc(t(k))}">${esc(t(k))}</button>`).join("")}</div>
@@ -640,7 +1051,7 @@ async function ask(question, shownText) {
     const body = {
       injury: state.caseData.injury, facility_id: state.caseData.facilityId,
       situations: state.caseData.situations, conditions: state.caseData.conditions || [],
-      language: state.lang, history: previous,
+      language: state.lang, history: previous, session: sessionId(),
     };
     if (question) body.question = question;
     if (state.caseData.notes) body.situation = state.caseData.notes;
@@ -648,6 +1059,7 @@ async function ask(question, shownText) {
     state.caseData.messages.push({
       role: "assistant", content: res.explanation, translated: res.explanation_translated,
       lang: state.lang, sources: res.sources, model: res.model, generated: res.generated,
+      lowConfidence: res.low_confidence,
     });
     saveCase();
   } catch (err) {
@@ -671,6 +1083,8 @@ async function restoreCase() {
   if (!c?.injury || !state.injuries.some((i) => i.key === c.injury)) return;
   state.caseData = c;
   state.restored = true;
+  if (c.session) session = c.session;
+  state.docs = new Set(c.docs || []);
   setInjury(c.injury);
   if (LOCALITIES[c.locality]) { $("locality").value = c.locality; $("locality").dispatchEvent(new Event("change")); }
   state.chosenSituations = new Set(c.situations || []);
@@ -680,14 +1094,38 @@ async function restoreCase() {
   await runSearch({ scroll: false, selectId: c.facilityId });
 }
 
+/* ---------- offline: save what's needed without signal (frontend/web/sw.js) ---------- */
+async function enableOffline() {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
+  } catch { return; }
+  // Save every first-aid and danger-signs card in English while the phone is idle and online (the
+  // worker shows these when a translated card wasn't saved). Skipped on data-saver connections.
+  if (!navigator.onLine || navigator.connection?.saveData) return;
+  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 3000));
+  idle(async () => {
+    const urls = [
+      ...state.injuries.map((i) => `/api/first_aid?injury=${encodeURIComponent(i.key)}&language=en`),
+      ...state.conditionList.map((c) => `/api/danger_signs?condition=${encodeURIComponent(c.key)}&language=en`),
+    ];
+    for (const u of urls) { try { await fetch(u); } catch { return; } }
+    $("offline-ready").hidden = false;
+  });
+}
+
 /* ---------- boot ---------- */
 async function init() {
   try {
-    const [i18n, injuries, situations, facilities, sources, conditionList] = await Promise.all([
+    const [i18n, injuries, situations, facilities, sources, conditionList, checklistRules, localities, helplines] = await Promise.all([
       api("/api/i18n"), api("/api/injuries"), api("/api/situations"), api("/api/facilities"), api("/api/sources"),
-      api("/api/conditions"),
+      api("/api/conditions"), api("/api/checklist").catch(() => null), api("/api/localities"),
+      api("/api/helplines").catch(() => null),
     ]);
-    Object.assign(state, { strings: i18n.strings, languages: i18n.languages, rtl: i18n.rtl, injuries, situations, sources, conditionList });
+    Object.assign(state, { strings: i18n.strings, languages: i18n.languages, rtl: i18n.rtl, injuries, situations, sources,
+      conditionList, checklistRules, facilities, localities, helplines });
+    LOCALITIES = Object.fromEntries(localities.map((l) => [l.name, [l.lat, l.lng]]));
     $("sources-band").innerHTML = sources.filter((x) => x.kind === "legal").map((x) => `<li>${esc(x.title)}</li>`).join("");
     $("stat-injuries").textContent = injuries.length;
     $("stat-facilities").textContent = facilities.length;
@@ -697,13 +1135,16 @@ async function init() {
     return;
   }
 
+  // First visit: start in the phone's own language (te/hi/ur) if it's one we have.
   const saved = store.get("raahat.lang");
-  state.lang = state.languages[saved] ? saved : "en";
+  const phoneLang = (navigator.languages || [navigator.language || ""]).map((l) => l.slice(0, 2).toLowerCase())
+    .find((l) => state.languages[l]);
+  state.lang = state.languages[saved] ? saved : (phoneLang || "en");
   state.injury = state.injuries[0]?.key;
 
   $("lang").innerHTML = Object.entries(state.languages).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("");
   $("lang").value = state.lang;
-  $("locality").innerHTML = Object.keys(LOCALITIES).map((n) => `<option>${esc(n)}</option>`).join("");
+  renderLocalities();
   $("locality").value = "Charminar";
   const syncCoords = () => { const [la, ln] = LOCALITIES[$("locality").value]; $("lat").value = la; $("lng").value = ln; };
   syncCoords();
@@ -735,8 +1176,57 @@ async function init() {
     chip.setAttribute("aria-pressed", String(state.chosenSituations.has(k)));
     renderSteps();
   });
+  // Anonymous counts of the actions that matter: calling 108, getting directions, sharing.
+  document.addEventListener("click", (ev) => {
+    const a = ev.target.closest("a");
+    if (!a) return;
+    if (a.getAttribute("href") === "tel:108") track("action", "call_108");
+    else if (a.classList.contains("helpline") || a.classList.contains("helpline-link")) track("action", "call_helpline");
+    else if (a.classList.contains("call-hospital")) {
+      const f = state.triage?.results.find((x) => x.id === Number(a.dataset.id));
+      track("action", "call_hospital", { facility_id: f?.id, tier: f?.tier });
+    } else if (a.classList.contains("dir-link")) {
+      const f = state.triage?.results.find((x) => x.id === Number(a.dataset.id));
+      track("action", "directions", { facility_id: f?.id, tier: f?.tier });
+    }
+  });
+  // "Was this helpful?" on results and on answers.
+  document.addEventListener("click", (ev) => {
+    const btn = ev.target.closest(".feedback__btn");
+    if (!btn) return;
+    const { target, value } = btn.dataset;
+    if (target === "results") {
+      state.resultsFeedback = value;
+      const f = state.triage?.results.find((x) => x.id === state.selectedId);
+      track("feedback", value, { target, facility_id: f?.id, tier: f?.tier });
+      $("results-feedback").innerHTML = feedbackHtml("", value, "");
+    } else if (target === "answer") {
+      const m = state.caseData?.messages[Number(btn.dataset.msg)];
+      if (!m) return;
+      m.feedback = value;
+      track("feedback", value, { target, facility_id: state.selectedId, doc_ids: (m.sources || []).map((s) => s.doc_id) });
+      saveCase();
+      renderChat();
+    }
+  });
+  $("next-steps").addEventListener("change", (ev) => {
+    const cb = ev.target.closest("[data-doc]");
+    if (!cb) return;
+    if (cb.checked) state.docs.add(cb.dataset.doc); else state.docs.delete(cb.dataset.doc);
+    if (state.caseData) { syncCase(); saveCase(); }
+    if (cb.checked) track("action", "checklist_tick");
+  });
   $("facility-list").addEventListener("click", (ev) => {
-    if (ev.target.closest("details, a")) return;
+    const rep = ev.target.closest(".report__btn");
+    if (rep) {
+      const id = Number(rep.dataset.id);
+      const f = state.triage?.results.find((x) => x.id === id);
+      track("report", rep.dataset.value, { facility_id: id, tier: f?.tier });
+      state.reported[id] = rep.dataset.value;
+      rep.closest(".report").outerHTML = `<p class="report__thanks">${esc(t("report.thanks"))}</p>`;
+      return;
+    }
+    if (ev.target.closest("details, a, .report__thanks")) return;
     const li = ev.target.closest(".fac");
     if (li) selectFacility(Number(li.dataset.id));
   });
@@ -746,7 +1236,9 @@ async function init() {
   });
   $("ent-facility").addEventListener("change", () => selectFacility(Number($("ent-facility").value)));
   $("describe-form").addEventListener("submit", onDescribe);
-  if (SpeechRec) { $("mic-btn").hidden = false; $("mic-btn").addEventListener("click", toggleListening); }
+  if (CAN_RECORD || SpeechRec) { $("mic-btn").hidden = false; $("mic-btn").addEventListener("click", onMic); }
+  // Phones: the helplines list starts folded so the form is the first thing on screen.
+  if (window.matchMedia("(max-width: 600px)").matches) $("helplines-box").open = false;
   document.addEventListener("click", (ev) => {
     const btn = ev.target.closest(".speak-btn");
     if (btn) { ev.stopPropagation(); toggleSpeak(btn); }
@@ -768,10 +1260,7 @@ async function init() {
 
   applyLanguage();
   restoreCase();
-
-  // Hero preview shows a real ranking (first injury type, Charminar) rather than a mock.
-  const [pla, plng] = LOCALITIES.Charminar;
-  api("/api/triage", { injury: state.injury, lat: pla, lng: plng }).then((res) => { state.preview = res; renderPreview(); }).catch(() => {});
+  enableOffline();
 }
 
 init();

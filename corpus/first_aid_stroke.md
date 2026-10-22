@@ -1,3 +1,4 @@
+Last verified: 2026-09-30
 Source: NHS, "Stroke - Symptoms" (https://www.nhs.uk/conditions/stroke/symptoms/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: Signs of a stroke and what to do (the FAST test: face, arms, speech, time):
 - Face: one side of the face may droop, and it may be hard to smile.

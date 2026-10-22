@@ -1,3 +1,4 @@
+Last verified: 2026-09-30
 Source: NHS, "Anaphylaxis" (https://www.nhs.uk/conditions/anaphylaxis/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: Severe allergic reaction (anaphylaxis) - signs and what to do:
 - Signs include swelling of the throat and tongue, difficulty breathing or breathing very fast, a tight throat or hoarse voice, wheezing, feeling faint or fainting, and blue, grey or pale skin, lips or tongue.

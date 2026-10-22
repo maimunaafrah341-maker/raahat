@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: North West Ambulance Service NHS Trust, "First aid facts" (https://www.nwas.nhs.uk/wp-content/uploads/2019/04/nwas-first-aid-facts-a5-leaflet.pdf); NHS Scotland Right Decisions, "Hand trauma" guideline (https://www.rightdecisions.scot.nhs.uk/south-east-scotland-major-trauma-guidelines/orthopaedicsplastics/hand-trauma/); St John Ambulance, "Severe bleeding" (https://www.sja.org.uk/first-aid-advice/severe-bleeding/) and "How to use a cold compress" (https://www.sja.org.uk/get-advice/first-aid-advice/how-to/how-to-use-a-cold-compress/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: First aid for a cut-off (severed) finger or fingertip, while waiting for help or on the way to hospital:
 - Call 108 for an ambulance, or get to a hospital emergency department straight away.

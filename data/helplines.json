@@ -1,0 +1,8 @@
+[
+ {"key": "ambulance", "number": "108", "source": {"label": "Telangana 108 emergency ambulance (EMRI)", "url": "https://en.wikipedia.org/wiki/Emergency_Management_and_Research_Institute"}},
+ {"key": "all", "number": "112", "source": {"label": "Emergency Response Support System 112 (Government of India)", "url": "https://www.vikaspedia.in/news/government-takes-decision-for-integration-of-child-helpline-with-erss-112"}},
+ {"key": "mental", "number": "14416", "source": {"label": "Tele-MANAS, Ministry of Health and Family Welfare (also 1-800-891-4416)", "url": "https://en.vikaspedia.in/viewcontent/health/mental-health/tele-manas"}},
+ {"key": "roshni", "number": "+914066202000", "source": {"label": "Roshni (Befrienders Worldwide member), listed by Aasra", "url": "https://aasra.info/helpline.html"}},
+ {"key": "child", "number": "1098", "source": {"label": "Child Helpline 1098, integrated with ERSS-112", "url": "https://www.vikaspedia.in/news/government-takes-decision-for-integration-of-child-helpline-with-erss-112"}},
+ {"key": "women", "number": "181", "source": {"label": "Women Helpline 181 (Mission Shakti), myScheme", "url": "https://www.myscheme.gov.in/schemes/whl-181"}}
+]

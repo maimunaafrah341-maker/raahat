@@ -7,6 +7,7 @@ capability comes from a cited public source (see that file's "method").
 Run:  python data/seed_facilities.py [--demo]
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -96,33 +97,51 @@ def validate_real(data: dict) -> None:
         assert 0 <= h["trauma_level"] <= 3, f"{name}: bad trauma level"
         assert 17.2 < h["lat"] < 17.6 and 78.3 < h["lng"] < 78.6, f"{name}: outside Hyderabad"
         assert h["sources"], f"{name}: every real hospital needs at least one source"
+        assert h["emergency_24x7"] in (True, False, None), f"{name}: emergency_24x7 is true, false or null"
         emp, ev = h["aarogyasri_empanelled"], h["aarogyasri_evidence"]
         assert (emp is None) == (ev is None), f"{name}: empanelment status and evidence must go together"
         if h["type"] == "empanelled_private":
             assert emp and ev == "official", f"{name}: empanelled_private needs official evidence"
+        scheme = h.get("scheme_specialties")
+        if scheme is not None:
+            assert not set(scheme) - set(SPECIALTIES), f"{name}: unknown scheme specialty"
+            assert h.get("scheme_source", {}).get("url"), f"{name}: scheme specialties need a source"
+        phone = h.get("phone")
+        if phone is not None:
+            assert re.fullmatch(r"\+91\d{10}|1\d{3}", phone["number"]), f"{name}: phone must be +91XXXXXXXXXX or a short code"
+            assert phone["kind"] in ("emergency", "main", "helpline"), f"{name}: bad phone kind"
+            assert phone.get("source", {}).get("url"), f"{name}: a phone number needs a source"
+        if "checked_on" in h:
+            assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", h["checked_on"]), f"{name}: checked_on must be YYYY-MM-DD"
 
 
 def seed(demo: bool = False) -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     if demo:
         validate(FACILITIES)
-        rows = [(n, loc, lat, lng, t, json.dumps(s), lvl, int(er), int(ars), None, "[]", None, 1)
+        rows = [(n, loc, lat, lng, t, json.dumps(s), lvl, int(er), int(ars), None, "[]", None, None, None, None, None, 1)
                 for n, loc, lat, lng, t, s, lvl, er, ars in FACILITIES]
     else:
         data = json.loads(REAL_FILE.read_text(encoding="utf-8"))
         validate_real(data)
+        dump = lambda v: None if v is None else json.dumps(v)  # noqa: E731
         rows = [(h["name"], h["locality"], h["lat"], h["lng"], h["type"], json.dumps(h["specialties"]),
-                 h["trauma_level"], int(h["emergency_24x7"]),
+                 h["trauma_level"], None if h["emergency_24x7"] is None else int(h["emergency_24x7"]),
                  None if h["aarogyasri_empanelled"] is None else int(h["aarogyasri_empanelled"]),
-                 h["aarogyasri_evidence"], json.dumps(h["sources"]), data["checked_on"], 0)
+                 h["aarogyasri_evidence"], json.dumps(h["sources"]),
+                 dump(h.get("scheme_specialties")), dump(h.get("scheme_source")), h.get("pmjay_id"),
+                 dump(h.get("phone")),
+                 # A hospital re-checked on its own carries its own date; the rest share the file's.
+                 h.get("checked_on", data["checked_on"]), 0)
                 for h in data["hospitals"]]
     with get_connection() as conn:
         init_db(conn)
         conn.executemany(
             """INSERT INTO facilities
                (name, locality, district, lat, lng, type, specialties, trauma_level, emergency_24x7,
-                aarogyasri_empanelled, aarogyasri_evidence, sources, checked_on, is_synthetic)
-               VALUES (?, ?, 'Hyderabad', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                aarogyasri_empanelled, aarogyasri_evidence, sources, scheme_specialties, scheme_source,
+                pmjay_id, phone, checked_on, is_synthetic)
+               VALUES (?, ?, 'Hyderabad', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             rows,
         )
         count = len(list_facilities(conn))

@@ -123,15 +123,65 @@ INJURIES = {
         "secondary": ["emergency_medicine"],
         "min_trauma": 1,
     },
+    # Added with sourced first aid (corpus/first_aid_cpr, _choking, _asthma, _heatstroke, _dog_bite,
+    # crisis_mental_health). None names a specialist team except psychiatry for a mental health crisis.
+    "collapsed_not_breathing": {
+        "label": "Collapsed / not responding / not breathing normally",
+        "primary": [],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "choking": {
+        "label": "Choking (can't breathe, cough or speak)",
+        "primary": [],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 1,
+    },
+    "asthma_breathing": {
+        "label": "Asthma attack / struggling to breathe",
+        "primary": [],
+        "secondary": ["emergency_medicine", "general_medicine"],
+        "min_trauma": 1,
+    },
+    "heatstroke": {
+        "label": "Heatstroke (very hot, confused, not sweating)",
+        "primary": [],
+        "secondary": ["emergency_medicine", "general_medicine"],
+        "min_trauma": 1,
+    },
+    "animal_bite": {
+        "label": "Dog, cat or monkey bite (rabies risk)",
+        "primary": [],
+        "secondary": ["emergency_medicine", "general_surgery"],
+        "min_trauma": 1,
+    },
+    "mental_health_crisis": {
+        "label": "Thoughts of suicide or self-harm / mental health crisis",
+        "primary": ["psychiatry"],
+        "secondary": ["emergency_medicine"],
+        "min_trauma": 0,
+    },
 }
-for _i in INJURIES.values():
-    _i.setdefault("group", "injury")
+
+# Display groups, ordered by what someone in a panic looks for first (frontend GROUPS has the same order).
+GROUPS = {
+    "urgent": ["collapsed_not_breathing", "choking", "asthma_breathing", "chest_pain", "stroke", "severe_allergy", "seizure"],
+    "injury": ["deep_cut", "hand_finger", "fracture", "head_injury", "fall_polytrauma", "burns", "eye_injury",
+               "animal_bite", "snake_bite"],
+    "illness": ["poisoning", "heatstroke", "low_blood_sugar", "chemo_fever"],
+    "mother_child": ["pregnancy_problem", "child_unwell"],
+    "mind": ["mental_health_crisis"],
+}
+for _g, _keys in GROUPS.items():
+    for _k in _keys:
+        INJURIES[_k]["group"] = _g
+assert all("group" in _i for _i in INJURIES.values()), "every emergency type needs a display group"
 
 # Who the patient is, alongside any emergency. Each brings its own sourced danger-signs card
 # (rag.CONDITION_DOCS); `prefer` nudges hospitals with that department up within their tier.
 CONDITIONS = {
     "pregnant": {"label": "Pregnant", "prefer": "obstetrics"},
-    "chemotherapy": {"label": "Having cancer treatment (chemotherapy)", "prefer": None},
+    "chemotherapy": {"label": "Having cancer treatment (chemotherapy)", "prefer": "oncology"},
     "diabetes": {"label": "Has diabetes", "prefer": None},
     "young_child": {"label": "A baby or young child", "prefer": "pediatrics"},
 }
@@ -186,6 +236,8 @@ def assess(facility: dict, injury: dict, distance_km: float, radius_km: float,
     if er:
         score += 10
         reasons.append("24x7 emergency department")
+    elif er is None:
+        reasons.append("24x7 emergency not confirmed in our sources — call ahead if you can")
     else:
         score -= 15
         reasons.append("No 24x7 emergency — may be closed at night")

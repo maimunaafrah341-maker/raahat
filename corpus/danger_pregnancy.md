@@ -1,3 +1,4 @@
+Last verified: 2026-09-30
 Source: NHS, "Pregnancy symptoms you need to get help for" (https://www.nhs.uk/pregnancy/common-symptoms/pregnancy-symptoms-you-need-to-get-help-for/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: During pregnancy, get medical help immediately for any of these:
 - Bleeding from the vagina.

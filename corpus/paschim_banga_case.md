@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: Paschim Banga Khet Mazdoor Samity & Ors v. State of West Bengal & Anor., (1996) 4 SCC 
 37 / AIR 1996 SC 2426 — Supreme Court of India, May 6, 1996.
 Key fact: A worker with severe injuries was turned away by multiple government hospitals for 

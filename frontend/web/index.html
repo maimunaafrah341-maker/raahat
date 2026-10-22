@@ -42,6 +42,8 @@
       <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></symbol>
       <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></symbol>
       <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></symbol>
     </defs>
   </svg>
 
@@ -69,24 +71,17 @@
           <h1 class="hero__title"><span id="title-a"></span> <span id="title-b" class="accent"></span></h1>
           <p class="hero__sub" data-i18n="hero_sub"></p>
 
-          <div class="alert alert--emergency" role="note">
-            <svg class="ico"><use href="#i-phone"/></svg>
-            <span data-i18n-md="banner_108"></span>
-            <a class="alert__call" href="tel:108">108</a>
+          <div class="sos-hero" role="note">
+            <a class="btn btn--sos" href="tel:108"><svg class="ico"><use href="#i-phone"/></svg><span data-i18n="call108.button"></span></a>
+            <span class="sos-hero__text" data-i18n-md="banner_108"></span>
           </div>
         </div>
 
-        <aside class="preview" aria-label="Preview">
-          <div class="preview__head">
-            <div class="preview__titlerow"><span class="preview__title" data-i18n="preview_title"></span><span class="preview__badge" id="preview-badge"></span></div>
-            <span class="preview__injury" id="preview-injury"></span>
-          </div>
-          <ol class="preview__list" id="preview-list"></ol>
-          <div class="preview__foot">
-            <svg class="ico"><use href="#i-shield"/></svg>
-            <span id="preview-foot"></span>
-          </div>
-        </aside>
+        <!-- Real, tappable numbers only: every row calls. -->
+        <details class="helplines" id="helplines-box" open>
+          <summary class="helplines__title"><svg class="ico"><use href="#i-phone"/></svg><span data-i18n="help.title"></span></summary>
+          <ul class="helplines__list" id="helplines"></ul>
+        </details>
       </div>
     </section>
 
@@ -164,6 +159,7 @@
         <div>
           <h3 class="list-title" data-i18n="nearby"></h3>
           <ol id="facility-list" class="facility-list"></ol>
+          <div id="results-feedback" class="feedback"></div>
         </div>
       </div>
       <div id="next-steps" class="steps card"></div>
@@ -226,10 +222,16 @@
     <div class="container">
       <p><b>Raahat</b> · <span data-i18n="caption"></span></p>
       <p class="small" data-i18n="demo_warning"></p>
+      <p class="small" data-i18n="privacy.note"></p>
+      <p class="small" id="offline-ready" data-i18n="offline.ready" hidden></p>
     </div>
   </footer>
 
+  <!-- Always one tap away, on every screen. -->
+  <a class="sos-bar" href="tel:108"><svg class="ico"><use href="#i-phone"/></svg><span data-i18n="call108.sticky"></span></a>
+
   <div id="toast" class="toast" role="alert" hidden></div>
+  <dialog id="desk" class="desk-dialog" aria-label="Show to hospital staff"></dialog>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="app.js"></script>

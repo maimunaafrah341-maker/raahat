@@ -25,7 +25,10 @@ COLLECTION = "entitlements"
 EMBED_MODEL = os.getenv("GEMINI_EMBED_MODEL", "gemini-embedding-001")
 GEN_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 # Tried in order when the primary model is overloaded (503) or rate-limited (429).
-GEN_FALLBACK_MODELS = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-flash-lite-latest"]
+# Free-tier quotas are small (gemini-3.8-flash: 20 requests/day), so the chain ends in "lite" models,
+# which have far higher limits; with billing enabled the first model almost always answers.
+GEN_FALLBACK_MODELS = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-3-flash-preview",
+                       "gemini-3.1-flash-lite", "gemini-flash-lite-latest"]
 GEMINI_TIMEOUT_MS = 25_000  # per request
 
 # Documents whose best chunk is within this cosine similarity of the top document are kept.
@@ -33,12 +36,31 @@ GEMINI_TIMEOUT_MS = 25_000  # per request
 RELEVANCE_MARGIN = 0.04
 MAX_DOCS = 3
 
+# A question whose best chunk (scored on the question alone) is below this gets "I'm not sure"
+# instead of a generated answer. Calibrated on 20 English and 20 Telugu/Hindi/Urdu questions:
+# in-scope ones scored >= 0.655, off-topic ones (costs, phone numbers, passports) <= 0.657 (en)
+# and <= 0.622 (te/hi/ur). The few that slip through are still caught by the prompt's "never guess" rule.
+# Re-checked after adding the road accident / Good Samaritan documents: those questions score 0.73-0.80,
+# but two off-topic money questions now pass (employer 0.673, private insurance 0.646) and real hi/ur
+# questions sit at 0.676, so a higher bar would refuse genuine questions; the prompt rule handles those two.
+LOW_CONFIDENCE = 0.64
+
 # Short human-readable names used for citations in the generated text.
 DOC_TITLES = {
     "clinical_establishments_act": "Clinical Establishments Act, 2010 (Telangana Rules, 2011)",
     "paschim_banga_case": "Paschim Banga Khet Mazdoor Samity v. State of West Bengal (1996)",
     "telangana_aarogyasri": "Telangana Rajiv Aarogyasri Scheme",
     "telangana_bocw": "Telangana BOCW Welfare Board (BOCW Act, 1996)",
+    "parmanand_katara_case": "Parmanand Katara v. Union of India (1989)",
+    "good_samaritan": "Good Samaritan protection (Motor Vehicles Act s.134A)",
+    "road_accident_cashless": "Cashless treatment for road accident victims (PM RAHAT)",
+    "aarogyasri_how_to_use": "Using Aarogyasri at a hospital, with or without a card (scheme guides)",
+    "first_aid_cpr": "First aid: CPR (St John Ambulance)",
+    "first_aid_choking": "First aid: choking (St John Ambulance)",
+    "first_aid_asthma": "First aid: asthma attack (NHS)",
+    "first_aid_heatstroke": "First aid: heatstroke (NHS)",
+    "first_aid_dog_bite": "First aid: animal bite and rabies (NCDC, NHS)",
+    "crisis_mental_health": "Mental health crisis: help now (NHS, Tele-MANAS)",
     "first_aid_severed_finger": "First aid: cut-off finger (NHS, St John Ambulance)",
     "first_aid_bleeding": "First aid: heavy bleeding (St John Ambulance, British Red Cross, NHS inform)",
     "first_aid_burns": "First aid: burns (NHS, British Red Cross, St John Ambulance)",
@@ -57,7 +79,8 @@ DOC_TITLES = {
     "danger_chemo": "Danger signs: during chemotherapy (Macmillan Cancer Support)",
     "danger_child": "Danger signs: baby or young child (NHS)",
 }
-LEGAL_DOCS = ("clinical_establishments_act", "paschim_banga_case", "telangana_aarogyasri", "telangana_bocw")
+LEGAL_DOCS = ("clinical_establishments_act", "paschim_banga_case", "telangana_aarogyasri", "telangana_bocw",
+              "parmanand_katara_case", "good_samaritan", "road_accident_cashless", "aarogyasri_how_to_use")
 
 # Injury key -> the first-aid document for it (keys match backend.triage.INJURIES).
 FIRST_AID_DOCS = {
@@ -78,6 +101,12 @@ FIRST_AID_DOCS = {
     "snake_bite": "first_aid_snake_bite",
     "poisoning": "first_aid_poisoning",
     "low_blood_sugar": "first_aid_low_blood_sugar",
+    "collapsed_not_breathing": "first_aid_cpr",
+    "choking": "first_aid_choking",
+    "asthma_breathing": "first_aid_asthma",
+    "heatstroke": "first_aid_heatstroke",
+    "animal_bite": "first_aid_dog_bite",
+    "mental_health_crisis": "crisis_mental_health",
 }
 # Patient condition (backend.triage.CONDITIONS) -> its danger-signs document.
 CONDITION_DOCS = {
@@ -90,6 +119,7 @@ MEDICAL_DOCS = tuple(d for d in DOC_TITLES if d not in LEGAL_DOCS)
 
 # Each corpus file is a sequence of labelled sections. The label decides the chunk kind.
 SECTION_LABELS = [
+    (re.compile(r"^Last verified:"), "verified"),
     (re.compile(r"^Source:"), "source"),
     (re.compile(r"^Key fact:"), "key_fact"),
     (re.compile(r"^Caveat"), "caveat"),
@@ -97,7 +127,8 @@ SECTION_LABELS = [
 ]
 
 _client = None
-_RETRYABLE = (429, 500, 503)
+# 429 (out of quota) isn't retried on the same model: waiting doesn't restore quota, the next model is faster.
+_RETRYABLE = (500, 503)
 # Anything that means "Gemini didn't answer": API errors and dropped connections alike.
 AI_ERRORS = (genai_errors.APIError, requests.exceptions.RequestException)
 
@@ -111,13 +142,13 @@ def client() -> genai.Client:
     return _client
 
 
-def _with_retry(fn, attempts: int = 3):
+def _with_retry(fn, attempts: int = 3, codes: tuple[int, ...] = _RETRYABLE):
     for i in range(attempts):
         try:
             return fn()
         except AI_ERRORS as e:
             # A timeout isn't retried on the same model: the caller moves on to the next one.
-            retryable = (e.code in _RETRYABLE if isinstance(e, genai_errors.APIError)
+            retryable = (e.code in codes if isinstance(e, genai_errors.APIError)
                          else not isinstance(e, requests.exceptions.Timeout))
             if not retryable or i == attempts - 1:
                 raise
@@ -145,7 +176,7 @@ def chunk_document(path: Path) -> list[dict]:
     citation = re.sub(r"\s+", " ", citation.removeprefix("Source:")).strip()
     chunks = []
     for i, (k, lines) in enumerate(sections):
-        if k == "source":
+        if k in ("source", "verified"):
             continue  # carried as metadata on every chunk instead
         text = re.sub(r"\s+", " ", " ".join(lines)).strip()
         chunks.append({
@@ -161,11 +192,28 @@ def load_chunks() -> list[dict]:
     return [c for p in sorted(CORPUS_DIR.glob("*.md")) for c in chunk_document(p)]
 
 
+_verified: dict[str, str | None] = {}
+
+
+def doc_verified(doc_id: str) -> str | None:
+    """Date (YYYY-MM-DD) a corpus document was last checked against its source, from its first line.
+
+    Read from the file rather than the vector store, so updating a date needs no re-index.
+    """
+    if doc_id not in _verified:
+        first = (CORPUS_DIR / f"{doc_id}.md").read_text(encoding="utf-8").split("\n", 1)[0]
+        m = re.match(r"^Last verified:\s*(\d{4}-\d{2}-\d{2})", first)
+        _verified[doc_id] = m.group(1) if m else None
+    return _verified[doc_id]
+
+
 # ---------- embeddings + store ----------
 
 def embed(texts: list[str], task_type: str) -> list[list[float]]:
+    # One embedding model and no fallback, so a rate limit (429) is worth waiting out here.
     res = _with_retry(lambda: client().models.embed_content(
-        model=EMBED_MODEL, contents=texts, config=types.EmbedContentConfig(task_type=task_type)))
+        model=EMBED_MODEL, contents=texts, config=types.EmbedContentConfig(task_type=task_type)),
+        codes=(429, *_RETRYABLE))
     return [e.values for e in res.embeddings]
 
 
@@ -258,7 +306,7 @@ SITUATIONS = {
     "cant_pay": {
         "label": "Can't pay right now / worried about the cost",
         "phrase": "I cannot afford to pay for emergency treatment right now",
-        "include": ["clinical_establishments_act", "telangana_aarogyasri"],
+        "include": ["clinical_establishments_act", "telangana_aarogyasri", "aarogyasri_how_to_use"],
     },
     "asked_to_pay_first": {
         "label": "Asked to pay before emergency treatment",
@@ -280,10 +328,20 @@ SITUATIONS = {
         "phrase": "I already received a large hospital bill for emergency treatment",
         "include": ["clinical_establishments_act", "telangana_aarogyasri"],
     },
+    "road_accident": {
+        "label": "Hurt in a road accident",
+        "phrase": "I was injured in a road accident involving a vehicle",
+        "include": ["road_accident_cashless", "parmanand_katara_case"],
+    },
+    "helped_stranger": {
+        "label": "I brought someone else (not family) to the hospital",
+        "phrase": "I am a bystander who brought an injured stranger to the hospital",
+        "include": ["good_samaritan"],
+    },
     "bpl_card": {
         "label": "Have a BPL ration card / Aarogyasri enrolment",
         "phrase": "My family has a BPL ration card",
-        "include": ["telangana_aarogyasri"],
+        "include": ["telangana_aarogyasri", "aarogyasri_how_to_use"],
     },
     "construction_worker": {
         "label": "Construction / building worker",
@@ -299,7 +357,9 @@ SITUATIONS = {
 
 # Documents that only apply to people in certain situations. When the user has ticked
 # situations and none of these open the gate, the document is left out entirely.
-GATED_DOCS = {"telangana_bocw": {"construction_worker", "informal_worker"}}
+GATED_DOCS = {"telangana_bocw": {"construction_worker", "informal_worker"},
+              "road_accident_cashless": {"road_accident"},
+              "good_samaritan": {"helped_stranger"}}
 
 
 def situation_rules(tags: list[str]) -> tuple[list[str], tuple[str, ...], tuple[str, ...]]:
@@ -355,15 +415,16 @@ def _problems(text: str, allowed_titles: set[str]) -> list[str]:
     return issues
 
 
-def _generate_with(prompt: str, config: types.GenerateContentConfig) -> tuple[str, str]:
+def _generate_with(prompt, config: types.GenerateContentConfig, models: list[str] | None = None,
+                   attempts: int = 2) -> tuple[str, str]:
     """Return (text, model_used), falling back to lighter models if the primary is unavailable."""
     last_err = None
-    for model in [GEN_MODEL, *GEN_FALLBACK_MODELS]:
+    for model in models or [GEN_MODEL, *GEN_FALLBACK_MODELS]:
         try:
             resp = _with_retry(lambda: client().models.generate_content(
-                model=model, contents=prompt, config=config), attempts=2)
+                model=model, contents=prompt, config=config), attempts=attempts)
             return (resp.text or "").strip(), model
-        except AI_ERRORS as e:  # overloaded, retired (404), network drop -> try the next model
+        except AI_ERRORS as e:  # overloaded, out of quota, retired (404), network drop -> try the next model
             last_err = e
     raise last_err
 
@@ -408,6 +469,22 @@ def generate_explanation(injury_label: str, situation: str | None, facility: dic
     return text + "\n\n_These are possibilities, not guarantees — please confirm each one._", model
 
 
+def question_confidence(question: str, exclude: tuple[str, ...] = ()) -> float:
+    """Best similarity between the question alone and any chunk Raahat could answer from.
+
+    Scored without the injury/hospital template that build_situation_query adds: that
+    template matches the corpus on its own and makes every question look relevant.
+    """
+    col = collection()
+    where = {"doc_id": {"$nin": list(exclude)}} if exclude else None
+    res = col.query(query_embeddings=embed([question], "RETRIEVAL_QUERY"), n_results=1, where=where)
+    return round(1 - res["distances"][0][0], 3) if res["distances"][0] else 0.0
+
+
+UNSURE_EXPLANATION = ("I'm not sure. Raahat's sources don't clearly answer this, so it won't guess. "
+                      "Please ask at the hospital's help desk. In an emergency, call 108.")
+
+
 def fallback_explanation(sources: list[dict]) -> str:
     """Shown when Gemini is unreachable: names the relevant sources without paraphrasing them."""
     titles = "\n".join(f"- {s['title']}" for s in sources)
@@ -437,6 +514,16 @@ def explain(injury_label: str, facility: dict | None = None, situation: str | No
     own = ({FIRST_AID_DOCS.get(injury_key), *(CONDITION_DOCS.get(c) for c in conditions or [])} - {None}
            if question else set())
     exclude = (*exclude, *(d for d in MEDICAL_DOCS if d not in own))
+    if question:
+        confidence = question_confidence(question, exclude)
+        if confidence < LOW_CONFIDENCE:
+            # Nothing in the sources is close to what they asked: say so rather than let the model guess.
+            return {"query": question, "question": question, "explanation": UNSURE_EXPLANATION,
+                    "generated": False, "low_confidence": True, "confidence": confidence, "sources": [],
+                    "situations": tags, "excluded_sources": list(exclude), "chunks": [],
+                    "model": {"generation": None, "embedding": EMBED_MODEL}}
+    else:
+        confidence = None
     if own:
         # In one ranking a first-aid match always outscores the law, so "is 37.8 dangerous? and can
         # they refuse if we can't pay?" would lose its legal half. Rank each pool on its own; the
@@ -448,7 +535,8 @@ def explain(injury_label: str, facility: dict | None = None, situation: str | No
     sources = {}
     for c in chunks:
         m = c["metadata"]
-        sources.setdefault(m["doc_id"], {"doc_id": m["doc_id"], "title": m["title"], "citation": m["citation"]})
+        sources.setdefault(m["doc_id"], {"doc_id": m["doc_id"], "title": m["title"], "citation": m["citation"],
+                                         "verified": doc_verified(m["doc_id"])})
     try:
         explanation, model_used = generate_explanation(injury_label, situation, facility, chunks, question, history)
         generated = True
@@ -459,6 +547,8 @@ def explain(injury_label: str, facility: dict | None = None, situation: str | No
         "question": question,
         "explanation": explanation,
         "generated": generated,
+        "low_confidence": False,
+        "confidence": confidence,
         "sources": list(sources.values()),
         "situations": tags,
         "excluded_sources": list(exclude),

@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: NHS, "Head injury and concussion" (https://www.nhs.uk/conditions/head-injury-and-concussion/); British Red Cross, "Head injury" (https://www.redcross.org.uk/first-aid/learn-first-aid/head-injury); St John Ambulance, "Head injury" (https://www.sja.org.uk/first-aid-advice/head-injury/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: First aid for a head injury:
 - Call 108 straight away if the person is unconscious or not fully awake, vomits, has trouble speaking, understanding, seeing, balancing or walking, has weakness in an arm or leg, has a seizure, has clear fluid or blood coming from the ears or nose, or has a headache that will not go away.

@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: NHS, "Eye injuries" (https://www.nhs.uk/conditions/eye-injuries/); St John Ambulance, "Eye injury" (https://www.sja.org.uk/first-aid-advice/eye-injury/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: First aid for an eye injury:
 - Chemical splash: rinse the eye under gently running clean water for at least 20 minutes, holding the eye open and washing the inside of the eyelid too. Keep rinsing while you wait for medical help.

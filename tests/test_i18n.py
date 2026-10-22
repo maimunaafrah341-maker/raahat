@@ -45,3 +45,18 @@ def test_every_backend_injury_and_situation_has_a_label():
         assert f"situation.{key}" in EN, key
     for key in CONDITIONS:
         assert f"condition.{key}" in EN, key
+
+
+def test_every_checklist_item_and_specialty_has_a_label():
+    from backend.checklist import ITEMS
+    from backend.db import SPECIALTIES
+    for key in ITEMS:
+        assert f"doc.{key}" in EN, key
+    for key in SPECIALTIES:
+        assert f"spec.{key}" in EN, key
+
+
+def test_unsure_message_keeps_108():
+    for lang in LANGUAGES:
+        assert "108" in STRINGS[lang]["unsure.body"], lang
+        assert "108" in STRINGS[lang]["call108.button"], lang

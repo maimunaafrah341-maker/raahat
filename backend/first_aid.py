@@ -26,6 +26,7 @@ def _parse(doc_id: str) -> dict:
         "steps": sections["Key fact"]["items"],
         "cautions": sections["Caveat"]["items"],
         "citation": sections["Source"]["intro"],
+        "verified": rag.doc_verified(doc_id),
     }
 
 
@@ -56,8 +57,10 @@ def card_for(doc_id: str, language: str = "en") -> dict:
     if (doc_id, language) in _cache:
         return _cache[(doc_id, language)]
     card = _parse(doc_id)
-    # "danger" cards list warning signs to act on; "first_aid" cards list steps to take.
-    card.update(kind="danger" if doc_id.startswith("danger_") else "first_aid", language="en", translated=False)
+    # "danger" cards list warning signs to act on; "first_aid" cards list steps to take;
+    # "crisis" is the mental health card, shown with its helplines as call buttons.
+    kind = "danger" if doc_id.startswith("danger_") else "crisis" if doc_id.startswith("crisis_") else "first_aid"
+    card.update(kind=kind, language="en", translated=False)
     if language in LANGUAGE_NAMES and language != "en":
         steps, cautions = _translate_list(card["steps"], language), _translate_list(card["cautions"], language)
         if steps is not None and cautions is not None:

@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: British Red Cross, "Broken bones and fractures" (https://www.redcross.org.uk/first-aid/learn-first-aid/broken-bone); St John Ambulance, "Broken bones and fractures" (https://www.sja.org.uk/first-aid-advice/fractures-and-broken-bones/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: First aid for a suspected broken bone:
 - Support the injured part above and below the injury, and keep it still.

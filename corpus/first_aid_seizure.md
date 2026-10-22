@@ -1,3 +1,4 @@
+Last verified: 2026-09-30
 Source: NHS, "What to do if someone has a seizure (fit)" (https://www.nhs.uk/symptoms/what-to-do-if-someone-has-a-seizure-fit/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: Helping someone who is having a seizure (fit):
 - Only move them if they are in danger, such as near a busy road or a hot cooker.

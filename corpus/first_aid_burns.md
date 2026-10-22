@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: NHS, "Burns and scalds" (https://www.nhs.uk/conditions/burns-and-scalds/); British Red Cross, "Burns" (https://www.redcross.org.uk/first-aid/learn-first-aid/burns); St John Ambulance, "Burns and scalds" (https://www.sja.org.uk/first-aid-advice/burns-and-scalds/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: First aid for burns and scalds:
 - Cool the burn under cool running water for at least 20 minutes.

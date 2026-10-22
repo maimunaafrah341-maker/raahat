@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: British Red Cross, "Heart attack" (https://www.redcross.org.uk/first-aid/learn-first-aid/heart-attack); St John Ambulance, "Heart attack" (https://www.sja.org.uk/first-aid-advice/heart-attack/); British Heart Foundation, "Should you take aspirin if you're having a heart attack?" (https://www.bhf.org.uk/informationsupport/heart-matters-magazine/medical/ask-the-experts/why-take-aspirin-for-heart-attack). UK sources say call 999; in India the ambulance number is 108.
 Key fact: First aid for suspected heart attack or severe chest pain:
 - Call 108 straight away and say you think it is a heart attack.

@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: St John Ambulance, "Severe bleeding" (https://www.sja.org.uk/first-aid-advice/severe-bleeding/); British Red Cross, "Bleeding heavily" (https://www.redcross.org.uk/first-aid/learn-first-aid/bleeding-heavily); NHS inform, "Severe bleeding first aid" (https://www.nhsinform.scot/tests-and-treatments/first-aid/severe-bleeding-first-aid/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: First aid for a deep cut or heavy bleeding, while waiting for help:
 - Call 108, or ask someone to call while you help.

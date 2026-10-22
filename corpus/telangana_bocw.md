@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: Building and Other Construction Workers (Regulation of Employment and Conditions of 
 Service) Act, 1996, administered in Telangana by the Telangana Building and Other Construction 
 Workers (BOCW) Welfare Board.

@@ -1,3 +1,4 @@
+Last verified: 2026-09-30
 Source: NHS, "Low blood sugar (hypoglycaemia)" (https://www.nhs.uk/conditions/low-blood-sugar-hypoglycaemia/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: Low blood sugar (hypoglycaemia), usually in someone with diabetes:
 - Signs include feeling hungry, sweating, shaking, feeling dizzy, anxious or irritable, a fast heartbeat, blurred vision and confusion.

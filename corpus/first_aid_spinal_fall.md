@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: St John Ambulance, "Spinal injury" (https://www.sja.org.uk/first-aid-advice/spinal-injury/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: First aid after a fall from height, when the neck or back may be injured:
 - Call 108, or ask someone to call for you.

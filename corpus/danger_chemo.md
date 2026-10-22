@@ -1,3 +1,4 @@
+Last verified: 2026-09-30
 Source: Macmillan Cancer Support, "Sepsis (blood poisoning)" (https://www.macmillan.org.uk/cancer-information-and-support/impacts-of-cancer/sepsis). UK sources say call 999; in India the ambulance number is 108.
 Key fact: During cancer treatment such as chemotherapy, an infection can quickly become serious (sepsis). Call the cancer team's 24-hour helpline straight away if:
 - The temperature goes over 37.5°C, or below 36°C.

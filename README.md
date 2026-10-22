@@ -35,6 +35,67 @@ the web page and the API. In Render: **New → Blueprint →** pick this repo, t
 your `GEMINI_API_KEY` when asked. The database is seeded and the vector index built on startup.
 Peak memory for a full session is well inside the free tier's 512 MB (the API alone peaked at ~136 MB).
 
+Two optional settings for collecting validation data:
+
+- `DATABASE_URL` — a Postgres URL (a free Neon or Supabase database works). Render's free disk is wiped
+  on every restart, so without it usage events only survive in the logs (lines starting `RAAHAT_EVENT`).
+- `ADMIN_TOKEN` — unlocks `GET /api/admin/stats?token=…` (headline numbers) and
+  `GET /api/admin/events.csv?token=…` (every event). Without it both return 404.
+
+## Safety rails
+
+- **Citations with dates.** Every answer names the documents it cites and when each was last checked
+  (the `Last verified:` line at the top of each `corpus/*.md`; update it when you re-check a source).
+  Hospital cards show when their details were checked and warn after 90 days.
+- **"I'm not sure" instead of guessing.** A question whose closest source passage scores below
+  `LOW_CONFIDENCE` (0.64, `backend/rag.py`) gets "please ask at the hospital desk" and is never sent to
+  the model. Calibrated on in-scope vs off-topic questions in English, Telugu, Hindi and Urdu.
+- **108 everywhere.** A large call button in the hero, and a call bar fixed to the bottom of every phone screen.
+- **Documents to carry** (`backend/checklist.py`), built from the emergency, the patient and their situation.
+  Items backed by a corpus source show it; the rest are marked as practical tips.
+
+- **Show to hospital staff.** A full-screen card with the emergency, who the patient is and "please
+  stabilise first" (plus police-formalities and road-accident lines when they apply), in the person's
+  language with English underneath. Fixed, hand-written sentences only; nothing generated.
+- **Call the hospital.** Only numbers taken from the hospital's own site or the WHO institute directory,
+  each with its source (`phone` in `data/hospitals_real.json`). Hospitals without a verified number say so.
+- **Works without signal.** `frontend/web/sw.js` keeps the page, the hospital list and every first-aid
+  card on the phone. Offline, a search lists hospitals by distance only, clearly marked as unranked.
+
+- **Voice understood by Gemini.** The mic records until the person stops talking, converts the audio to
+  16 kHz WAV and sends it to `/api/understand_audio`. Gemini returns what it heard (in the speaker's
+  script), the emergency, who the patient is, their situation and their area, plus a one-line summary
+  to confirm. Tested on Telugu, Hindi (code-mixed), Urdu and English recordings. If the area is known,
+  the search runs straight away. Phones that can't record fall back to the browser's own recognition.
+- **Mental health crisis.** An emergency type with Tele-MANAS (14416, free, 24x7), Roshni (Hyderabad)
+  and 108 as call buttons, and sourced steps (NHS). Suicidal or self-harm talk counts as life-threatening.
+- **Paying for treatment, with or without a card**: what to do at the Aarogya Mithra desk in each case.
+
+## Gemini quotas
+
+Understanding (typed or spoken) uses fast "lite" models first (`UNDERSTAND_MODELS` in
+`backend/understanding.py`, ~4-8 s). On the free tier `gemini-3.8-flash` allows only 20 requests a day,
+so for real use enable billing on the API key; the fallback chains keep the app answering meanwhile.
+
+## Areas
+
+`data/localities.json`: 106 Hyderabad areas in six zones, coordinates from OpenStreetMap (Nominatim).
+Ambiguous names (e.g. two places called Bandlaguda) are left out rather than guessed.
+
+## What is logged (anonymously)
+
+`backend/analytics.py`: emergency type, language, area (a named locality, or GPS rounded to ~1 km),
+result counts, questions with long numbers and emails removed, "was this helpful?", 108/directions/share
+taps, and "something wrong with this hospital" reports. No IP address, user agent or exact location.
+A random id per case groups one person's events without identifying them.
+
+## Hospital data
+
+`data/hospitals_real.json` can also record, per hospital, the specialities the PM-JAY / Aarogyasri
+registry lists it for (`scheme_specialties` + `scheme_source` + `pmjay_id`) and its own `checked_on`.
+The official search is <https://hospitals.pmjay.gov.in> (State: Telangana, District: Hyderabad); it needs
+a captcha, so entries are checked by hand.
+
 ## API
 
 - `GET  /api/injuries` — supported injury types
@@ -42,7 +103,9 @@ Peak memory for a full session is well inside the free tier's 512 MB (the API al
 - `POST /api/triage` — `{"injury": "hand_finger", "lat": 17.36, "lng": 78.47, "radius_km": 20}`
 - `POST /api/understand` — `{"text": "machine lo vellu tegipoyayi"}` → suggested injury, situations, life-threatening flag
 - `GET  /api/situations` — situation tags the user can tick
-- `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 3, "situations": ["cant_pay"], "situation": "optional notes", "question": "optional", "history": [{"role": "user", "content": "..."}], "language": "te"}`
+- `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 3, "situations": ["cant_pay"], "situation": "optional notes", "question": "optional", "history": [{"role": "user", "content": "..."}], "language": "te"}` → also `low_confidence`, and `verified` on each source
+- `GET  /api/checklist` — rules for the documents-to-carry card
+- `POST /api/event` — `{"kind": "feedback|action|report", "value": "...", "session": "..."}` (closed vocabularies, see `backend/analytics.py`)
 
 ## Voice
 

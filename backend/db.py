@@ -21,6 +21,8 @@ SPECIALTIES = (
     "pediatrics",
     "obstetrics",
     "ophthalmology",
+    "oncology",
+    "psychiatry",
 )
 
 # 0 = no emergency trauma care (refer out)
@@ -40,10 +42,16 @@ CREATE TABLE IF NOT EXISTS facilities (
     type                   TEXT    NOT NULL CHECK (type IN ('govt','charitable','empanelled_private','private')),
     specialties            TEXT    NOT NULL,  -- JSON list drawn from SPECIALTIES
     trauma_level           INTEGER NOT NULL CHECK (trauma_level BETWEEN 0 AND 3),
-    emergency_24x7         INTEGER NOT NULL CHECK (emergency_24x7 IN (0,1)),
+    emergency_24x7         INTEGER CHECK (emergency_24x7 IN (0,1)),  -- NULL = not confirmed by a source
     aarogyasri_empanelled  INTEGER CHECK (aarogyasri_empanelled IN (0,1)),  -- NULL = not verified
     aarogyasri_evidence    TEXT    CHECK (aarogyasri_evidence IN ('official','reported')),
     sources                TEXT    NOT NULL DEFAULT '[]',  -- JSON list of {label, url}
+    -- Specialities the scheme (Aarogyasri / PM-JAY) lists this hospital for, from SPECIALTIES.
+    -- NULL = not verified; a list may be incomplete, so the app never says "not covered" from it.
+    scheme_specialties     TEXT,
+    scheme_source          TEXT,                            -- JSON {label, url} for that list
+    pmjay_id               TEXT,                            -- registry ID, to look the hospital up by hand
+    phone                  TEXT,                            -- JSON {number, kind: emergency|main|helpline, source}; NULL = none verified
     checked_on             TEXT,
     is_synthetic           INTEGER NOT NULL DEFAULT 1
 );
@@ -65,12 +73,14 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
     d = dict(row)
     d["specialties"] = json.loads(d["specialties"])
     d["sources"] = json.loads(d["sources"])
+    for field in ("scheme_specialties", "scheme_source", "phone"):
+        d[field] = json.loads(d[field]) if d[field] else None
     d["trauma_label"] = TRAUMA_LEVELS[d["trauma_level"]]
-    for flag in ("emergency_24x7", "is_synthetic"):
-        d[flag] = bool(d[flag])
+    d["is_synthetic"] = bool(d["is_synthetic"])
     # Tri-state: True / False / None (not verified)
-    if d["aarogyasri_empanelled"] is not None:
-        d["aarogyasri_empanelled"] = bool(d["aarogyasri_empanelled"])
+    for flag in ("emergency_24x7", "aarogyasri_empanelled"):
+        if d[flag] is not None:
+            d[flag] = bool(d[flag])
     return d
 
 

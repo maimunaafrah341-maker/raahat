@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: Telangana Rajiv Aarogyasri Scheme (implemented as "Ayushman Bharat PMJAY – Rajiv 
 Aarogyasri" under the Aarogyasri Health Care Trust), Government of Telangana.
 Key fact: Community health insurance for BPL (Below Poverty Line) families in Telangana. 

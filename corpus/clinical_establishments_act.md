@@ -1,3 +1,4 @@
+Last verified: 2026-09-27
 Source: The Clinical Establishments (Registration and Regulation) Act, 2010 (Central Act No. 23 
 of 2010), adopted by Telangana in 2011 as the Telangana State Clinical Establishments 
 (Registration and Regulation) Rules, 2011.

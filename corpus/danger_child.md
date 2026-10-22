@@ -1,3 +1,4 @@
+Last verified: 2026-09-30
 Source: NHS, "Is your baby or toddler seriously ill?" (https://www.nhs.uk/conditions/baby/health/is-your-baby-or-toddler-seriously-ill/). UK sources say call 999; in India the ambulance number is 108.
 Key fact: Call 108 or go to a hospital emergency department straight away if a baby or young child:
 - Has swollen lips, tongue or throat, with difficulty swallowing or talking.
