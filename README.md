@@ -12,11 +12,25 @@ explains, in plain language, what the person *may* be eligible for (Clinical Est
 Paschim Banga judgment, Aarogyasri, Telangana BOCW Welfare Board) — always with citations and
 "how to confirm" steps, never as a guarantee.
 
-> **Hospital data is real but deliberately conservative.** `data/hospitals_real.json` lists 10 Hyderabad
-> hospitals. Every specialty, emergency capability and Aarogyasri status comes from a cited public source
-> (checked 27 Sep 2026); anything not confirmed is left out, so a hospital may be more capable than shown.
-> Aarogyasri status is `official` (hospital's own site), `reported` (secondary sources) or unverified (`?`).
-> Locations are from OpenStreetMap. The original synthetic set is still available: `python data/seed_facilities.py --demo`.
+> **Hospital data is real but deliberately conservative.** `data/hospitals_real.json` lists 19 researched
+> Hyderabad hospitals. Every specialty, emergency capability, phone number and Aarogyasri status comes from a
+> cited public source; anything not confirmed is left out, so a hospital may be more capable than shown.
+> Another 700 hospitals from OpenStreetMap (`data/hospitals_osm.json`) are shown as "not yet checked — call
+> first", only after the researched ones. Aarogyasri status is `official` (hospital or government site),
+> `reported` (secondary sources) or unverified (`?`). The original synthetic set is still available:
+> `python data/seed_facilities.py --demo`.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Home page on a computer](Raahat%20screenshots/01-home-desktop.png) **1. Home:** 108 first, helplines that call when tapped, then "what happened?" | ![Home page on a phone](Raahat%20screenshots/02-home-phone.png) **2. On a phone:** a 108 bar on every screen |
+| ![Describing the emergency in Telugu](Raahat%20screenshots/03-describe-in-telugu-ai-fills-the-form.png) **3. Describe it in Telugu** (typed or spoken): the AI fills in the emergency and the area, then searches | ![Map and hospital list](Raahat%20screenshots/04-results-map-and-hospital-list.png) **4. Results:** hospitals that can treat it first, colour-coded on the map |
+| ![Hospital card](Raahat%20screenshots/05-hospital-card-with-trust-level.png) **5. Hospital card:** why it matches, Aarogyasri status, when it was checked | ![Closer hospitals not yet checked](Raahat%20screenshots/06-closer-hospitals-not-yet-checked-call-first.png) **6. On the city's edge:** closer hospitals we haven't checked yet, with what to ask when you call |
+| ![Next steps](Raahat%20screenshots/07-next-steps-call-directions-staff-card.png) **7. Your next steps:** first aid, where to go, documents, rights, payment | ![Documents to carry](Raahat%20screenshots/08-documents-to-carry-chemotherapy.png) **8. Documents to carry** (chemotherapy: ration card, Aarogyasri card, Aadhaar, referral letter) |
+| ![Paying for treatment](Raahat%20screenshots/09-paying-with-or-without-aarogyasri-card.png) **9. Paying for treatment,** with or without an Aarogyasri card | ![Answer with citations](Raahat%20screenshots/10-answer-with-citations-and-dates.png) **10. Answers cite their sources,** with the date each was checked |
+| ![I'm not sure](Raahat%20screenshots/11-im-not-sure-instead-of-guessing.png) **11. "I'm not sure"** when the sources don't cover a question, instead of guessing | ![Mental health crisis](Raahat%20screenshots/12-mental-health-crisis-helplines.png) **12. Mental health crisis:** 108, Tele-MANAS 14416 and Roshni as call buttons |
+| ![Show to hospital staff](Raahat%20screenshots/13-show-to-hospital-staff-telugu.png) **13. Show to hospital staff:** the patient's needs in Telugu and English | ![Offline mode](Raahat%20screenshots/14-offline-mode-no-internet.png) **14. Offline:** the saved hospital list still works with no internet |
 
 ## Run
 

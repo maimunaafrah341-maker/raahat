@@ -313,10 +313,14 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 // Without the server we can't check which hospitals can treat this emergency, so we don't pretend to:
 // every hospital gets the grey "offline" label and the page says to call 108 if it's serious.
 function showOffline(lat, lng, radius, scroll) {
-  const results = state.facilities
-    .map((f) => ({ ...f, distance_km: haversineKm(lat, lng, f.lat, f.lng), tier: "offline", reasons: [] }))
+  // Same order as online, minus the capability check: researched hospitals by distance, then the
+  // nearest few that Raahat hasn't checked yet.
+  const near = state.facilities
+    .map((f) => ({ ...f, distance_km: haversineKm(lat, lng, f.lat, f.lng), reasons: [],
+                   tier: f.data_level === "unchecked" ? "unchecked" : "offline" }))
     .filter((f) => f.distance_km <= radius)
-    .sort((a, b) => a.distance_km - b.distance_km)
+    .sort((a, b) => a.distance_km - b.distance_km);
+  const results = [...near.filter((f) => f.tier === "offline"), ...near.filter((f) => f.tier === "unchecked").slice(0, 10)]
     .map((f, i) => ({ ...f, rank: i + 1 }));
   const item = state.injuries.find((i) => i.key === state.injury);
   state.triage = { offline: true, injury: { key: state.injury, label: item?.label || "", specialist_data: true, needs: [] },
