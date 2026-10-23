@@ -194,3 +194,55 @@ def test_scrub_removes_numbers_and_emails():
 
 def test_coarse_area_is_about_a_kilometre():
     assert analytics.coarse_area(17.372954, 78.47427) == "17.37,78.47"
+
+
+def test_translation_keeps_numbers_followed_by_punctuation():
+    from backend.translation import _preserved
+    # "Call 108, or ..." must accept Telugu "108కి": the comma belongs to the sentence, not the number.
+    assert _preserved("* Call 108, or ask someone.", "* 108కి ఫోన్ చేయండి.")
+    assert _preserved("Up to ₹5,00,000 a year.", "సంవత్సరానికి ₹5,00,000 వరకు.")
+    assert not _preserved("Up to ₹5,00,000 a year.", "సంవత్సరానికి ₹5,000 వరకు.")
+
+
+def test_read_aloud_returns_audio_and_rejects_bad_requests(monkeypatch):
+    from backend import speech
+    from backend.app import app, _speak_log
+    monkeypatch.setattr(speech, "speak", lambda text, lang: (b"RIFF fake wav", "fake-tts"))
+    _speak_log.clear()
+    client = app.test_client()
+    res = client.post("/api/speak", json={"text": "108కి ఫోన్ చేయండి.", "language": "te"})
+    assert res.status_code == 200 and res.mimetype == "audio/wav" and res.data.startswith(b"RIFF")
+    assert client.post("/api/speak", json={"text": "hi", "language": "xx"}).status_code == 400
+    assert client.post("/api/speak", json={"text": "a" * 601, "language": "en"}).status_code == 400
+    assert speech._as_wav(b"\x00\x01" * 10)[:4] == b"RIFF"  # raw PCM from older models gets a header
+
+
+def test_low_cost_first_never_beats_a_better_equipped_hospital():
+    from backend.db import get_connection, list_facilities
+    from backend.triage import TIER_ORDER, cost_rank, rank_facilities
+    with get_connection() as conn:
+        facilities = list_facilities(conn)
+    for injury in ("fracture", "burns", "chest_pain_cardiac"):
+        if injury not in INJURIES:
+            continue
+        normal = rank_facilities(facilities, injury, 17.3616, 78.4747)
+        cheap = rank_facilities(facilities, injury, 17.3616, 78.4747, low_cost_first=True)
+        assert [r["tier"] for r in cheap] == [r["tier"] for r in normal]  # same capability order
+        assert sorted(r["id"] for r in cheap) == sorted(r["id"] for r in normal)
+        for a, b in zip(cheap, cheap[1:]):
+            if a["tier"] == b["tier"] != "unchecked":
+                assert cost_rank(a) <= cost_rank(b)
+        assert TIER_ORDER  # tiers still drive the order
+
+
+def test_saved_card_translations_keep_numbers_and_steps():
+    from backend import first_aid
+    from backend.translation import _preserved
+    for key, entry in first_aid.load_saved().items():
+        doc_id, _lang = key.split("/")
+        card = first_aid._parse(doc_id)
+        if entry["source"] != first_aid.source_hash(card):
+            continue  # card edited since: ignored by the app until data/translate_cards.py is rerun
+        assert len(entry["steps"]) == len(card["steps"]) and len(entry["cautions"]) == len(card["cautions"]), key
+        for en, tr in zip(card["steps"] + card["cautions"], entry["steps"] + entry["cautions"]):
+            assert _preserved(en, tr), (key, en, tr)

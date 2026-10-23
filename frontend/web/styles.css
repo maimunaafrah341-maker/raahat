@@ -177,6 +177,9 @@ input[type="range"] { accent-color: var(--primary); width: 100%; margin: 10px 0 
 .coords summary { cursor: pointer; font-weight: 600; width: max-content; }
 .coords__row { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; margin-top: 12px; }
 .check { display: flex; align-items: center; gap: 8px; }
+.lowcost { align-items: flex-start; margin: 4px 0 14px; cursor: pointer; font-weight: 600; }
+.lowcost input { width: 20px; height: 20px; margin-top: 2px; flex: none; accent-color: var(--primary); }
+.lowcost__hint { display: block; font-weight: 400; color: var(--muted); font-size: .85em; }
 .field--sm { width: 160px; }
 
 /* ---------- sources band ---------- */

@@ -84,6 +84,9 @@ Two optional settings for collecting validation data:
 - **Mental health crisis.** An emergency type with Tele-MANAS (14416, free, 24x7), Roshni (Hyderabad)
   and 108 as call buttons, and sourced steps (NHS). Suicidal or self-harm talk counts as life-threatening.
 - **Paying for treatment, with or without a card**: what to do at the Aarogya Mithra desk in each case.
+- **Free / low-cost hospitals first**: a tick box (on by itself when someone says they can't pay or have a
+  ration card) puts government, charitable and Aarogyasri hospitals first, but only among hospitals equally
+  able to treat the emergency. A cheaper hospital never moves above a better-equipped one.
 
 ## Gemini quotas
 
@@ -159,11 +162,12 @@ a captcha, so entries are checked by hand.
 
 - `GET  /api/injuries` — supported injury types
 - `GET  /api/facilities` — all facilities
-- `POST /api/triage` — `{"injury": "hand_finger", "lat": 17.36, "lng": 78.47, "radius_km": 20}`
+- `POST /api/triage` — `{"injury": "hand_finger", "lat": 17.36, "lng": 78.47, "radius_km": 20, "low_cost_first": false}`
 - `POST /api/understand` — `{"text": "machine lo vellu tegipoyayi"}` → suggested injury, situations, life-threatening flag
 - `GET  /api/situations` — situation tags the user can tick
 - `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 3, "situations": ["cant_pay"], "situation": "optional notes", "question": "optional", "history": [{"role": "user", "content": "..."}], "language": "te"}` → also `low_confidence`, and `verified` on each source
 - `GET  /api/checklist` — rules for the documents-to-carry card
+- `POST /api/speak` — `{"text": "108కి ఫోన్ చేయండి.", "language": "te"}` → WAV audio (up to 600 characters)
 - `POST /api/event` — `{"kind": "feedback|action|report", "value": "...", "session": "..."}` (closed vocabularies, see `backend/analytics.py`)
 
 ## Voice
@@ -171,8 +175,10 @@ a captcha, so entries are checked by hand.
 For people who can't comfortably read or type: a mic button takes the description by voice (Telugu, Hindi,
 Urdu or English, via the browser's speech recognition) and goes straight to understanding it — no extra tap.
 "Read aloud" buttons on the first-aid card, the next-steps guide and each answer use the phone's own voice for
-that language, skipping citation labels. If the phone has no voice for the language, the app says so instead of
-reading Telugu/Urdu with an English voice. Support depends on the browser and phone (Chrome on Android works).
+that language when it has one, skipping citation labels. Most phones and laptops have no Telugu or Urdu voice,
+so then the page asks `/api/speak`, which reads the text with Gemini text-to-speech (`backend/speech.py`) a sentence
+or two at a time: the first words play in about 4 seconds. Chunks are cached, so first-aid cards that many people
+read cost nothing after the first time, and each visitor is limited to 150 chunks per 10 minutes.
 
 ## First aid
 
@@ -180,7 +186,10 @@ reading Telugu/Urdu with an English voice. Support depends on the browser and ph
 taken only from NHS, British Red Cross, St John Ambulance, British Heart Foundation, Macmillan and Government of India
 guidance (sources listed in each file; 999 replaced by 108).
 The app shows these steps as a fixed card — never generated — as soon as the injury is understood and in
-"Your next steps"; Gemini only translates them (translation rejected unless numbers and step count survive).
+"Your next steps". The Hindi, Telugu and Urdu versions are translated once by `data/translate_cards.py` and saved in
+`data/card_translations.json` (rejected unless numbers and step count survive), so cards appear instantly in every
+language, even when Gemini is busy. Each translation is tied to the English it came from: after editing a card,
+rerun `python data/translate_cards.py`; until then that card is translated live.
 They are also in the vector store, so follow-up questions like "should I put the finger in ice?" are answered
 from them with a citation. Anything beyond them gets "ask a doctor or call 108".
 

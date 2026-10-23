@@ -194,6 +194,8 @@ function applyUnderstanding(res, text) {
   state.understood = { ...res, text };
   if (res.injury) setInjury(res.injury);
   state.chosenSituations = new Set(res.situations || []);
+  // "We can't pay" or "we have a ration card": put free and low-cost hospitals first.
+  if (state.chosenSituations.has("cant_pay") || state.chosenSituations.has("bpl_card")) $("low-cost").checked = true;
   state.conditions = new Set([...(res.conditions || []), ...(IMPLIED_CONDITION[res.injury] ? [IMPLIED_CONDITION[res.injury]] : [])]);
   renderConditionChips();
   $("situation-text").value = (text || "").slice(0, 500);
@@ -282,6 +284,7 @@ async function runSearch({ scroll = true, selectId = null } = {}) {
   try {
     state.triage = await api("/api/triage", {
       injury: state.injury, lat, lng, radius_km: Number($("radius").value), conditions: [...state.conditions],
+      low_cost_first: $("low-cost").checked,
       // A named area is logged as-is; GPS is rounded to ~1 km on the server.
       session: sessionId(), language: state.lang, area: $("use-coords").checked ? null : $("locality").value,
     });
@@ -779,11 +782,11 @@ const SPEECH_LANG = { en: "en-IN", hi: "hi-IN", te: "te-IN", ur: "ur-IN" };
 let speakingBtn = null;
 
 function speakButton(rootSelector) {
-  if (!("speechSynthesis" in window)) return "";
   return `<button type="button" class="speak-btn" data-speak="${rootSelector}"><svg class="ico"><use href="#i-speaker"/></svg><span>${esc(t("voice.read"))}</span></button>`;
 }
 
 function voiceFor(lang) {
+  if (!("speechSynthesis" in window)) return null;
   const voices = window.speechSynthesis.getVoices();
   const want = SPEECH_LANG[lang].toLowerCase();
   return voices.find((v) => v.lang.replace("_", "-").toLowerCase() === want)
@@ -800,8 +803,72 @@ function speakableText(root) {
   return clone.textContent.replace(/\s+/g, " ").trim();
 }
 
+// Most phones and laptops have no Telugu or Urdu voice (and many no Hindi one), so when the
+// phone can't speak the language, the server reads it with Gemini, a sentence or two at a time.
+const SPEAK_CHUNK = 260;
+let serverSpeech = null; // { audio, aborted, urls }
+
+function speechChunks(text) {
+  const sentences = text.match(/[^.!?।۔]+[.!?।۔]*\s*/g) || [text];
+  const chunks = [];
+  let cur = "";
+  for (const s of sentences) {
+    // The first chunk is one sentence, so the voice starts within a few seconds.
+    if (cur && (cur.length + s.length > SPEAK_CHUNK || chunks.length === 0)) { chunks.push(cur.trim()); cur = ""; }
+    cur += s;
+    while (cur.length > SPEAK_CHUNK) { // one very long sentence: split at a space
+      const cut = cur.lastIndexOf(" ", SPEAK_CHUNK) > 0 ? cur.lastIndexOf(" ", SPEAK_CHUNK) : SPEAK_CHUNK;
+      chunks.push(cur.slice(0, cut).trim());
+      cur = cur.slice(cut);
+    }
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks.filter(Boolean);
+}
+
+async function fetchSpeech(text, lang) {
+  const res = await fetch("/api/speak", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, language: lang }),
+  });
+  if (!res.ok) throw new Error(`speak ${res.status}`);
+  return URL.createObjectURL(await res.blob());
+}
+
+async function speakWithServer(btn, text, lang) {
+  const job = { audio: new Audio(), aborted: false, urls: [] };
+  serverSpeech = job;
+  const chunks = speechChunks(text);
+  let next = fetchSpeech(chunks[0], lang);
+  try {
+    for (let i = 0; i < chunks.length; i++) {
+      const url = await next;
+      if (job.aborted) return;
+      job.urls.push(url);
+      next = i + 1 < chunks.length ? fetchSpeech(chunks[i + 1], lang) : null; // fetch ahead while this plays
+      next?.catch(() => {});
+      job.audio.src = url;
+      await new Promise((resolve, reject) => {
+        job.audio.onended = resolve;
+        job.audio.onerror = reject;
+        job.audio.play().catch(reject);
+      });
+      if (job.aborted) return;
+    }
+  } catch {
+    if (!job.aborted) toast(t("voice.no_voice"));
+  }
+  if (speakingBtn === btn) stopSpeaking();
+}
+
 function stopSpeaking() {
-  window.speechSynthesis.cancel();
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  if (serverSpeech) {
+    serverSpeech.aborted = true;
+    serverSpeech.audio.pause();
+    serverSpeech.urls.forEach((u) => URL.revokeObjectURL(u));
+    serverSpeech = null;
+  }
   if (speakingBtn) speakingBtn.querySelector("span").textContent = t("voice.read");
   speakingBtn = null;
 }
@@ -811,16 +878,22 @@ function toggleSpeak(btn) {
   stopSpeaking();
   if (wasThis) return;
   const root = btn.closest(btn.dataset.speak);
+  const text = speakableText(root);
+  if (!text) return;
+  speakingBtn = btn;
+  btn.querySelector("span").textContent = t("voice.stop");
+  track("action", "read_aloud");
   const voice = voiceFor(state.lang);
   // Never read Telugu/Hindi/Urdu text with an English voice: it would be unintelligible.
-  if (!voice && state.lang !== "en") { toast(t("voice.no_voice")); return; }
-  const u = new SpeechSynthesisUtterance(speakableText(root));
+  if (!voice && (state.lang !== "en" || !("speechSynthesis" in window))) {
+    speakWithServer(btn, text, state.lang);
+    return;
+  }
+  const u = new SpeechSynthesisUtterance(text);
   u.lang = SPEECH_LANG[state.lang];
   if (voice) u.voice = voice;
   u.rate = 0.9;
   u.onend = u.onerror = () => { if (speakingBtn === btn) stopSpeaking(); };
-  speakingBtn = btn;
-  btn.querySelector("span").textContent = t("voice.stop");
   window.speechSynthesis.speak(u);
 }
 
@@ -1180,7 +1253,7 @@ async function init() {
   const syncCoords = () => { const [la, ln] = LOCALITIES[$("locality").value]; $("lat").value = la; $("lng").value = ln; };
   syncCoords();
 
-  $("lang").addEventListener("change", () => { if ("speechSynthesis" in window) stopSpeaking(); state.lang = $("lang").value; store.set("raahat.lang", state.lang); applyLanguage(); });
+  $("lang").addEventListener("change", () => { stopSpeaking();state.lang = $("lang").value; store.set("raahat.lang", state.lang); applyLanguage(); });
   $("locality").addEventListener("change", () => {
     syncCoords();
     $("use-coords").checked = false; // an area picked by hand replaces "my location"
@@ -1284,6 +1357,11 @@ async function init() {
   });
   if ("speechSynthesis" in window) window.speechSynthesis.getVoices(); // voices load asynchronously
   $("search-form").addEventListener("submit", onSearch);
+  $("low-cost").checked = store.get("raahat.lowcost") === "1";
+  $("low-cost").addEventListener("change", () => {
+    store.set("raahat.lowcost", $("low-cost").checked ? "1" : "0");
+    if (!$("results").hidden && state.injury) runSearch({ scroll: false });
+  });
   $("ent-form").addEventListener("submit", onExplain);
   $("ent-result").addEventListener("submit", (ev) => {
     if (ev.target.id !== "ask-form") return;

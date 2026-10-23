@@ -28,7 +28,8 @@ Text:
 {text}"""
 
 _CITATION_RX = re.compile(r"\[[^\]]+\]")
-_NUMBER_RX = re.compile(r"\d[\d,]*")
+# Digits with internal separators only (₹5,00,000), so "Call 108, or ..." yields "108", not "108,".
+_NUMBER_RX = re.compile(r"\d+(?:,\d+)*")
 
 
 def _preserved(original: str, translated: str) -> bool:

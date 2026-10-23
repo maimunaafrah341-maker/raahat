@@ -272,8 +272,18 @@ def assess(facility: dict, injury: dict, distance_km: float, radius_km: float,
     return {"score": round(score, 1), "tier": tier, "reasons": reasons}
 
 
+def cost_rank(f: dict) -> int:
+    """0 = usually free (government), 1 = free/low-cost likely (charitable, Aarogyasri), 2 = ask about cost."""
+    if f["type"] == "govt":
+        return 0
+    if f["type"] == "charitable" or f.get("aarogyasri_empanelled"):
+        return 1
+    return 2
+
+
 def rank_facilities(facilities: list[dict], injury_key: str, lat: float, lng: float,
-                    radius_km: float = DEFAULT_RADIUS_KM, conditions: tuple[str, ...] = ()) -> list[dict]:
+                    radius_km: float = DEFAULT_RADIUS_KM, conditions: tuple[str, ...] = (),
+                    low_cost_first: bool = False) -> list[dict]:
     injury = INJURIES[injury_key]
     results = []
     for f in facilities:
@@ -281,7 +291,10 @@ def rank_facilities(facilities: list[dict], injury_key: str, lat: float, lng: fl
         if d > radius_km:
             continue
         results.append({**f, "distance_km": round(d, 2), **assess(f, injury, d, radius_km, conditions)})
-    results.sort(key=lambda r: (TIER_ORDER.index(r["tier"]), -r["score"]))
+    # "Free / low-cost first" reorders hospitals only within a tier: a cheaper hospital never
+    # jumps above one better equipped for this emergency. Unchecked hospitals stay nearest-first.
+    results.sort(key=lambda r: (TIER_ORDER.index(r["tier"]),
+                                cost_rank(r) if low_cost_first and r["tier"] != TIER_UNCHECKED else 0, -r["score"]))
     unchecked = [r for r in results if r["tier"] == TIER_UNCHECKED][MAX_UNCHECKED:]
     if unchecked:
         drop = {id(r) for r in unchecked}

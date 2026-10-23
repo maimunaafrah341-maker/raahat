@@ -4,7 +4,10 @@ The card shown in the app is the reviewed text itself, never generated. Gemini
 only translates it, and a translation is used only if every number survives
 and the step count matches; otherwise the English is shown.
 """
+import hashlib
+import json
 import re
+from pathlib import Path
 
 from backend import rag
 from backend.translation import LANGUAGE_NAMES, translate_explanation
@@ -41,6 +44,30 @@ def _translate_list(items: list[str], language: str) -> list[str] | None:
 
 
 _cache: dict[tuple[str, str], dict] = {}
+# Translations made ahead of time by data/translate_cards.py, so cards appear instantly in every
+# language and still do when Gemini is busy. Live translation is only the fallback.
+SAVED_FILE = Path(__file__).resolve().parent.parent / "data" / "card_translations.json"
+_saved: dict | None = None
+
+
+def source_hash(card: dict) -> str:
+    """Fingerprint of the English a translation was made from; an edited card no longer matches."""
+    return hashlib.sha256(json.dumps([card["steps"], card["cautions"]], ensure_ascii=False).encode()).hexdigest()[:16]
+
+
+def load_saved() -> dict:
+    global _saved
+    if _saved is None:
+        _saved = json.loads(SAVED_FILE.read_text(encoding="utf-8")) if SAVED_FILE.exists() else {}
+    return _saved
+
+
+def _saved_translation(card: dict, language: str) -> tuple[list[str], list[str]] | None:
+    entry = load_saved().get(f"{card['doc_id']}/{language}")
+    if (entry and entry.get("source") == source_hash(card)
+            and len(entry["steps"]) == len(card["steps"]) and len(entry["cautions"]) == len(card["cautions"])):
+        return entry["steps"], entry["cautions"]
+    return None
 
 
 def first_aid(injury_key: str, language: str = "en") -> dict | None:
@@ -62,7 +89,12 @@ def card_for(doc_id: str, language: str = "en") -> dict:
     kind = "danger" if doc_id.startswith("danger_") else "crisis" if doc_id.startswith("crisis_") else "first_aid"
     card.update(kind=kind, language="en", translated=False)
     if language in LANGUAGE_NAMES and language != "en":
-        steps, cautions = _translate_list(card["steps"], language), _translate_list(card["cautions"], language)
+        saved = _saved_translation(card, language)
+        if saved:
+            steps, cautions = saved
+        else:
+            steps = _translate_list(card["steps"], language)
+            cautions = _translate_list(card["cautions"], language) if steps is not None else None
         if steps is not None and cautions is not None:
             card.update(steps_en=card["steps"], cautions_en=card["cautions"], steps=steps, cautions=cautions,
                         language=language, translated=True)

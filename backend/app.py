@@ -5,12 +5,13 @@ import hmac
 import io
 import os
 import time
+from collections import deque
 from pathlib import Path
 
 from flask import Flask, Response, abort, jsonify, redirect, request, send_from_directory
 
 
-from backend import analytics, rag
+from backend import analytics, rag, speech
 from backend.checklist import rules as checklist_rules
 from backend.db import get_connection, list_facilities
 from backend.i18n import LANGUAGES, RTL, STRINGS
@@ -209,13 +210,15 @@ def triage():
         return {"error": f"conditions must be a list drawn from {list(CONDITIONS)}"}, 400
 
     with get_connection() as conn:
-        ranked = rank_facilities(list_facilities(conn), injury, lat, lng, radius, tuple(conds))
+        ranked = rank_facilities(list_facilities(conn), injury, lat, lng, radius, tuple(conds),
+                                 low_cost_first=body.get("low_cost_first") is True)
     if _session(body):  # the page's own example preview sends no session and isn't counted
         area = body.get("area") if isinstance(body.get("area"), str) else None
         analytics.log("search", session=_session(body), language=_lang(body), injury=injury, conditions=conds,
                       area=(area[:40] if area else analytics.coarse_area(lat, lng)),
                       extra={"results": len(ranked), "top_tier": ranked[0]["tier"] if ranked else None,
-                             "specialists": sum(r["tier"] == "specialist" for r in ranked), "radius_km": radius})
+                             "specialists": sum(r["tier"] == "specialist" for r in ranked), "radius_km": radius,
+                             "low_cost_first": body.get("low_cost_first") is True})
     return jsonify({"injury": {"key": injury, "label": INJURIES[injury]["label"],
                                "specialist_data": bool(INJURIES[injury]["primary"]),
                                # The specialist team it needs, matched against what the scheme lists a hospital
@@ -273,6 +276,45 @@ def understand_spoken():
     if result is None:
         return {"error": "The AI service is busy. Please type or choose from the list instead."}, 503
     return jsonify(result)
+
+
+# Speech is billed per request: cap each visitor so a script can't run up the bill. A whole
+# first-aid card is ~8 chunks, so this still allows reading everything on the page many times.
+SPEAK_LIMIT, SPEAK_WINDOW_S = 150, 600
+_speak_log: dict[str, deque] = {}
+
+
+def _speak_allowed() -> bool:
+    ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+    now, log = time.monotonic(), _speak_log.setdefault(ip, deque())
+    while log and now - log[0] > SPEAK_WINDOW_S:
+        log.popleft()
+    if len(log) >= SPEAK_LIMIT:
+        return False
+    log.append(now)
+    if len(_speak_log) > 5000:  # forget idle visitors
+        for k in [k for k, v in _speak_log.items() if not v or now - v[-1] > SPEAK_WINDOW_S]:
+            del _speak_log[k]
+    return True
+
+
+@app.post("/api/speak")
+def speak_text():
+    """{text, language} -> WAV audio of the text read aloud, for phones with no voice for that language."""
+    body = request.get_json(silent=True) or {}
+    text = (body.get("text") or "").strip()
+    language = body.get("language")
+    if not text or len(text) > speech.MAX_CHARS or language not in LANGUAGE_NAMES:
+        return {"error": f"text (1-{speech.MAX_CHARS} characters) and a valid language are required"}, 400
+    if not _speak_allowed():
+        return {"error": "Too many read-aloud requests. Please wait a few minutes."}, 429
+    try:
+        audio, _model = speech.speak(text, language)
+    except rag.AI_ERRORS:
+        return {"error": "Read aloud is busy right now. Please try again."}, 503
+    resp = Response(audio, mimetype="audio/wav")
+    resp.headers["Cache-Control"] = "private, max-age=86400"
+    return resp
 
 
 @app.post("/api/entitlements")
