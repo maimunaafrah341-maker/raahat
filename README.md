@@ -111,8 +111,16 @@ Every hospital card shows how much Raahat has checked it:
 
 - ✅ **Verified by phone** (date): someone called and asked.
 - 📄 **Researched from public sources** (date): every capability is backed by a cited link.
+- 🏛️ **In the official Aarogyasri / PM-JAY hospital list** (date): an OpenStreetMap hospital whose name
+  matches the National Health Authority's list of empanelled hospitals. That proves it is in the scheme's
+  network, not what it can treat, so it is still "call first" and never ranked above a researched hospital;
+  within that group it gets a 3 km head start over listings with no evidence.
 - ❔ **Not yet checked**: only listed from OpenStreetMap (`data/fetch_osm_hospitals.py`). Shown after
   every researched hospital, nearest 10 only, with "call first" and a script of what to ask.
+
+The ranking never says a hospital *can* treat an emergency, only what our sources list. When no hospital
+we've checked can treat it within the chosen distance, the top card says so and points to 108 instead of
+suggesting a hospital, and the list is headed with the same warning.
 
 To move a hospital from ❔ to 📄 without calling anyone:
 
@@ -163,6 +171,19 @@ taps, and "something wrong with this hospital" reports. No IP address, user agen
 A random id per case groups one person's events without identifying them.
 
 ## Hospital data
+
+**Official scheme list.** `data/fetch_pmjay_registry.py` downloads the National Health Authority's list of
+hospitals empanelled under Ayushman Bharat PM-JAY in the four districts of Greater Hyderabad (Hyderabad,
+Medchal-Malkajgiri, Ranga Reddy, Sangareddy) from <https://hospitals.pmjay.gov.in>. Telangana runs Aarogyasri
+together with PM-JAY (NHA–Telangana MoU, May 2021, implemented by the Aarogyasri Health Care Trust), so this
+is the scheme's network. On 24 Oct 2026 it listed 440 hospitals: 150 are primary health centres (left out:
+not emergency hospitals). `data/match_registry.py` matches the rest to our hospitals: our 19 researched ones
+by hand (16 found; CARE Banjara Hills and both Rainbow hospitals aren't in it under any name we could find,
+so they stay "not verified", which is not the same as "not empanelled"), and the 700 OpenStreetMap ones by
+name, strictly: chain names ("Yashoda Hospitals") only when the branch matches, and only when the location
+fits the registry's district. 45 matched. The registry's name list ignores its speciality filter, so
+specialities are not taken from it. Rerun both scripts, then `python data/seed_facilities.py`.
+
 
 `data/hospitals_real.json` can also record, per hospital, the specialities the PM-JAY / Aarogyasri
 registry lists it for (`scheme_specialties` + `scheme_source` + `pmjay_id`) and its own `checked_on`.

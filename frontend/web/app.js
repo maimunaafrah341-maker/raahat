@@ -359,7 +359,7 @@ function showOffline(lat, lng, radius, scroll) {
   // nearest few that Raahat hasn't checked yet.
   const near = state.facilities
     .map((f) => ({ ...f, distance_km: haversineKm(lat, lng, f.lat, f.lng), reasons: [],
-                   tier: f.data_level === "unchecked" ? "unchecked" : "offline" }))
+                   tier: notChecked(f) ? "unchecked" : "offline" }))
     .filter((f) => f.distance_km <= radius)
     .sort((a, b) => a.distance_km - b.distance_km);
   const results = [...near.filter((f) => f.tier === "offline"), ...near.filter((f) => f.tier === "unchecked").slice(0, 10)]
@@ -489,7 +489,7 @@ function renderSteps() {
   const tell = who ? `<p class="steps__tell">${esc(t("steps.tell", { who }))}</p>` : "";
   const steps = [
     `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}${tell}${guideCards(state.triage.injury.key)}</div></li>`,
-    `<li><div>${go}${f.phone ? callScript(f, f.data_level === "unchecked") : ""}</div></li>`,
+    `<li><div>${go}${f.phone ? callScript(f, notChecked(f)) : ""}</div></li>`,
     ...(state.checklistRules ? [`<li><div>${checklistHtml(f)}</div></li>`] : []),
     `<li><div>${esc(t("steps.ask"))}${citePill("clinical_establishments_act")}${refuseCardHtml()}</div></li>`,
     `<li><div>${esc(t(`steps.emp_${empKey(f)}`))}${citePill("telangana_aarogyasri")}${payCardHtml()}</div></li>`,
@@ -642,7 +642,10 @@ function checklistHtml(f) {
 // Aarogyasri status is tri-state: true, false, or null (not verified in our sources).
 function empKey(f) { return f.aarogyasri_empanelled === true ? "yes" : f.aarogyasri_empanelled === false ? "no" : "unknown"; }
 const EMP_MARK = { yes: "✓", no: "✕", unknown: "?" };
-function empLine(f) { return t(`emp.${empKey(f)}`); }
+function empLine(f) {
+  // Evidence from the official scheme registry is stronger than news or a hospital's own website: say which.
+  return t(f.aarogyasri_empanelled === true && f.aarogyasri_evidence === "official" ? "emp.yes_official" : `emp.${empKey(f)}`);
+}
 function sourcesBlock(f) {
   if (!f.sources?.length) return "";
   return `<div class="fac__sources"><p class="fac__sub">${esc(t("sources_checked", { date: fmtDate(f.checked_on) }))}</p><ul>${
@@ -651,8 +654,15 @@ function sourcesBlock(f) {
 function typeLine(f) { return `${t(`type.${f.type}`)} · ${f.locality} · ${Number(f.distance_km).toFixed(1)} km`; }
 
 // How much Raahat has checked this hospital (phone / public sources / not yet), and how long ago.
+// Not researched by Raahat: only listed (OpenStreetMap), or also in the scheme's official list.
+function notChecked(f) { return f.data_level === "unchecked" || f.data_level === "registry"; }
 function checkedLine(f) {
   if (f.data_level === "unchecked") return `<p class="checked checked--unchecked">${esc(t("trust.unchecked"))}</p>`;
+  // In the scheme's official list: proof it is in the Aarogyasri network, not of what it can treat.
+  if (f.data_level === "registry") {
+    const link = f.scheme_source ? ` <a href="${esc(f.scheme_source.url)}" target="_blank" rel="noopener">${esc(t("trust.registry_link"))}</a>` : "";
+    return `<p class="checked checked--registry">${esc(t("trust.registry", { date: fmtDate(f.checked_on) }))}${link}</p>`;
+  }
   const days = daysSince(f.checked_on);
   if (days === null) return "";
   if (days > STALE_DAYS) return `<p class="checked checked--stale">${esc(t("checked.stale", { days }))}</p>`;
@@ -696,9 +706,15 @@ function reportBlock(f) {
 }
 
 // One hospital, one decision: name, distance and the two buttons that matter. Details stay below.
-function renderBest(f) {
+function renderBest(f, noMatch = false) {
   const box = $("best");
-  box.hidden = !f;
+  box.hidden = !f && !noMatch;
+  box.classList.toggle("best--none", noMatch);
+  if (noMatch) {
+    box.innerHTML = `<p class="best__name">${esc(t("best.none_title"))}</p><p class="best__more">${esc(t("best.none_body"))}</p>
+      <div class="best__actions"><a class="btn btn--sos" href="tel:108"><svg class="ico"><use href="#i-phone"/></svg>${esc(t("call108.button"))}</a></div>`;
+    return;
+  }
   if (!f) { box.innerHTML = ""; return; }
   box.innerHTML = `
     <p class="best__label">${esc(t("best.title"))}</p>
@@ -709,7 +725,7 @@ function renderBest(f) {
       <a class="btn ${f.phone ? "btn--ghost" : "btn--primary"} dir-link" data-id="${f.id}" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
       ${speakButton(".best")}
     </div>
-    <p class="best__more">${esc(t("best.more"))}</p>`;
+    <p class="best__more">${esc(t("best.caveat"))} ${esc(t("best.more"))}</p>`;
 }
 
 function renderResults() {
@@ -739,7 +755,10 @@ function renderResults() {
   const best = researched.slice(0, 3).map((f) => f.distance_km);
   const nearer = best.length ? Math.min(...best) : Infinity;
   const closer = results.filter((f) => f.tier === "unchecked" && f.distance_km < nearer).slice(0, 4);
-  renderBest(researched[0] || results[0]);
+  // No hospital we've checked can treat this nearby: say so, and send people to 108 rather than to a
+  // hospital we know isn't equipped or haven't checked.
+  const noMatch = !capable.length && results.length > 0;
+  renderBest(noMatch ? null : researched[0], noMatch);
   const card = (f) => `
     <li class="fac" style="--tier:${TIER_COLOR[f.tier]}" data-id="${f.id}" tabindex="0" aria-current="${f.id === state.selectedId}">
       <div class="fac__name"><span class="fac__rank">#${f.rank}</span>${esc(f.name)}</div>
@@ -753,7 +772,7 @@ function renderResults() {
         <a class="btn btn--ghost btn--sm dir-link" data-id="${f.id}" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
         ${appleMapsLink(f)}
       </div>
-      ${f.data_level === "unchecked" && f.phone ? callScript(f) : ""}
+      ${notChecked(f) && f.phone ? callScript(f) : ""}
       <details class="fac__more"><summary>${esc(t("fac.more"))}</summary>
         ${phoneNote(f)}
         ${schemeList(f)}
@@ -763,7 +782,8 @@ function renderResults() {
         ${reportBlock(f)}
       </details>
     </li>`;
-  $("facility-list").innerHTML = researched.slice(0, 6).map(card).join("")
+  $("facility-list").innerHTML = (noMatch ? `<li class="fac-group fac-group--warn">${esc(t("list.no_checked_match", { km: $("radius").value }))}</li>` : "")
+    + researched.slice(0, 6).map(card).join("")
     + (closer.length ? `<li class="fac-group">${esc(t("list.closer_unchecked"))}</li>${closer.map(card).join("")}` : "");
   $("results-feedback").innerHTML = results.length
     ? feedbackHtml(t("helpful.results_q"), state.resultsFeedback, 'data-target="results"') : "";
@@ -1362,7 +1382,7 @@ async function init() {
     LOCALITIES = Object.fromEntries(localities.map((l) => [l.name, [l.lat, l.lng]]));
     $("sources-band").innerHTML = sources.filter((x) => x.kind === "legal").map((x) => `<li>${esc(x.title)}</li>`).join("");
     $("stat-injuries").textContent = injuries.length;
-    $("stat-facilities").textContent = facilities.filter((f) => f.data_level !== "unchecked").length; // researched only
+    $("stat-facilities").textContent = facilities.filter((f) => !notChecked(f)).length; // researched only
   } catch (err) {
     document.querySelector("main").insertAdjacentHTML("afterbegin",
       `<div class="container"><p class="demo-note">${esc(err.message || "Cannot connect to the Raahat server.")}</p></div>`);

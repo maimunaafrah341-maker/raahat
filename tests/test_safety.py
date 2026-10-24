@@ -254,3 +254,24 @@ def test_every_source_the_page_cites_exists():
     assert {"consumer_protection_medical", "legal_aid_nalsa", "parmanand_katara_case"} <= cited
     for doc_id in cited:
         assert doc_id in rag.DOC_TITLES and rag.doc_verified(doc_id), doc_id
+
+
+def test_registry_hospitals_are_evidence_of_the_scheme_not_of_capability():
+    import json
+    from backend.db import get_connection, list_facilities
+    from backend.triage import TIER_UNCHECKED, rank_facilities
+    data = Path(__file__).resolve().parent.parent / "data"
+    registry = {h["name"] for h in json.loads((data / "registry_pmjay.json").read_text(encoding="utf-8"))["hospitals"]}
+    matches = json.loads((data / "registry_matches.json").read_text(encoding="utf-8"))["matches"]
+    assert matches and all(m["registry_name"] in registry for m in matches)
+    with get_connection() as conn:
+        facilities = list_facilities(conn)
+    listed = [f for f in facilities if f["data_level"] == "registry"]
+    assert listed and all(f["aarogyasri_empanelled"] is True and f["aarogyasri_evidence"] == "official"
+                          and "pmjay.gov.in" in f["scheme_source"]["url"] for f in listed)
+    ranked = rank_facilities(facilities, "fracture", 17.3616, 78.4747)
+    first_unchecked = next(i for i, r in enumerate(ranked) if r["tier"] == TIER_UNCHECKED)
+    assert all(r["data_level"] in ("public", "phone_verified") for r in ranked[:first_unchecked])
+    for r in ranked:
+        if r["data_level"] == "registry":
+            assert r["tier"] == TIER_UNCHECKED and any("call before going" in x for x in r["reasons"])

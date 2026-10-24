@@ -1,0 +1,600 @@
+{
+ "registry_fetched_on": "2026-10-24",
+ "source_url": "https://hospitals.pmjay.gov.in/Search/empnlWorkFlow.htm?actionFlag=ViewRegisteredHosptlsNew",
+ "matches": [
+  {
+   "registry_name": "AASHRITHA HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Aashritha Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6536327470",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Alpha Super Speciality Hospital",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Alpha Super Speciality Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6496972211",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "ANKITH MULTI SPECIALITY HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Ankith Multi Speciality Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6480023416",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "ARCHANA HOSPITALS PRIVATE LIMITED",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Archana Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/4716995091",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Area Hospital Patancheru",
+   "district": "Sangareddy",
+   "type": "govt",
+   "listed_kind": "osm",
+   "listed_name": "AREA HOSPITAL PATANCHERU",
+   "listed_ref": "https://www.openstreetmap.org/node/6556728347",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Area Hospital - Golconda",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "osm",
+   "listed_name": "Area Hospital, Golconda",
+   "listed_ref": "https://www.openstreetmap.org/node/6546851783",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Area Hospital - Nampally",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "osm",
+   "listed_name": "Area Hospital, Nampally",
+   "listed_ref": "https://www.openstreetmap.org/node/6542441846",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Area Hospital - Vanasthalipuram",
+   "district": "Ranga Reddy",
+   "type": "govt",
+   "listed_kind": "osm",
+   "listed_name": "Area Hospital, Vanasthalipuram",
+   "listed_ref": "https://www.openstreetmap.org/node/4711614465",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "ARUNA HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Aruna Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6496877818",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "BBR MULTI SPECIALITY HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "BBR Super Speciality Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6811749152",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "BHAGYALATHA HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Bhagyalatha Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6531706878",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "CENTURY SUPER SPECIALITY HOSPITALS PVT LTD",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Century hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/4419091498",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Community Health Centre Rajendra Nagar",
+   "district": "Ranga Reddy",
+   "type": "govt",
+   "listed_kind": "osm",
+   "listed_name": "Community Health Centre Rajendranagar",
+   "listed_ref": "https://www.openstreetmap.org/node/11935458418",
+   "method": "name",
+   "score": 0.979
+  },
+  {
+   "registry_name": "District Hospital -  Kingkoti",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "osm",
+   "listed_name": "District Hospital, King Koti",
+   "listed_ref": "https://www.openstreetmap.org/node/6549028392",
+   "method": "name",
+   "score": 0.971
+  },
+  {
+   "registry_name": "Durga Bhai Deshmukh Hospital and Research Centre A unit of Andhra Mahila Shaba",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Durgabai Deshmukh Hospital and Research Centre",
+   "listed_ref": "https://www.openstreetmap.org/way/238282935",
+   "method": "name",
+   "score": 0.944
+  },
+  {
+   "registry_name": "FATIMA HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "FATIMA HOSPITAL",
+   "listed_ref": "https://www.openstreetmap.org/node/6549133126",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Himagiri Hospitals",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Himagiri Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/5405055776",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Induss Hospitals",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Induss Hospitals",
+   "listed_ref": "https://www.openstreetmap.org/node/6503302425",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "KAKATIYA HOSPITALS",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Kakatiya Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6548854401",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "LEGEND HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "LEGEND HOSPITAL",
+   "listed_ref": "https://www.openstreetmap.org/node/6548891585",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Madhava Nursing Home",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Madhava Nursing Home",
+   "listed_ref": "https://www.openstreetmap.org/node/6485663642",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "MAMATA ACADEMY OF MEDICAL SCIENCES HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Mamata Academy of Medical Sciences Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/8760595032",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "NEELIMA HOSPITALS PRIVATE LTD",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Neelima Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6560815058",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Nikhil Hospital",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Nikhil Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6497913444",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "NIRMALA MATERNITY ORTHOPAEDICS AND GENERAL HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Nirmala Maternity, Orthopaedic & General Hospital",
+   "listed_ref": "https://www.openstreetmap.org/way/356535887",
+   "method": "name",
+   "score": 0.987
+  },
+  {
+   "registry_name": "OLIVE HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Olive Hospital",
+   "listed_ref": "https://www.openstreetmap.org/way/182703660",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "OZONE HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "OZONE HOSPITALS",
+   "listed_ref": "https://www.openstreetmap.org/node/2217950153",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "PANACEA MERIDIAN HOSPITAL",
+   "district": "Sangareddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "PANACEA MERIDIAN HOSPITAL",
+   "listed_ref": "https://www.openstreetmap.org/node/5539102501",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "PRAGNYA HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Pragna Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6477289985",
+   "method": "name",
+   "score": 0.923
+  },
+  {
+   "registry_name": "PRAJASAI HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Praja Sai Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6484888144",
+   "method": "name",
+   "score": 0.941
+  },
+  {
+   "registry_name": "PRATHIMA HOSPITALS  a unit of Sri Sai Balaji Health Care India Pvt Ltd",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Prathima Hospitals",
+   "listed_ref": "https://www.openstreetmap.org/node/8759154274",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Ramdevrao Hospital",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Ramdev Rao Hospital",
+   "listed_ref": "https://www.openstreetmap.org/way/238860802",
+   "method": "name",
+   "score": 0.947
+  },
+  {
+   "registry_name": "RENOVA HOSPITALS A Unit of Kathyayani Medcare Services Private Limited",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Renova Hospitals",
+   "listed_ref": "https://www.openstreetmap.org/node/13227662859",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "SHISHIRA HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Shishira hospitals",
+   "listed_ref": "https://www.openstreetmap.org/node/11027534552",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "SHREE HEALTHCARE MULTI SPECIALITY HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Shree Healthcare Multi Specialty Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/8763598296",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Sreshta Orange Hospitals",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Shresta Orange Hospitals",
+   "listed_ref": "https://www.openstreetmap.org/node/4517094891",
+   "method": "name",
+   "score": 0.929
+  },
+  {
+   "registry_name": "SPARK HOSPITALS",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Spark Hospitals",
+   "listed_ref": "https://www.openstreetmap.org/node/5538998266",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "SRI SRI HOLISTIC HOSPITAL A UNIT OF SREE RAMCHANDRA HEALTH SERVICES PRIVATE LIMITED",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Sri Sri Holistic Hospitals",
+   "listed_ref": "https://www.openstreetmap.org/node/6549292128",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "ST THERESA HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "St.Theresa's Hospitals",
+   "listed_ref": "https://www.openstreetmap.org/node/6503155785",
+   "method": "name",
+   "score": 0.909
+  },
+  {
+   "registry_name": "SUMITHRA HOSPITALS PRIVATE LIMITED",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "SUMITHRA HOSPITALS",
+   "listed_ref": "https://www.openstreetmap.org/node/6549439100",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "SUREKHA HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Surekha Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6133853785",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "TRR GENERAL HOSPITAL(A unit of St.Augustin Educational Society)",
+   "district": "Sangareddy",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "TRR General Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/8733354274",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "TULASI HOSPITALS A UNIT OF LIFE SHINE MEDICAL SERVICES PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Tulasi Hospitals",
+   "listed_ref": "https://www.openstreetmap.org/node/6503669088",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Vasavi Hospital",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "Vasavi Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6484770090",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Vinn Healthcare Private Limited",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "osm",
+   "listed_name": "VINN Hospital",
+   "listed_ref": "https://www.openstreetmap.org/node/6212803089",
+   "method": "name",
+   "score": 1.0
+  },
+  {
+   "registry_name": "Apollo Hospitals Enterprises Ltd Jubilee Hills",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "researched",
+   "listed_name": "Apollo Hospitals, Jubilee Hills",
+   "listed_ref": "Apollo Hospitals, Jubilee Hills",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "BASAVATARAKAM INDO AMERICAN CANCER HOSPITAL and RESEARCH INSTITUTE",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "researched",
+   "listed_name": "Basavatarakam Indo-American Cancer Hospital",
+   "listed_ref": "Basavatarakam Indo-American Cancer Hospital",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "CONTINENTAL HOSPITALS LIMITED",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "researched",
+   "listed_name": "Continental Hospitals, Gachibowli",
+   "listed_ref": "Continental Hospitals, Gachibowli",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Gandhi Hospitals",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "researched",
+   "listed_name": "Gandhi Hospital",
+   "listed_ref": "Gandhi Hospital",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Government Hospital for Mental Care",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "researched",
+   "listed_name": "Institute of Mental Health, Erragadda",
+   "listed_ref": "Institute of Mental Health, Erragadda",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Kamineni Hospitals Pvt Ltd",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "researched",
+   "listed_name": "Kamineni Hospitals, LB Nagar",
+   "listed_ref": "Kamineni Hospitals, LB Nagar",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Krishna Institute Of Medical Sciences Ltd",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "researched",
+   "listed_name": "KIMS Hospitals, Secunderabad",
+   "listed_ref": "KIMS Hospitals, Secunderabad",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Mahavir Hospital And Research Centre",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "researched",
+   "listed_name": "Mahavir Hospital and Research Centre",
+   "listed_ref": "Mahavir Hospital and Research Centre",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "M.N.J.Hospitals",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "researched",
+   "listed_name": "MNJ Institute of Oncology and Regional Cancer Centre",
+   "listed_ref": "MNJ Institute of Oncology and Regional Cancer Centre",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Niloufer Hospital",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "researched",
+   "listed_name": "Niloufer Hospital (women and children)",
+   "listed_ref": "Niloufer Hospital (women and children)",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Nims Hospitals",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "researched",
+   "listed_name": "Nizam's Institute of Medical Sciences (NIMS)",
+   "listed_ref": "Nizam's Institute of Medical Sciences (NIMS)",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Osmania General Hospital",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "researched",
+   "listed_name": "Osmania General Hospital",
+   "listed_ref": "Osmania General Hospital",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Owaisi Hospital  And Research Center",
+   "district": "Ranga Reddy",
+   "type": "private",
+   "listed_kind": "researched",
+   "listed_name": "Owaisi Hospital and Research Centre",
+   "listed_ref": "Owaisi Hospital and Research Centre",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Sarojini Devi Eye Hospital",
+   "district": "Hyderabad",
+   "type": "govt",
+   "listed_kind": "researched",
+   "listed_name": "Sarojini Devi Eye Hospital",
+   "listed_ref": "Sarojini Devi Eye Hospital",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Yashoda Hospital Malakpet",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "researched",
+   "listed_name": "Yashoda Hospitals, Malakpet",
+   "listed_ref": "Yashoda Hospitals, Malakpet",
+   "method": "by hand"
+  },
+  {
+   "registry_name": "Yashoda Hospitals - Somajiguda",
+   "district": "Hyderabad",
+   "type": "private",
+   "listed_kind": "researched",
+   "listed_name": "Yashoda Hospitals, Somajiguda",
+   "listed_ref": "Yashoda Hospitals, Somajiguda",
+   "method": "by hand"
+  }
+ ]
+}

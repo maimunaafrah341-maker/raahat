@@ -18,6 +18,24 @@ from backend.db import (  # noqa: E402
 
 REAL_FILE = Path(__file__).resolve().parent / "hospitals_real.json"
 OSM_FILE = Path(__file__).resolve().parent / "hospitals_osm.json"  # from fetch_osm_hospitals.py
+# The official PM-JAY / Aarogyasri registry, matched to our hospitals (fetch_pmjay_registry.py, match_registry.py).
+MATCHES_FILE = Path(__file__).resolve().parent / "registry_matches.json"
+
+
+def registry_matches() -> tuple[dict, dict, str | None, str | None]:
+    """(by OpenStreetMap link, by researched name, date checked, registry URL); empty if never fetched."""
+    if not MATCHES_FILE.exists():
+        return {}, {}, None, None
+    data = json.loads(MATCHES_FILE.read_text(encoding="utf-8"))
+    by_osm = {m["listed_ref"]: m for m in data["matches"] if m["listed_kind"] == "osm"}
+    by_name = {m["listed_ref"]: m for m in data["matches"] if m["listed_kind"] == "researched"}
+    return by_osm, by_name, data["registry_fetched_on"], data["source_url"]
+
+
+def registry_source(m: dict, fetched_on: str, url: str) -> dict:
+    return {"label": f"Ayushman Bharat PM-JAY Aarogyasri empanelled hospitals (National Health Authority): "
+                     f"listed as \u201c{m['registry_name']}\u201d, {m['district']} district, checked {fetched_on}",
+            "url": url}
 
 DISTRICT = "Hyderabad"
 
@@ -125,15 +143,26 @@ def osm_rows() -> list[tuple]:
     if not OSM_FILE.exists():
         return []
     data = json.loads(OSM_FILE.read_text(encoding="utf-8"))
+    by_osm, _, fetched_on, url = registry_matches()
     rows = []
     for h in data["hospitals"]:
         govt = (h.get("operator_type") or "").lower() in ("government", "public")
         sources = [{"label": "OpenStreetMap listing (community-edited)", "url": h["osm"]}]
+        m = by_osm.get(h["osm"])
         if h.get("website"):
             sources.append({"label": "Hospital website (not yet reviewed by Raahat)", "url": h["website"]})
         phone = ({"number": h["phone"], "kind": "unverified",
                   "source": {"label": "OpenStreetMap (community-edited, not verified)", "url": h["osm"]}}
                  if h.get("phone") else None)
+        if m:
+            # In the scheme's official list: that's evidence it is a real hospital in the Aarogyasri network,
+            # not of what it can treat, so it stays after every researched hospital ("registry" level).
+            src = registry_source(m, fetched_on, url)
+            kind = {"govt": "govt", "private": "empanelled_private"}.get(m["type"], "govt" if govt else "unknown")
+            rows.append((h["name"], h["locality"], h["lat"], h["lng"], kind, "[]", 0, None,
+                         1, "official", json.dumps([src] + sources), None, json.dumps(src), None,
+                         json.dumps(phone) if phone else None, fetched_on, "registry", 0))
+            continue
         rows.append((h["name"], h["locality"], h["lat"], h["lng"], "govt" if govt else "unknown", "[]", 0, None,
                      None, None, json.dumps(sources), None, None, None,
                      json.dumps(phone) if phone else None, data["fetched_on"], "unchecked", 0))
@@ -150,6 +179,13 @@ def seed(demo: bool = False) -> None:
     else:
         data = json.loads(REAL_FILE.read_text(encoding="utf-8"))
         validate_real(data)
+        _, by_name, fetched_on, url = registry_matches()
+        for h in data["hospitals"]:
+            m = by_name.get(h["name"])
+            if m:  # the official registry is stronger evidence than news reports or the hospital's own site
+                src = registry_source(m, fetched_on, url)
+                h.update(aarogyasri_empanelled=True, aarogyasri_evidence="official", sources=[src] + h["sources"])
+                h.setdefault("scheme_source", src)
         dump = lambda v: None if v is None else json.dumps(v)  # noqa: E731
         rows = [(h["name"], h["locality"], h["lat"], h["lng"], h["type"], json.dumps(h["specialties"]),
                  h["trauma_level"], None if h["emergency_24x7"] is None else int(h["emergency_24x7"]),
@@ -172,9 +208,11 @@ def seed(demo: bool = False) -> None:
             rows,
         )
         facilities = list_facilities(conn)
-    unchecked = sum(f["data_level"] == "unchecked" for f in facilities)
+    level = lambda lv: sum(f["data_level"] == lv for f in facilities)  # noqa: E731
     print(f"Seeded {len(facilities)} {'SYNTHETIC demo' if demo else 'real'} facilities "
-          f"({len(facilities) - unchecked} researched, {unchecked} not yet checked) into {DB_PATH}")
+          f"({level('public') + level('phone_verified')} researched, {level('registry')} in the official scheme list, "
+          f"{level('unchecked')} not yet checked; {sum(f['aarogyasri_empanelled'] is True for f in facilities)} "
+          f"Aarogyasri-empanelled) into {DB_PATH}")
 
 
 if __name__ == "__main__":

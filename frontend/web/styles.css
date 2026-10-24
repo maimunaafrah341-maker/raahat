@@ -605,3 +605,8 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .understood-card__title { text-tr
   .pic__label { font-size: .85rem; }
   .best__actions .btn { flex: 1 1 100%; justify-content: center; }
 }
+.checked.checked--registry { color: #3a4f8a; font-weight: 700; }
+.checked--registry a { font-weight: 600; margin-inline-start: 4px; }
+.fac-group--warn { color: #8a3a00; background: #fff4e5; border-radius: 12px; padding: 10px 12px; font-weight: 700; line-height: 1.4; }
+.best--none { border-color: var(--danger); }
+.best--none .best__name { color: var(--danger); }

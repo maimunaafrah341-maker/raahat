@@ -9,7 +9,7 @@ DB_PATH = Path(__file__).resolve().parent.parent / "data" / "healthcare.db"
 FACILITY_TYPES = ("govt", "charitable", "empanelled_private", "private", "unknown")
 
 # How much Raahat has checked a hospital, strongest first (shown on every card).
-DATA_LEVELS = ("phone_verified", "public", "unchecked")
+DATA_LEVELS = ("phone_verified", "public", "registry", "unchecked")
 
 SPECIALTIES = (
     "emergency_medicine",
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS facilities (
     checked_on             TEXT,
     -- phone_verified: someone called and asked; public: researched from cited public sources;
     -- unchecked: only listed (OpenStreetMap), capabilities unknown -- "call first".
-    data_level             TEXT    NOT NULL DEFAULT 'public' CHECK (data_level IN ('phone_verified','public','unchecked')),
+    data_level             TEXT    NOT NULL DEFAULT 'public' CHECK (data_level IN ('phone_verified','public','registry','unchecked')),
     is_synthetic           INTEGER NOT NULL DEFAULT 1
 );
 """

@@ -194,6 +194,7 @@ TIER_UNCHECKED = "unchecked"     # only listed (OpenStreetMap): capability unkno
 TIER_UNSUITABLE = "unsuitable"
 TIER_ORDER = [TIER_SPECIALIST, TIER_CAN_MANAGE, TIER_STABILIZE, TIER_UNCHECKED, TIER_UNSUITABLE]
 MAX_UNCHECKED = 10  # nearest not-yet-checked hospitals shown after the researched ones
+REGISTRY_HEAD_START_KM = 3  # see assess(): official scheme list vs an unknown listing
 
 DEFAULT_RADIUS_KM = 20.0
 
@@ -208,10 +209,18 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 
 def assess(facility: dict, injury: dict, distance_km: float, radius_km: float,
            conditions: tuple[str, ...] = ()) -> dict:
-    if facility.get("data_level") == "unchecked":
+    if facility.get("data_level") in ("unchecked", "registry"):
         # Nothing is known about what it can treat; never call it "not equipped" -- say "call first".
-        return {"score": round(-distance_km, 2), "tier": TIER_UNCHECKED,
-                "reasons": ["Not yet checked by Raahat — call before going to confirm they can treat this"]}
+        # Being in the scheme's official list shows it's a real hospital in the Aarogyasri network,
+        # not what it can treat, so it stays in the same "call first" group.
+        reasons = ["Not yet checked by Raahat — call before going to confirm they can treat this"]
+        score = -distance_km
+        if facility.get("data_level") == "registry":
+            reasons.insert(0, "In the official Aarogyasri / PM-JAY hospital list")
+            # Within this group, a hospital in the official list beats an unknown listing that is
+            # up to REGISTRY_HEAD_START_KM nearer -- still never above a researched hospital.
+            score += REGISTRY_HEAD_START_KM
+        return {"score": round(score, 2), "tier": TIER_UNCHECKED, "reasons": reasons}
     specs = set(facility["specialties"])
     primary_hits = [s for s in injury["primary"] if s in specs]
     secondary_hits = [s for s in injury["secondary"] if s in specs]

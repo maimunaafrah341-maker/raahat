@@ -1,0 +1,2208 @@
+{
+ "source": "National Health Authority, Ayushman Bharat PM-JAY hospital search: Empanelled Hospitals, State: Telangana, empanelment type PMJAY",
+ "source_url": "https://hospitals.pmjay.gov.in/Search/empnlWorkFlow.htm?actionFlag=ViewRegisteredHosptlsNew",
+ "fetched_on": "2026-10-24",
+ "note": "Telangana runs Aarogyasri together with PM-JAY. Being empanelled is not proof of a 24x7 emergency or of what a hospital can treat at a given time; specialities are not included.",
+ "hospitals": [
+  {
+   "name": "Alpha Super Speciality Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "ANKITH MULTI SPECIALITY HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Apollo Hospitals  Secunderabad",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Apollo Hospitals Enterprises Ltd Jubilee Hills",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "APOLLO INSTITUTE OF MECDICAL SCIENCES AND RESEARCH",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "ARAVIND EYE HOSPITAL PRIVATE LIMITED",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Area Hospital - Golconda",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Area Hospital - Nampally",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "ASIAN VASCULAR HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "AVS WELLNESS HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Balaji Medical and Diagnostics Research centre (Max Super Speciality Hospital Patparganj (A unit of Balaji Medical and Diagnostic Research))",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "BASAVATARAKAM INDO AMERICAN CANCER HOSPITAL and RESEARCH INSTITUTE",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "BHEL General Hospital RCPuram Hyderabad",
+   "district": "Hyderabad",
+   "type": "unknown"
+  },
+  {
+   "name": "BIBI Hospitals Private Limited",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "CARE HOSPITALS MALAKPET",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "CENTER FOR THALASSEMIA AND BLOOD DISORDERS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "CENTURY SUPER SPECIALITY HOSPITALS PVT LTD",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "CHC - Barkas",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "CHC - Dabeerpura",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "CHC - Khairatabad",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "CHC-AMEERPET",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "CLEAR VISION EYE HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "COMPOSITE HOSPITAL CRPF HYDERABAD",
+   "district": "Hyderabad",
+   "type": "unknown"
+  },
+  {
+   "name": "District Hospital -  Kingkoti",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "DR AGARWAL HEALTH CARE LIMITED",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Dr Agarwals Health care Limited",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Dr Akbar Eye Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Dr B L Kapur Memorial Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Dr Hari kishan eye care",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "DRISHTI EYE CARE CENTRE",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Durga Bhai Deshmukh Hospital and Research Centre A unit of Andhra Mahila Shaba",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "ESIC MEDICAL COLLEGE AND HOSPITAL",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "ESIC Medical College Hospital",
+   "district": "Hyderabad",
+   "type": "unknown"
+  },
+  {
+   "name": "Eye Care Hyderabad",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "EYECURE HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "FATIMA HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Gandhi Hospitals",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Government Hospital for Mental Care",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Govt Ent Hospital  - Koti",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Govt Meternity Hospital",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Govt. Genl. And Chest Hospital",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Guru Nanak CARE Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Hyderabad Eye Institute (Operating Trust of L V Prasad Eye Institute)",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "image health care ltd",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "INDO US SUPERSPECIALITY HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "INTEGRO HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Jaypee Healthcare Limited",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Kamineni Hospital King Koti",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Krishna Institute Of Medical Sciences Ltd",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "LIFE PLUS HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Lions Club of Hyderabad Sadhuram Eye Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "M.N.J.Hospitals",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "MAA HOSITALS PRIVATE LIMITED",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Madhava Nursing Home",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Mahavir Hospital And Research Centre",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Max Multi Speciality Centre Noida (A unit of Crosslay Remedies Limited)",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Max Multi Speciality Centre Panchsheel Park (A unit of Max Healthcare Institute Limited)",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Max Super Speciality Hospital (A unit of Devki Devi Foundation)",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Max Super Speciality Hospital (A unit of Gujarmal Modi Hospital and Research Centre for Medical Sciences)",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Max Super Speciality Hospital Dwarka A unit of Muthoot Hospital Pvt Ltd)",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Max Super Speciality Hospital Vaishali (A unit of Crosslay Remedies Ltd)",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Maxivision Eye Hospitals Private Limited",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "MEDISTARHOSPITALS AUNITOFVCAREHOSPITALSMULTISPECIALITY",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Medivision Eye Care Centre Private Limited Company",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Mn Area Hospital Hospital Apvvp",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "MURUGUN HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "NEELIMA HOSPITALS PRIVATE LTD",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "NEO BBC NEW BORN and CHILDREN HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "NEO RETINA EYE CARE CENTRE",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "NEW DELHI CENTRE FOR SIGHT",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Nikhil Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Niloufer Hospital",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "NIMI GENERAL HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Nims Hospitals",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "NIRMALA MATERNITY ORTHOPAEDICS AND GENERAL HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "NTR TRUST THALASSEMIA CARE CENTRE",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "OLIVE HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "OMEGAHOSPITALS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "ONUS HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Osmania General Hospital",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "PRAJASAI HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "PRATHIMA HOSPITALS  a unit of Sri Sai Balaji Health Care India Pvt Ltd",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Prime Hospitals",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "PRIME RETINA EYE CARE CENTRE",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Princess Esra Hospital Dcms",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Pushpagiri Eye Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Quality Care India Ltd Care Hospitals- Nampally",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "RAGHAVENDRA HOSPITALS(A UNIT OF SKHC PVT LTD)",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Ravindranath Ge Medical Associates Pvt Ltd. Global Hospital Lakdikapool",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Red Cross Saraswathi Rao Memorial Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "RENOVA HOSPITALS A Unit of Kathyayani Medcare Services Private Limited",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "RK HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "S R R I T  C D Govt Fever Hospital",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "SAI NURSING HOME",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "SAI VANI SUPER SPECIALITY HOSPITALS LTD A UNIT OF VISHWA HEALTH INSTITUTE PVT LTD",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Sarojini Devi Eye Hospital",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "SHISHIRA HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "SMART VISION EYE SPECIALITIES PVT LTD",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Solis Eye Care Hospitals Pvt Ltd",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "SOUTH CENTRAL RAILWAY CENTRAL HOSPITAL",
+   "district": "Hyderabad",
+   "type": "unknown"
+  },
+  {
+   "name": "Sowmya Hospital Ramnagar",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "SRIKARA HOSPITALS",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "SRIKARA HOSPITALS A UNIT OF VENKATESHWARA ORTHO HEALTHCARE PVT LTD",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "ST THERESA HOSPITAL",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Sunshine Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Superintendent- Govt. Maternity Hospital- Nayapul",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Surajbhan bhagavati bai maternity and children hospital",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Swarup Eye Centre",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "UCHC - Amberpet",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UCHC - Jangammet",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UCHC - Lalapet",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UCHC - Panipura",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UCHC - Sitaphalmandi",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UCHC - Sriramnagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Unimed Healthcare Pvt- Ltd Star Hospitals",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "UPHC-Addagutta",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Afzal Sagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Agapura",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Aliyabad",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Aman Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Ameerpet",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-AMS",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Azampura",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Bagh Amberpet",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Balagunj",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Bandlaguda",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Banjarahills",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Barkas",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Begum Bazar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Bhoiguda",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Bholakpur",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Bible House",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Boggulkunta",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Borabanda",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Bowenpally",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Chandulal Baradari",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Charminar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Chilkalguda",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-ChinthalBasthi",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-ChuttalBasthi",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Dabeerpura",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Darulshifa",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-DBR Mills",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Dhoodbowli",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Dr. Paul Das",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Edi Bazar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Esamia Bazar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-ESI",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Film Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Gaddiannaram",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Gagan Mahal",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Gandhi",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Gareeb Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Golconda",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Gudimalkapur",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Harrajpenta",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Jahanuma",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Jambagh Park",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Jublihills",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Kamatipura",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Karwan-I",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Karwan-II",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Khairtabad",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Kishanbagh",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Kummarwadi",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Kuttivellodi",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Madannapet",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Maharajgunj",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Maisaram",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Malakpet",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Mettuguda",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Mohammadguda",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Musheerabad",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Nampally",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Nayapool",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Niloufer",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Pan Bazar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Panipura",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Panjesha-I",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Panjesha-II",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Parvathi Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Punjagutta",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Puranapool-I",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Puranapool-II",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Sanath Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Shalivahana Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Shanti Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Showkath Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Sri Ram Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Sulthan Bazar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Syed Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Taramaidan",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Teegalkunta",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Tilak Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Tukaram Gate",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Umda Bazar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Uppuguda",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Vinayak Nagar",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Yakutpura-I",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-Yakutpura-II",
+   "district": "Hyderabad",
+   "type": "govt"
+  },
+  {
+   "name": "Vasavi Hospital",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Vascular Care Centre",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "VIJAYA HEALTH CARE",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Vinn Healthcare Private Limited",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Virinchi Heathcare Private Limted",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Yashoda Hospital Malakpet",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Yashoda Hospitals",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "Yashoda Hospitals - Somajiguda",
+   "district": "Hyderabad",
+   "type": "private"
+  },
+  {
+   "name": "AASHRITHA HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "ABINAV EYE CARE CENTRES",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Amor Hospitals a unit of Aptamitra healthcare pvt ltd",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "ANAND EYE INSTITUTE PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "APEX HOSPITALS",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Area hospital - Ghatkesar",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "ARUNDATHI HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "BABAJI NETHRALAYYA PRIVATE LIMITED",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "BBR MULTI SPECIALITY HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Cantonment General Hospital-Bollaram",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "CHC - Ebrahimpatnam",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "CHC - Kadangal",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "CHC - Medchal",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "CHC - Parigi",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "CHC - Shamshabad",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "CHIRANJEEVI HOSPITALS A UNIT OF CHIRANJEEVI VASCULAR CARE PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "CMR HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Community Health Centre Malkajgiri",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "EYE LAND HOSPITALS A UNIT OF EYE LAND HEALTH CARE",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "GEMCARE POULOMI HOSPITALS",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "GLOBAL EYE AND LASER HOSPITAL PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "KAKATIYA HOSPITALS",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "L.K.Hospitals P Ltd",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Malla reddy narayana multispeciality HospitalA unit of chandramma educational society",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "MALLAREDDY HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "MAMATA ACADEMY OF MEDICAL SCIENCES HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "MEDITECH MULTISPECIALITY HOSPITAL A UNIT OF BYT HEALTH CARE SERVICES PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "MEDIVISION EYE AND HEALTH CARE CENTRE PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "NEELIMA HOSPITALS A Unit of Gayathri Educational and Cultural Trust",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "NEO VISION EYE CARE AND LASER CENTRE",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "NEW LIFE LINE MULTI SPECIALITY HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "OMNI HOSPITALS A UNIT OF INCOR HOSPITALS PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "OZONE HOSPITALS A unit of ozone institute of medical Sciences Pvt Ltd",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "PADMAJA HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "PADMAJA HOSPITAL A UNIT OF NEW LIFE REHAB LLP",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "PARAMITHA CHILDRENS HOSPITALS KOMPALLY PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "PHC-JAWAHAR NAGAR",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-KEESARA",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-KUSHAIGUDA",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-MALKAJGIRI",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-QUTHBULLAPUR",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-SRIRANGAVARAM",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "PRAGNYA HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "PRASAD HOSPITALS INDIA PRIVATE LIMITED",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Prasad Hospitals(a unit of Biosciences Pvt Ltd)",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Prathima Hospitals (A unit of Mamatha Medicare Pvt. Ltd.)",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "PULSE HEART CENTRE",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "RAMANSHOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Ramdevrao Hospital",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "RAMRAJ HOSPITALS A UNIT OF RAMRAJ HOSPITALS PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "RISHAB EYE CENTRE",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "RNC SUPER SPECIALITY HOSPITAL A Unit of Pranadhara Health Care Pvt Ltd",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Roma Hospital",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SAIJYOTHI EYE HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Share Medical Care Mediciti Institute Of Medical Sciences- Medchal",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SHREE HEALTHCARE MULTI SPECIALITY HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SPARK HOSPITALS",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SREE LAKSHMI GAYATRI HOSPITALS PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Sri Raghavendra Hospital",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SRI SRI HOLISTIC HOSPITAL A UNIT OF SREE RAMCHANDRA HEALTH SERVICES PRIVATE LIMITED",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SRI SRI HOLISTIC HOSPITALS A Unit of Sree Ramachandra Health Services Pvt Ltd",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SRIKARA HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SRIKARA HOSPITALS",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SUNRIDGE MULTI SPECALITY HOSPITAL A Unit of Varalaxmi Healthcare Pvt ltd",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SUPRAJA HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "SUREKHA HOSPITAL",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "TREATMENT RANGE HOSPITAL PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "TULASI HOSPITALS A UNIT OF LIFE SHINE MEDICAL SERVICES PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "UPHC-BODUPPAL",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-CHERPALLY",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-EKLAYANAGAR",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-GAJULA RAMARAM",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-HAMSAPET",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-JAGADHGIRI GUTTA/DEENABANDU COLONY",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-KOTHAPET",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-KUKATPALLY",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-MACHA BOLLARAM",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-MALLAPUR",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-MOOSAPET",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-MOULALI",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-NAGOLE",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-PARVATNAGAR",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-PEERZADIGUDA",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-PET BASHEERABAD/MEDCHAL",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-SAFILGUDA",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-SHAPUR NAGAR",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-SUBHASH NAGAR",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-SURARAM COLONY",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-VENKATREDDY NAGAR",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-VINAYAKNAGAR",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-YELLAMABANDA",
+   "district": "Medchal Malkajgiri",
+   "type": "govt"
+  },
+  {
+   "name": "VASAN EYE CARE A Unit of Vasan Health Care Pvt Ltd",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "Vijaya Hospital",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "WELLNESS HOSPITALS NXP A UNIT OF WELLNESS NXP HOSPITALS PVT LTD",
+   "district": "Medchal Malkajgiri",
+   "type": "private"
+  },
+  {
+   "name": "ANAND EYE INSTITUTE PRIVATE LIMITED",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Apollo Hospitals Enterprise Ltd Drdo",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "ARCHANA HOSPITALS PRIVATE LIMITED",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Area Hospital - Chevella",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "Area Hospital - Kondapur",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "Area Hospital - Vanasthalipuram",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "ARUNA HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "BHAGYALATHA HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "BHASKAR GENERAL HOSPITAL(Joginpally BR Educational Society)",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "BRIGHT MULTISPECILAITY HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Bristlecone Hospitals (A unit of Virinchi limited)",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "CHC - HayathNagar",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "CHC ? AMANGAL",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "CHC ? YACHARAM",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "CHETHANA HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "CITIZENS SPECIALITY HOSPITALS (A UNIT OF ARTMED HEALTHCARE  PVT LTD)",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Community Health Centre Rajendra Nagar",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "Community Health Centre- Maheshwaram",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "CONTINENTAL HOSPITALS LIMITED",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "DR PATNAM MAHENDER REDDY INSTITUTE OF MEDICAL SCIENCES",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Himagiri Hospitals",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "HIMALAYA HOSPITALS A UNIT OF GVSR HEALTH CARE PVT LTD",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Induss Hospitals",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "JEEVAN HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Kamala Hospital and Research Centre for Thalassemia and Sickle Cell patients (A unit of Thalassemia and Sickle Cell Society)",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Kamineni Hospitals Pvt Ltd",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Kamineni Oncology Private Limited",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "KONDETI SUPER SPECIALITY HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "LEGEND HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "LIFE CARE HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "LIFE CARE INSTITUTE OF MEDICAL SCIENCES",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "M M S Hospital Mohan multi speciality hospital",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "M/s SAI RAM SUPER SPECIALITY HOSPITALS/PINK CLOUD MOTHER & CHILD CARE",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "MATLIS HOSPITAL A UNIT OF MATLIS HOSPITAL PVT LTD",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Maxivision Eye Hospitals Private limited",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "MEDICOVER HOSPITALS A UNIT OF SAHRUDAYA HEALTH CARE PRIVATE LIMITED MADHAPUR",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "MINA SUPERSPECIALITY HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "NAVEENA MULTI SPECIALITY HOSPITAL PRIVATE LIMITED",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "NEELADHRII SUPER SPECIALITY HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Nightingale Hospital",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "NIKHIL HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "OMEGA HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Owaisi Hospital  And Research Center",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "OZONE HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "PACE HOSPITALS A Unit of OMRV Hospitals Pvt Ltd",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "PHC-GI PALLY",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "Pragma Hospitals A Unit of Vamsi Pragma Hospitals Pvt Ltd",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "PRIME RETINA EYE CARE CENTRE",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "PRK HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "PULSE HEART SUPER SPECIALUTY HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "RECOVER HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "S V MULTI SPECIALTY HOSPITALS A Division of Siddavati Hospitals Pvt Ltd",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SAISANJEEVINI HOSPITALSa unit of singapanga health care india-Hyderabad",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SANKARA EYE HOSPITALSRIKANCHIKAMAKOTIMEDICALTRUST",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SBR PULSE HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Shadan Medical College",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Shadnagar-Chc",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "SHANMUKHA VAISHNAVI HOSPITALS PVT LTD",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SHARADA EYE CARE",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SINDHU HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SIVA EYE HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SMART VISION EYE SPECIALITIES PRIVATE LIMITED",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SPARSH HOSPICE",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Sree Netralaya Eye Hospital and Laser Centre",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Sreshta Orange Hospitals",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Sreshta Sri Kamala Hospitals-Rangareddy",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SRI MAHALAXMI EYE HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SRI RADHIKA MULTY SPECIALITY HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SRI SAI NETHRALAYA EYE HOSPITAL",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SRI SRI HOLISTIC HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Sridhar Multi Speciality Hospital",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SRIKARA HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "SUMITHRA HOSPITALS PRIVATE LIMITED",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Suseela Netralaya A Unit of SuseelaNetralayaPvtLtd",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Telangana Institute of Medical Sciences and Research",
+   "district": "Ranga Reddy",
+   "type": "govt"
+  },
+  {
+   "name": "UDBHAVA HOSPITALS",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "viswas hospitals",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "WELLNESS HOSPITALS(A Unit of Swasth Medical Associates)",
+   "district": "Ranga Reddy",
+   "type": "private"
+  },
+  {
+   "name": "Area hospital",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "Area Hospital Patancheru",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "Area hospital Zahirabad",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "CHC - Sadashivepet",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "CHC ? KARASGUTHI",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "CHC ? MANOOR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "Community Health Centre Jogipet",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "DHRUVA HOSPITALS A Unit of Dhruva Vijaya Health Care Services",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "Dist Hospital Sanga Reddy",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "GOKUL VENKATESHWARA MULTI SPECIALITY HOSPITAL",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "GOKUL VENKATESHWARA SUPER SPECIALITY HOSPITAL",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "HOPE NEURO AND MULTISPECIALITY HOSPITAL",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "KBR Life Care Hospital A Unit of KBRT Trinity Private Limited",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "M/s MEDI STAR HOSPITAL(a unit of SVR Hospitals)",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "Maheshwara Medical College and Hospital A unit of Alleti Shrunitha Educational Society",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "MANJEERA HOSPITAL A UNIT OF SRI MANJEERA SUPER SPECIALITY HOSPITALS PVT LTD",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "Mnr Medical College And Hospital",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "PANACEA MERIDIAN HOSPITAL",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "PHC-ATMAKUR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-BHANOOR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-BILALPUR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-BOLLARAM",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-CHINTHALCHERU",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-DIGWAL",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-DOULTHABAD-H",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-GUMMADIDALA",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-HATHNOORA",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-JHARASANGAM",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-JINNARAM",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-KALHER",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-KANDI",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-KANGTI",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-KANUKUNTA",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-KARASGUTHI",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-KONDAPUR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-MALCHELMA",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-MANOOR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-MIRZAPUR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-MOGUDAMPALLY",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-MUNIPALLY",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-NIZAMPET",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-NYALKAL",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-PHCTALELMA",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-PULKAL",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-RAIKODE",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-RCPURAM",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-RHCPTC",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-SIRGAPUR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "PHC-THURKAPALLY",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "SANROHI HOSPITAL",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "SHREE BALAJI MEDICOVER  HOSPITALS(A UNIT OF SAHRUDYA BALAJI HEALTH CARE(SANGAREDDY)",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "SRI CHARITHA",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "SRI SAI HOSPITAL",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "SUNRISE HOSPITA",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "TRR GENERAL HOSPITAL(A unit of St.Augustin Educational Society)",
+   "district": "Sangareddy",
+   "type": "private"
+  },
+  {
+   "name": "UPHC-INDIRA NAGAR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-MARKSNAGAR",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-PATANCHERU",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "UPHC-ZAHEERABAD",
+   "district": "Sangareddy",
+   "type": "govt"
+  },
+  {
+   "name": "WELLNESS HOSPITALS (A Unit of Wellnessplus Healthcare LLP)",
+   "district": "Sangareddy",
+   "type": "private"
+  }
+ ]
+}
