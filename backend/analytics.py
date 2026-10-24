@@ -23,7 +23,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 KINDS = ("search", "understand", "answer", "feedback", "action", "report")
 # Client-reported values, so the table stays a closed vocabulary rather than free text.
 ACTIONS = ("call_108", "call_hospital", "call_helpline", "directions", "share", "read_aloud", "checklist_tick", "geo_used",
-           "desk_card", "offline_search")
+           "desk_card", "offline_search", "refuse_desk", "call_legal_aid")
 FEEDBACK_TARGETS = ("answer", "results", "first_aid", "checklist")
 REPORTS = ("no_emergency", "wrong_phone", "no_aarogyasri", "closed", "other")
 

@@ -94,10 +94,11 @@
             <div class="describe__row">
               <textarea id="describe-text" rows="2" maxlength="1000" data-i18n-ph="describe_placeholder"></textarea>
               <div class="describe__buttons">
-                <button type="button" class="btn btn--ghost mic" id="mic-btn" hidden><svg class="ico"><use href="#i-mic"/></svg><span id="mic-label" data-i18n="voice.speak"></span></button>
+                <button type="button" class="btn btn--ghost mic" id="mic-btn" hidden><svg class="ico"><use href="#i-mic"/></svg><span id="mic-label" data-i18n="voice.speak"></span><span class="mic__level" aria-hidden="true"><i id="mic-level"></i></span></button>
                 <button type="submit" class="btn btn--primary" id="describe-btn"><span data-i18n="understand_button"></span></button>
               </div>
             </div>
+            <p class="mic-hint" id="mic-hint" data-i18n="voice.hint" hidden></p>
           </form>
           <div class="flow__pick">
             <label class="field">

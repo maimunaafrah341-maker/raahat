@@ -87,6 +87,13 @@ Two optional settings for collecting validation data:
 - **Free / low-cost hospitals first**: a tick box (on by itself when someone says they can't pay or have a
   ration card) puts government, charitable and Aarogyasri hospitals first, but only among hospitals equally
   able to treat the emergency. A cheaper hospital never moves above a better-equipped one.
+- **If a hospital refuses emergency treatment**: a card (open by itself when someone says they were turned
+  away or asked to pay first) with the law in its own words (Clinical Establishments Act s.12(2), adopted by
+  Telangana in 2017) and the Supreme Court (Parmanand Katara, 1989); what to do right now, with a staff card
+  that adds the Supreme Court line; and, afterwards, the complaint routes, each cited: the district registering
+  authority (s.10, s.32, fines under s.40), the District Consumer Commission for paid care (IMA v. V.P. Shantha,
+  1995), a High Court petition for government hospitals (Paschim Banga, 1996) and free legal aid (NALSA, 15100).
+  General information, not legal advice; practical tips are marked as not from a cited source.
 
 ## Gemini quotas
 
@@ -173,11 +180,12 @@ a captcha, so entries are checked by hand.
 ## Voice
 
 For people who can't comfortably read or type: a mic button takes the description by voice (Telugu, Hindi,
-Urdu or English, via the browser's speech recognition) and goes straight to understanding it — no extra tap.
+Urdu or English) and goes straight to understanding it — no extra tap. Tap to start and tap to stop, or press and
+hold while talking like a WhatsApp voice note; a bar moves with the voice so people can see they're being heard.
 "Read aloud" buttons on the first-aid card, the next-steps guide and each answer use the phone's own voice for
-that language when it has one, skipping citation labels. Most phones and laptops have no Telugu or Urdu voice,
-so then the page asks `/api/speak`, which reads the text with Gemini text-to-speech (`backend/speech.py`) a sentence
-or two at a time: the first words play in about 4 seconds. Chunks are cached, so first-aid cards that many people
+English, skipping citation labels. Telugu, Hindi and Urdu always use the server's voice, because many phones list
+a voice for them that was never downloaded and then play nothing: the page asks `/api/speak`, which reads the text with Gemini text-to-speech (`backend/speech.py`) a sentence
+or two at a time, showing "Loading the voice…" until the first words play (about 4 seconds). Chunks are cached, so first-aid cards that many people
 read cost nothing after the first time, and each visitor is limited to 150 chunks per 10 minutes.
 
 ## First aid

@@ -6,7 +6,7 @@
  */
 "use strict";
 
-const CACHE = "raahat-v3";
+const CACHE = "raahat-v4";
 const SHELL = [
   "/", "/app.js", "/styles.css",
   "/api/i18n", "/api/injuries", "/api/situations", "/api/facilities", "/api/sources", "/api/conditions",

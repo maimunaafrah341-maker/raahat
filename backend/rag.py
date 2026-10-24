@@ -47,7 +47,9 @@ LOW_CONFIDENCE = 0.64
 
 # Short human-readable names used for citations in the generated text.
 DOC_TITLES = {
-    "clinical_establishments_act": "Clinical Establishments Act, 2010 (Telangana Rules, 2011)",
+    "clinical_establishments_act": "Clinical Establishments Act, 2010, s.12(2) (adopted by Telangana, 2017)",
+    "consumer_protection_medical": "Indian Medical Association v. V.P. Shantha (1995): consumer complaints about hospitals",
+    "legal_aid_nalsa": "Free legal aid (NALSA, Legal Services Authorities Act, 1987)",
     "paschim_banga_case": "Paschim Banga Khet Mazdoor Samity v. State of West Bengal (1996)",
     "telangana_aarogyasri": "Telangana Rajiv Aarogyasri Scheme",
     "telangana_bocw": "Telangana BOCW Welfare Board (BOCW Act, 1996)",
@@ -80,7 +82,8 @@ DOC_TITLES = {
     "danger_child": "Danger signs: baby or young child (NHS)",
 }
 LEGAL_DOCS = ("clinical_establishments_act", "paschim_banga_case", "telangana_aarogyasri", "telangana_bocw",
-              "parmanand_katara_case", "good_samaritan", "road_accident_cashless", "aarogyasri_how_to_use")
+              "parmanand_katara_case", "good_samaritan", "road_accident_cashless", "aarogyasri_how_to_use",
+              "consumer_protection_medical", "legal_aid_nalsa")
 
 # Injury key -> the first-aid document for it (keys match backend.triage.INJURIES).
 FIRST_AID_DOCS = {
@@ -314,12 +317,12 @@ SITUATIONS = {
     "asked_to_pay_first": {
         "label": "Asked to pay before emergency treatment",
         "phrase": "The hospital asked me to pay before giving emergency treatment",
-        "include": ["clinical_establishments_act"],
+        "include": ["clinical_establishments_act", "consumer_protection_medical"],
     },
     "turned_away": {
         "label": "Was turned away or told to wait by a hospital",
         "phrase": "A hospital turned me away or told me to wait instead of treating my emergency",
-        "include": ["clinical_establishments_act", "paschim_banga_case"],
+        "include": ["clinical_establishments_act", "paschim_banga_case", "parmanand_katara_case", "legal_aid_nalsa"],
     },
     "referred_elsewhere": {
         "label": "Told to go to another hospital",

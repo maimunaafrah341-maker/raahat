@@ -246,3 +246,11 @@ def test_saved_card_translations_keep_numbers_and_steps():
         assert len(entry["steps"]) == len(card["steps"]) and len(entry["cautions"]) == len(card["cautions"]), key
         for en, tr in zip(card["steps"] + card["cautions"], entry["steps"] + entry["cautions"]):
             assert _preserved(en, tr), (key, en, tr)
+
+
+def test_every_source_the_page_cites_exists():
+    js = (Path(__file__).resolve().parent.parent / "frontend" / "web" / "app.js").read_text(encoding="utf-8")
+    cited = set(re.findall(r'citePill\("([a-z_]+)"\)', js))
+    assert {"consumer_protection_medical", "legal_aid_nalsa", "parmanand_katara_case"} <= cited
+    for doc_id in cited:
+        assert doc_id in rag.DOC_TITLES and rag.doc_verified(doc_id), doc_id

@@ -452,7 +452,7 @@ function renderSteps() {
     `<li class="${urgent ? "is-urgent" : ""}"><div>${inlineMd(t("steps.call"))}${tell}${guideCards(state.triage.injury.key)}</div></li>`,
     `<li><div>${go}${f.phone ? callScript(f, f.data_level === "unchecked") : ""}</div></li>`,
     ...(state.checklistRules ? [`<li><div>${checklistHtml(f)}</div></li>`] : []),
-    `<li><div>${esc(t("steps.ask"))}${citePill("clinical_establishments_act")}</div></li>`,
+    `<li><div>${esc(t("steps.ask"))}${citePill("clinical_establishments_act")}${refuseCardHtml()}</div></li>`,
     `<li><div>${esc(t(`steps.emp_${empKey(f)}`))}${citePill("telangana_aarogyasri")}${payCardHtml()}</div></li>`,
   ];
   if (worker) steps.push(`<li><div>${esc(t("steps.bocw"))}${citePill("telangana_bocw")}</div></li>`);
@@ -477,6 +477,7 @@ function renderSteps() {
     <ol>${steps.join("")}</ol>`;
   $("share-btn").addEventListener("click", () => shareFacility(f));
   $("desk-btn").addEventListener("click", () => openDeskCard(f));
+  $("refuse-desk").addEventListener("click", () => openDeskCard(f, true));
 }
 
 /* ---------- paying for treatment: with a card, and without one ---------- */
@@ -491,6 +492,38 @@ function payCardHtml() {
   </div>`;
 }
 
+/* ---------- if a hospital refuses: the law, what to do now, and complaint routes afterwards ---------- */
+const REFUSED = ["turned_away", "asked_to_pay_first", "referred_elsewhere"];
+function refuseCardHtml() {
+  const open = REFUSED.some((s) => state.chosenSituations.has(s));
+  const tip = '<span class="docs__star" aria-hidden="true">*</span>';
+  return `<details class="refuse"${open ? " open" : ""}>
+    <summary><svg class="ico"><use href="#i-alert"/></svg>${esc(t("refuse.title"))}</summary>
+    <div class="refuse__body">
+      ${speakButton(".refuse__body")}
+      <p class="refuse__law">${esc(t("refuse.law"))}${citePill("clinical_establishments_act")}</p>
+      <p>${esc(t("refuse.court"))}${citePill("parmanand_katara_case")}</p>
+      <p class="refuse__h">${esc(t("refuse.now"))}</p>
+      <ul class="refuse__list">
+        <li>${esc(t("refuse.now_ask"))}</li>
+        <li>${esc(t("refuse.now_go"))}${tip}</li>
+        <li>${esc(t("refuse.now_note"))}${tip}</li>
+      </ul>
+      <button type="button" class="btn btn--primary btn--sm" id="refuse-desk"><svg class="ico"><use href="#i-doc"/></svg>${esc(t("refuse.show"))}</button>
+      <p class="refuse__h">${esc(t("refuse.later"))}</p>
+      <ul class="refuse__list">
+        <li>${esc(t("refuse.dra"))}${citePill("clinical_establishments_act")}</li>
+        <li>${esc(t("refuse.consumer"))}${citePill("consumer_protection_medical")}</li>
+        <li>${esc(t("refuse.court_case"))}${citePill("paschim_banga_case")}</li>
+        <li>${esc(t("refuse.aid"))}${citePill("legal_aid_nalsa")}</li>
+      </ul>
+      <a class="btn btn--ghost btn--sm refuse__aid" href="tel:15100" ><svg class="ico"><use href="#i-phone"/></svg>${esc(t("refuse.call_aid"))}</a>
+      <p class="refuse__note">${esc(t("refuse.note"))}</p>
+      <p class="docs__tip">* ${esc(t("docs.tip"))}</p>
+    </div>
+  </details>`;
+}
+
 /* ---------- "show to hospital staff": what to say, when someone can't say it ---------- */
 function tIn(lang, key, params) {
   let s = state.strings[lang]?.[key] || state.strings.en?.[key] || "";
@@ -498,12 +531,14 @@ function tIn(lang, key, params) {
   return s;
 }
 // The same fixed, hand-written sentences as the rest of the page: nothing here is generated.
-function deskLines(lang, f) {
+function deskLines(lang, f, refused = false) {
   const injury = state.triage.injury.key;
   const who = [...state.conditions].map((c) => tIn(lang, `condition.${c}`)).join(", ");
   const lines = [`<p class="desk__what">${esc(tIn(lang, `injury.${injury}`))}</p>`];
   if (who) lines.push(`<p class="desk__who"><b>${esc(tIn(lang, "desk.who"))}:</b> ${esc(who)}</p>`);
   lines.push(`<p class="desk__ask">${esc(tIn(lang, "desk.stabilise"))}</p>`, `<p>${esc(tIn(lang, "desk.law"))}</p>`);
+  // Being refused: add the Supreme Court's words and a polite request to put the reason in writing.
+  if (refused) lines.push(`<p>${esc(tIn(lang, "desk.court"))}</p>`, `<p class="desk__ask">${esc(tIn(lang, "desk.refused"))}</p>`);
   if (state.chosenSituations.has("road_accident") || state.chosenSituations.has("helped_stranger")) {
     lines.push(`<p>${esc(tIn(lang, "desk.police"))}</p>`);
   }
@@ -513,22 +548,23 @@ function deskLines(lang, f) {
   }
   return lines.join("");
 }
-function openDeskCard(f) {
+function openDeskCard(f, refused = false) {
   const dlg = $("desk");
-  const cites = ["clinical_establishments_act",
-    ...(state.chosenSituations.has("road_accident") ? ["parmanand_katara_case", "road_accident_cashless"] : [])]
+  const cites = [...new Set(["clinical_establishments_act",
+    ...(refused ? ["parmanand_katara_case"] : []),
+    ...(state.chosenSituations.has("road_accident") ? ["parmanand_katara_case", "road_accident_cashless"] : [])])]
     .map((d) => `<span class="cite">${citeText(d)}</span>`).join(" ");
   dlg.innerHTML = `<div class="desk">
     <div class="desk__top"><p class="desk__hint">${esc(t("desk.hint"))}</p>
       <button type="button" class="btn btn--ghost btn--sm" id="desk-close">${esc(t("desk.close"))}</button></div>
     <p class="desk__title">🚑 ${esc(t("desk.title"))}</p>
-    <div class="desk__body" lang="${state.lang}">${deskLines(state.lang, f)}</div>
-    ${state.lang !== "en" ? `<div class="desk__body desk__body--en" lang="en" dir="ltr"><p class="desk__label">${esc(t("desk.english"))}</p>${deskLines("en", f)}</div>` : ""}
+    <div class="desk__body" lang="${state.lang}">${deskLines(state.lang, f, refused)}</div>
+    ${state.lang !== "en" ? `<div class="desk__body desk__body--en" lang="en" dir="ltr"><p class="desk__label">${esc(t("desk.english"))}</p>${deskLines("en", f, refused)}</div>` : ""}
     <p class="desk__cites">${cites}</p>
   </div>`;
   $("desk-close").addEventListener("click", () => dlg.close());
   dlg.showModal();
-  track("action", "desk_card", { facility_id: f.id, tier: f.tier });
+  track("action", refused ? "refuse_desk" : "desk_card", { facility_id: f.id, tier: f.tier });
 }
 
 /* ---------- documents to carry (rules: backend/checklist.py) ---------- */
@@ -838,6 +874,14 @@ async function fetchSpeech(text, lang) {
 async function speakWithServer(btn, text, lang) {
   const job = { audio: new Audio(), aborted: false, urls: [] };
   serverSpeech = job;
+  // The first words take a few seconds: say so, or people tap again (which stops it) and think it's broken.
+  btn.classList.add("is-loading");
+  btn.querySelector("span").textContent = t("voice.loading");
+  job.audio.addEventListener("playing", () => {
+    if (speakingBtn !== btn) return;
+    btn.classList.remove("is-loading");
+    btn.querySelector("span").textContent = t("voice.stop");
+  });
   const chunks = speechChunks(text);
   let next = fetchSpeech(chunks[0], lang);
   try {
@@ -869,7 +913,10 @@ function stopSpeaking() {
     serverSpeech.urls.forEach((u) => URL.revokeObjectURL(u));
     serverSpeech = null;
   }
-  if (speakingBtn) speakingBtn.querySelector("span").textContent = t("voice.read");
+  if (speakingBtn) {
+    speakingBtn.classList.remove("is-loading", "is-speaking");
+    speakingBtn.querySelector("span").textContent = t("voice.read");
+  }
   speakingBtn = null;
 }
 
@@ -881,11 +928,13 @@ function toggleSpeak(btn) {
   const text = speakableText(root);
   if (!text) return;
   speakingBtn = btn;
+  btn.classList.add("is-speaking");
   btn.querySelector("span").textContent = t("voice.stop");
   track("action", "read_aloud");
   const voice = voiceFor(state.lang);
-  // Never read Telugu/Hindi/Urdu text with an English voice: it would be unintelligible.
-  if (!voice && (state.lang !== "en" || !("speechSynthesis" in window))) {
+  // Telugu, Hindi and Urdu always use the server's voice: many phones list a voice for them that
+  // was never downloaded, and then the browser plays nothing at all. English uses the phone's own.
+  if (state.lang !== "en" || !voice) {
     speakWithServer(btn, text, state.lang);
     return;
   }
@@ -983,6 +1032,7 @@ function micState(mode) {
   const btn = $("mic-btn");
   btn.classList.toggle("is-listening", mode === "listening");
   btn.disabled = mode === "processing";
+  if (mode !== "listening") $("mic-level").style.transform = "scaleX(0)";
   $("mic-label").textContent = t(mode === "listening" ? "voice.listening" : mode === "processing" ? "voice.processing" : "voice.speak");
 }
 
@@ -1013,6 +1063,7 @@ async function startRecording() {
     const rms = Math.sqrt(sum / buf.length);
     const now = Date.now();
     if (rms > 0) rec.signal = true;
+    $("mic-level").style.transform = `scaleX(${Math.min(1, rms * 12).toFixed(2)})`;
     // Some phones never feed the level meter; then only a tap or the time cap ends the recording.
     if (!rec.signal && now - rec.started > 2000) { if (now - rec.started > MAX_LISTEN_MS) stopRecording(); return; }
     if (now - rec.started < 500) { rec.noise = Math.max(rec.noise, rms); return; }
@@ -1081,6 +1132,28 @@ function onMic() {
     if (rec.mr?.state === "recording") stopRecording();
     else if (!$("mic-btn").disabled) startRecording();
   } else toggleListening();
+}
+
+// Tap to start and tap to stop, or press and hold while talking like a WhatsApp voice note:
+// people used to voice notes hold the button and let go, which a tap-only button ignores.
+const HOLD_MS = 700;
+function wireMic() {
+  const btn = $("mic-btn");
+  if (!CAN_RECORD) { btn.addEventListener("click", onMic); return; }
+  let pressedAt = 0;
+  btn.addEventListener("pointerdown", (ev) => {
+    if (btn.disabled || ev.button > 0) return;
+    pressedAt = Date.now();
+    onMic();
+  });
+  btn.addEventListener("pointerup", () => {
+    const held = pressedAt && Date.now() - pressedAt > HOLD_MS;
+    pressedAt = 0;
+    if (held && rec.mr?.state === "recording") stopRecording();
+  });
+  btn.addEventListener("contextmenu", (ev) => ev.preventDefault()); // long press shouldn't open a menu
+  btn.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onMic(); } });
+  btn.addEventListener("click", (ev) => ev.preventDefault());
 }
 
 // "Was this helpful?" -- one answer per item; the choice is remembered so it isn't asked twice.
@@ -1285,6 +1358,7 @@ async function init() {
     const a = ev.target.closest("a");
     if (!a) return;
     if (a.getAttribute("href") === "tel:108") track("action", "call_108");
+    else if (a.classList.contains("refuse__aid")) track("action", "call_legal_aid");
     else if (a.classList.contains("helpline") || a.classList.contains("helpline-link")) track("action", "call_helpline");
     else if (a.classList.contains("call-hospital")) {
       const f = state.triage?.results.find((x) => x.id === Number(a.dataset.id));
@@ -1348,7 +1422,7 @@ async function init() {
   });
   $("ent-facility").addEventListener("change", () => selectFacility(Number($("ent-facility").value)));
   $("describe-form").addEventListener("submit", onDescribe);
-  if (CAN_RECORD || SpeechRec) { $("mic-btn").hidden = false; $("mic-btn").addEventListener("click", onMic); }
+  if (CAN_RECORD || SpeechRec) { $("mic-btn").hidden = false; $("mic-hint").hidden = false; wireMic(); }
   // Phones: the helplines list starts folded so the form is the first thing on screen.
   if (window.matchMedia("(max-width: 600px)").matches) $("helplines-box").open = false;
   document.addEventListener("click", (ev) => {

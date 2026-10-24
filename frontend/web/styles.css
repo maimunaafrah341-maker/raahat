@@ -314,13 +314,25 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .sources-band__label { letter-spa
 
 /* voice */
 .describe__buttons { display: flex; flex-direction: column; gap: 8px; }
-.mic.is-listening { border-color: var(--danger); color: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
+.mic { position: relative; min-height: 48px; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; border: 1.5px solid var(--primary); color: var(--primary-ink); font-weight: 800; }
+.mic.is-listening { border-color: var(--danger); background: var(--danger); color: #fff; animation: pulse 1.4s ease-in-out infinite; }
+/* A bar that moves with her voice, so she can see the phone is hearing her. */
+.mic__level { display: none; position: absolute; left: 14px; right: 14px; bottom: 6px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .35); overflow: hidden; }
+.mic.is-listening .mic__level { display: block; }
+.mic__level i { display: block; height: 100%; width: 100%; background: #fff; transform-origin: left; transform: scaleX(0); transition: transform .1s linear; }
+.mic:disabled { opacity: .85; cursor: progress; }
+.mic-hint { margin-top: 8px; font-size: .85rem; color: var(--muted); }
 .speak-btn {
-  display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
-  border: 1px solid var(--line); background: #fff; color: var(--primary-ink); border-radius: 999px;
-  padding: 6px 12px; font-size: .84rem; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; min-height: 44px;
+  border: 1.5px solid var(--primary); background: var(--primary-soft); color: var(--primary-ink); border-radius: 999px;
+  padding: 8px 16px; font-size: .95rem; font-weight: 800; cursor: pointer;
 }
-.speak-btn:hover { border-color: var(--primary); }
+.speak-btn .ico { width: 20px; height: 20px; }
+.speak-btn:hover { background: #cfe8e4; }
+.speak-btn.is-speaking { background: var(--primary); color: #fff; }
+.speak-btn.is-loading { background: var(--primary-soft); color: var(--primary-ink); }
+.speak-btn.is-loading .ico { animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .2; } }
 .firstaid__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .firstaid__head .speak-btn { margin-top: 0; }
 .steps__actions .speak-btn { margin-top: 0; padding: 8px 14px; }
@@ -460,6 +472,16 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .understood-card__title { text-tr
 .pay__opt { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
 .pay__opt summary { cursor: pointer; font-weight: 700; color: var(--primary-ink); }
 .pay__opt p { margin-top: 6px; font-size: .92rem; }
+.refuse { margin-top: 10px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--danger, #c8323c); border-radius: 14px; padding: 10px 14px; font-weight: 400; }
+.refuse summary { cursor: pointer; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+.refuse summary .ico { color: var(--danger, #c8323c); flex: none; }
+.refuse__body { margin-top: 8px; font-size: .92rem; }
+.refuse__body > p { margin-top: 6px; }
+.refuse__law { font-weight: 600; }
+.refuse__h { margin-top: 12px !important; font-weight: 800; color: var(--primary-ink); }
+.refuse__list { margin: 4px 0 8px 18px; display: grid; gap: 6px; }
+.refuse__aid { margin-top: 2px; }
+.refuse__note { color: var(--muted); font-size: .85rem; }
 
 .phone-src { font-size: .8rem; color: var(--muted); margin-top: 8px; }
 .phone-src a { color: var(--primary-ink); }
@@ -533,8 +555,8 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .understood-card__title { text-tr
   .where__or { padding: 0; text-align: center; }
   .preview { display: none; }
   .describe__row { flex-direction: column; }
-  .describe__buttons { flex-direction: row; }
-  .describe__buttons .btn { flex: 1; }
+  .describe__buttons { flex-direction: column; }
+  .describe__buttons .btn { width: 100%; border-radius: 16px; }
   .tiles { gap: 10px; }
   .tile { flex-direction: column; text-align: center; padding: 14px 10px; }
   .stats__grid { grid-template-columns: repeat(2, 1fr); row-gap: 18px; }
