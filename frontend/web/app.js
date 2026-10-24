@@ -1360,10 +1360,12 @@ async function enableOffline() {
   if (!navigator.onLine || navigator.connection?.saveData) return;
   const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 3000));
   idle(async () => {
-    const urls = [
-      ...state.injuries.map((i) => `/api/first_aid?injury=${encodeURIComponent(i.key)}&language=en`),
-      ...state.conditionList.map((c) => `/api/danger_signs?condition=${encodeURIComponent(c.key)}&language=en`),
-    ];
+    // The person's own language too: those translations are saved on the server, so this is quick.
+    const langs = [...new Set(["en", state.lang])];
+    const urls = langs.flatMap((lang) => [
+      ...state.injuries.map((i) => `/api/first_aid?injury=${encodeURIComponent(i.key)}&language=${lang}`),
+      ...state.conditionList.map((c) => `/api/danger_signs?condition=${encodeURIComponent(c.key)}&language=${lang}`),
+    ]);
     for (const u of urls) { try { await fetch(u); } catch { return; } }
     $("offline-ready").hidden = false;
   });
