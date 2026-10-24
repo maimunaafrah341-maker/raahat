@@ -128,6 +128,7 @@ function applyLanguage() {
   $("title-a").textContent = a || "";
   $("title-b").textContent = b || "";
   renderInjuryControls();
+  renderPics();
   if (state.localities) renderLocalities();
   renderLegend();
   renderHelplines();
@@ -167,6 +168,44 @@ function pickInjury(key) {
   state.understood = { injury: key, picked: true, life_threatening_signs: u.life_threatening_signs };
   renderUnderstood();
   renderSteps();
+}
+
+/* ---------- picture buttons: tap what happened, no reading or typing needed ---------- */
+// The emergencies people bring most often. Everything else is in "Type it, or choose from the full list".
+const PICS = [
+  { key: "fracture", icon: "🦴" },
+  { key: "deep_cut", icon: "🩸", label: "bleeding" },
+  { key: "chest_pain", icon: "💔", label: "chest" },
+  { key: "collapsed_not_breathing", icon: "😵", label: "collapsed" },
+  { key: "fall_polytrauma", icon: "🏍️", label: "accident", situation: "road_accident" },
+  { key: "burns", icon: "🔥", label: "burn" },
+  { key: "pregnancy_problem", icon: "🤰", label: "pregnancy" },
+  { key: "child_unwell", icon: "👶", label: "child" },
+  { key: "other", icon: "➕", label: "other" },
+];
+function renderPics() {
+  $("pics").innerHTML = PICS.map((p) => `<button type="button" class="pic" data-pic="${p.key}" aria-pressed="${state.injury === p.key && !!state.understood?.picked}">
+    <span class="pic__icon" aria-hidden="true">${p.icon}</span><span class="pic__label">${esc(t(`pic.${p.label || p.key}`))}</span></button>`).join("");
+}
+function onPic(ev) {
+  const btn = ev.target.closest(".pic");
+  if (!btn) return;
+  const p = PICS.find((x) => x.key === btn.dataset.pic);
+  if (p.key === "other") {
+    $("more-ways").open = true;
+    $("injury").focus();
+    $("more-ways").scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (p.situation) { state.chosenSituations.add(p.situation); renderChips(); }
+  pickInjury(p.key);
+  // Life-threatening picks (not breathing, chest pain) show "call 108 now" first.
+  if (state.injuries.find((i) => i.key === p.key)?.group === "urgent") {
+    state.understood.life_threatening_signs = true;
+    renderUnderstood();
+  }
+  renderPics();
+  $("understood").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 /* ---------- describe (free text -> suggestions) ---------- */
@@ -656,6 +695,23 @@ function reportBlock(f) {
     <div class="chips">${REPORTS.map((r) => `<button type="button" class="chip report__btn" data-id="${f.id}" data-value="${r}">${esc(t(`report.${r}`))}</button>`).join("")}</div></div>`;
 }
 
+// One hospital, one decision: name, distance and the two buttons that matter. Details stay below.
+function renderBest(f) {
+  const box = $("best");
+  box.hidden = !f;
+  if (!f) { box.innerHTML = ""; return; }
+  box.innerHTML = `
+    <p class="best__label">${esc(t("best.title"))}</p>
+    <p class="best__name">${esc(f.name)}</p>
+    <p class="best__meta">${tierPill(f)} <span>${esc(t("best.km", { km: Number(f.distance_km).toFixed(1) }))}</span></p>
+    <div class="best__actions">
+      ${phoneButton(f, true)}
+      <a class="btn ${f.phone ? "btn--ghost" : "btn--primary"} dir-link" data-id="${f.id}" href="${directionsUrl(f)}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-nav"/></svg>${esc(t("directions"))}</a>
+      ${speakButton(".best")}
+    </div>
+    <p class="best__more">${esc(t("best.more"))}</p>`;
+}
+
 function renderResults() {
   const { results, origin, injury } = state.triage;
   const item = state.injuries.find((i) => i.key === injury.key);
@@ -683,6 +739,7 @@ function renderResults() {
   const best = researched.slice(0, 3).map((f) => f.distance_km);
   const nearer = best.length ? Math.min(...best) : Infinity;
   const closer = results.filter((f) => f.tier === "unchecked" && f.distance_km < nearer).slice(0, 4);
+  renderBest(researched[0] || results[0]);
   const card = (f) => `
     <li class="fac" style="--tier:${TIER_COLOR[f.tier]}" data-id="${f.id}" tabindex="0" aria-current="${f.id === state.selectedId}">
       <div class="fac__name"><span class="fac__rank">#${f.rank}</span>${esc(f.name)}</div>
@@ -832,7 +889,7 @@ function voiceFor(lang) {
 // Text a person should hear: skip citation badges, buttons, notes and collapsed English originals.
 function speakableText(root) {
   const clone = root.cloneNode(true);
-  clone.querySelectorAll(".cite, details, button, .firstaid__note, .mt-label, .model, .steps__for, .steps__actions, .from, .feedback, .docs__tip, input")
+  clone.querySelectorAll(".cite, details, button, .firstaid__note, .mt-label, .model, .steps__for, .steps__actions, .from, .feedback, .docs__tip, .eyebrow, .best__actions, input")
     .forEach((n) => n.remove());
   // A detached clone has no layout, so separate list items and paragraphs explicitly (gives the voice a pause).
   clone.querySelectorAll("li, p, h3").forEach((n) => n.append(" "));
@@ -1333,7 +1390,8 @@ async function init() {
     $("geo-status").hidden = true;
   });
   $("radius").addEventListener("input", () => ($("radius-val").textContent = $("radius").value));
-  $("injury").addEventListener("change", () => pickInjury($("injury").value));
+  $("injury").addEventListener("change", () => { pickInjury($("injury").value); renderPics(); });
+  $("pics").addEventListener("click", onPic);
   $("geo-btn").addEventListener("click", useMyLocation);
   $("cond-chips").addEventListener("click", (ev) => {
     const chip = ev.target.closest(".chip");

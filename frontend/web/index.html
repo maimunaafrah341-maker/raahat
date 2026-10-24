@@ -70,6 +70,7 @@
           <p class="eyebrow"><span class="eyebrow__dot"></span><span data-i18n="caption"></span></p>
           <h1 class="hero__title"><span id="title-a"></span> <span id="title-b" class="accent"></span></h1>
           <p class="hero__sub" data-i18n="hero_sub"></p>
+          <button type="button" class="speak-btn hero__listen" data-speak=".hero__copy"><svg class="ico"><use href="#i-speaker"/></svg><span data-i18n="voice.read"></span></button>
 
           <div class="sos-hero" role="note">
             <a class="btn btn--sos" href="tel:108"><svg class="ico"><use href="#i-phone"/></svg><span data-i18n="call108.button"></span></a>
@@ -89,27 +90,33 @@
       <div class="flow card">
         <div class="flow__step">
           <h2 class="flow__title" id="flow-what"><span class="flow__num">1</span><span data-i18n="flow.what"></span></h2>
-          <form id="describe-form" class="describe">
-            <p class="describe__hint" data-i18n="describe_label"></p>
-            <div class="describe__row">
-              <textarea id="describe-text" rows="2" maxlength="1000" data-i18n-ph="describe_placeholder"></textarea>
-              <div class="describe__buttons">
-                <button type="button" class="btn btn--ghost mic" id="mic-btn" hidden><svg class="ico"><use href="#i-mic"/></svg><span id="mic-label" data-i18n="voice.speak"></span><span class="mic__level" aria-hidden="true"><i id="mic-level"></i></span></button>
-                <button type="submit" class="btn btn--primary" id="describe-btn"><span data-i18n="understand_button"></span></button>
+          <!-- The first thing anyone sees: one big button to speak, and pictures to tap. -->
+          <button type="button" class="btn mic mic--big" id="mic-btn" hidden><svg class="ico"><use href="#i-mic"/></svg><span id="mic-label" data-i18n="voice.speak"></span><span class="mic__level" aria-hidden="true"><i id="mic-level"></i></span></button>
+          <p class="mic-hint" id="mic-hint" data-i18n="voice.hint" hidden></p>
+          <p class="pics__label" data-i18n="pics.label"></p>
+          <div class="pics" id="pics"></div>
+          <details class="more-ways" id="more-ways">
+            <summary data-i18n="flow.type_or_list"></summary>
+            <form id="describe-form" class="describe">
+              <p class="describe__hint" data-i18n="describe_label"></p>
+              <div class="describe__row">
+                <textarea id="describe-text" rows="2" maxlength="1000" data-i18n-ph="describe_placeholder"></textarea>
+                <div class="describe__buttons">
+                  <button type="submit" class="btn btn--primary" id="describe-btn"><span data-i18n="understand_button"></span></button>
+                </div>
+              </div>
+            </form>
+            <div class="flow__pick">
+              <label class="field">
+                <span class="field__label" data-i18n="flow.or_choose"></span>
+                <select id="injury"></select>
+              </label>
+              <div class="conds">
+                <span class="field__label" data-i18n="conditions_label"></span>
+                <div id="cond-chips" class="chips"></div>
               </div>
             </div>
-            <p class="mic-hint" id="mic-hint" data-i18n="voice.hint" hidden></p>
-          </form>
-          <div class="flow__pick">
-            <label class="field">
-              <span class="field__label" data-i18n="flow.or_choose"></span>
-              <select id="injury"></select>
-            </label>
-            <div class="conds">
-              <span class="field__label" data-i18n="conditions_label"></span>
-              <div id="cond-chips" class="chips"></div>
-            </div>
-          </div>
+          </details>
           <div id="understood" class="understood" aria-live="polite"></div>
         </div>
 
@@ -148,6 +155,7 @@
         <h2 class="section__title" id="found"></h2>
         <p class="muted" data-i18n="tap_hint"></p>
       </div>
+      <div id="best" class="best card" hidden></div>
       <p id="spec-note" class="note note--info" hidden></p>
       <div class="metrics">
         <div class="metric"><span data-i18n="metric_specialists"></span><b id="m-specialists"></b></div>

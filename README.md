@@ -84,6 +84,10 @@ Two optional settings for collecting validation data:
 - **Mental health crisis.** An emergency type with Tele-MANAS (14416, free, 24x7), Roshni (Hyderabad)
   and 108 as call buttons, and sourced steps (NHS). Suicidal or self-harm talk counts as life-threatening.
 - **Paying for treatment, with or without a card**: what to do at the Aarogya Mithra desk in each case.
+- **A first screen anyone can use**: older and less-educated testers didn't understand what the app was for,
+  so the top now says it in one plain sentence (with a Read aloud button), then one big "Press and speak"
+  button and nine picture buttons for the most common emergencies. Typing and the full list are folded
+  underneath. Results start with one hospital: name, distance, Call and Directions.
 - **Free / low-cost hospitals first**: a tick box (on by itself when someone says they can't pay or have a
   ration card) puts government, charitable and Aarogyasri hospitals first, but only among hospitals equally
   able to treat the emergency. A cheaper hospital never moves above a better-equipped one.

@@ -570,3 +570,38 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .understood-card__title { text-tr
   .ent__form, .ent__result { padding: 20px; }
   .ask { flex-direction: column; }
 }
+
+/* ---------- simple first screen: speak, or tap a picture ---------- */
+.hero__listen { margin-top: 14px; }
+.mic--big { width: 100%; justify-content: center; min-height: 64px; margin-top: 8px; font-size: 1.15rem; border-radius: 18px;
+  background: var(--primary); border-color: var(--primary); color: #fff; }
+.mic--big .ico { width: 26px; height: 26px; }
+.mic--big:hover { background: var(--primary-ink); }
+.mic--big.is-listening { background: var(--danger); border-color: var(--danger); }
+.pics__label { margin-top: 20px; font-weight: 800; color: var(--ink); }
+.pics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.pic { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 104px;
+  padding: 12px 8px; border: 1.5px solid var(--line); border-radius: 16px; background: #fff; cursor: pointer;
+  font: inherit; font-weight: 700; color: var(--ink); text-align: center; line-height: 1.25; }
+.pic:hover { border-color: var(--primary); }
+.pic[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 2px var(--primary) inset; }
+.pic__icon { font-size: 2.1rem; line-height: 1; }
+.pic__label { font-size: .92rem; }
+.more-ways { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+.more-ways > summary { cursor: pointer; font-weight: 700; color: var(--primary-ink); }
+.more-ways[open] > summary { margin-bottom: 12px; }
+
+/* ---------- the one best hospital, first in the results ---------- */
+.best { margin-top: 14px; padding: 18px 20px; border: 2px solid var(--primary); }
+.best__label { font-size: .85rem; font-weight: 800; color: var(--primary-ink); text-transform: uppercase; letter-spacing: .04em; }
+.best__name { margin-top: 4px; font-size: 1.35rem; font-weight: 800; color: var(--ink); line-height: 1.25; }
+.best__meta { margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-weight: 600; }
+.best__actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.best__actions .btn { min-height: 52px; font-size: 1.05rem; padding: 0 22px; }
+.best__actions .speak-btn { margin-top: 0; }
+.best__more { margin-top: 12px; font-size: .88rem; color: var(--muted); }
+@media (max-width: 600px) {
+  .pic { min-height: 96px; }
+  .pic__label { font-size: .85rem; }
+  .best__actions .btn { flex: 1 1 100%; justify-content: center; }
+}
