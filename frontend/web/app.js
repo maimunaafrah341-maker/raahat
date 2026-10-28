@@ -161,7 +161,7 @@ function setInjury(key) {
   state.injury = key;
   $("injury").value = key;
 }
-// Choosing from the list shows that emergency's first-aid card right away, like describing it does.
+// Choosing from the list works like describing it: we show what was chosen, and first aid comes with the hospitals.
 function pickInjury(key) {
   setInjury(key);
   const u = state.understood || {};
@@ -284,9 +284,9 @@ function renderUnderstood() {
           u.area ? ` · ${esc(t("understood.area", { area: u.area }))}` : ""}</p>
         <p class="understood-card__next">${esc(u.knowPlace ? t("understood.confirm_place") : t("understood.need_place"))} ${esc(t("understood.change"))}</p>
       </div>`;
-    }
-    html += guideCards(u.injury);
-  } else html += `<p class="note note--info">${esc(t("not_understood"))}</p>${guideCards(null)}`;
+    } else html += `<p class="note note--info">${esc(t("understood.confirm_place"))}</p>`;
+    // First aid comes with the hospital list (step 1 of "Your next steps"), after "Find hospitals".
+  } else html += `<p class="note note--info">${esc(t("not_understood"))}</p>`;
   box.innerHTML = html;
 }
 
@@ -1422,7 +1422,7 @@ async function init() {
     $("geo-status").hidden = true;
   });
   $("radius").addEventListener("input", () => ($("radius-val").textContent = $("radius").value));
-  $("injury").addEventListener("change", () => { pickInjury($("injury").value); renderPics(); });
+  $("injury").addEventListener("change", () => { clearResults(); pickInjury($("injury").value); renderPics(); });
   $("pics").addEventListener("click", onPic);
   $("geo-btn").addEventListener("click", useMyLocation);
   $("cond-chips").addEventListener("click", (ev) => {
