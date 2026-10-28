@@ -493,7 +493,8 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .understood-card__title { text-tr
 .desk { padding: 22px; }
 .desk__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .desk__hint { font-size: .85rem; color: var(--muted); }
-.desk__title { margin-top: 10px; font-size: 1.6rem; font-weight: 800; color: var(--danger); }
+.desk__title { margin-top: 10px; font-size: 1.6rem; font-weight: 800; color: var(--danger); display: flex; align-items: center; gap: 10px; }
+.desk__title .ico { width: 30px; height: 30px; padding: 5px; border-radius: 8px; background: var(--danger); color: #fff; stroke-width: 3; }
 .desk__body { margin-top: 12px; font-size: 1.3rem; line-height: 1.5; display: grid; gap: 10px; }
 .desk__body--en { font-size: 1.05rem; border-top: 2px dashed var(--line); padding-top: 12px; text-align: left; }
 .desk__what { font-weight: 800; font-size: 1.15em; }

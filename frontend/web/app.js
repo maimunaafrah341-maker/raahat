@@ -596,7 +596,7 @@ function openDeskCard(f, refused = false) {
   dlg.innerHTML = `<div class="desk">
     <div class="desk__top"><p class="desk__hint">${esc(t("desk.hint"))}</p>
       <button type="button" class="btn btn--ghost btn--sm" id="desk-close">${esc(t("desk.close"))}</button></div>
-    <p class="desk__title">🚑 ${esc(t("desk.title"))}</p>
+    <p class="desk__title"><svg class="ico"><use href="#i-plus"/></svg>${esc(t("desk.title"))}</p>
     <div class="desk__body" lang="${state.lang}">${deskLines(state.lang, f, refused)}</div>
     ${state.lang !== "en" ? `<div class="desk__body desk__body--en" lang="en" dir="ltr"><p class="desk__label">${esc(t("desk.english"))}</p>${deskLines("en", f, refused)}</div>` : ""}
     <p class="desk__cites">${cites}</p>
@@ -804,7 +804,7 @@ function drawMap(origin, results) {
   state.layer.clearLayers();
   state.markers = {};
   const you = L.marker([origin.lat, origin.lng], { icon: L.divIcon({ className: "", html: '<div class="you"></div>', iconSize: [18, 18] }), zIndexOffset: 1000 });
-  you.bindTooltip("📍").addTo(state.layer);
+  you.bindTooltip(t("you_are_here") || "You").addTo(state.layer);
 
   for (const f of results) {
     const icon = L.divIcon({
@@ -1237,8 +1237,8 @@ function wireMic() {
 function feedbackHtml(question, chosen, attrs) {
   if (chosen) return `<p class="feedback__thanks">${esc(t("helpful.thanks"))}</p>`;
   return `<div class="feedback__row"><span>${esc(question)}</span>
-    <button type="button" class="chip feedback__btn" ${attrs} data-value="yes">👍 ${esc(t("helpful.yes"))}</button>
-    <button type="button" class="chip feedback__btn" ${attrs} data-value="no">👎 ${esc(t("helpful.no"))}</button></div>`;
+    <button type="button" class="chip feedback__btn" ${attrs} data-value="yes">${esc(t("helpful.yes"))}</button>
+    <button type="button" class="chip feedback__btn" ${attrs} data-value="no">${esc(t("helpful.no"))}</button></div>`;
 }
 // Which document each answer came from and when it was last checked, always visible.
 function sourceLine(sources) {
