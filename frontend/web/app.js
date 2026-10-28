@@ -198,6 +198,7 @@ function onPic(ev) {
     return;
   }
   if (p.situation) { state.chosenSituations.add(p.situation); renderChips(); }
+  clearResults();
   pickInjury(p.key);
   // Life-threatening picks (not breathing, chest pain) show "call 108 now" first.
   if (state.injuries.find((i) => i.key === p.key)?.group === "urgent") {
@@ -206,6 +207,14 @@ function onPic(ev) {
   }
   renderPics();
   $("understood").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// A new emergency hides the previous hospital list until the person searches again.
+function clearResults() {
+  if ($("results").hidden) return;
+  $("results").hidden = true;
+  $("entitlements").hidden = true;
+  state.triage = null;
 }
 
 /* ---------- describe (free text -> suggestions) ---------- */
@@ -243,12 +252,13 @@ function applyUnderstanding(res, text) {
     $("locality").value = res.area;
     $("locality").dispatchEvent(new Event("change")); // a named area replaces "my location"
   }
-  const knowPlace = !!(res.area && LOCALITIES[res.area]) || $("use-coords").checked;
-  state.understood.autoSearch = !!res.injury && knowPlace;
+  // Never jump to the hospital list: show what we understood and the first aid, then let the person
+  // confirm where they are and tap "Find hospitals" themselves.
+  state.understood.knowPlace = !!(res.area && LOCALITIES[res.area]) || $("use-coords").checked;
+  clearResults();
   renderUnderstood();
   renderSteps();
-  if (state.understood.autoSearch) runSearch();
-  else $("understood").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("understood").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderUnderstood() {
@@ -272,7 +282,7 @@ function renderUnderstood() {
         ${u.summary ? `<p class="understood-card__summary">${esc(u.summary)}</p>` : ""}
         <p class="understood-card__row"><b>${esc(item ? injuryLabel(item) : u.injury)}</b>${who ? ` · ${esc(who)}` : ""}${
           u.area ? ` · ${esc(t("understood.area", { area: u.area }))}` : ""}</p>
-        <p class="understood-card__next">${esc(u.autoSearch ? t("understood.searching") : t("understood.need_place"))} ${esc(t("understood.change"))}</p>
+        <p class="understood-card__next">${esc(u.knowPlace ? t("understood.confirm_place") : t("understood.need_place"))} ${esc(t("understood.change"))}</p>
       </div>`;
     }
     html += guideCards(u.injury);
@@ -1530,7 +1540,7 @@ async function init() {
   });
 
   applyLanguage();
-  restoreCase();
+  // A saved case is no longer reopened on load: every visit starts at "What happened?".
   enableOffline();
 }
 
