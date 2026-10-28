@@ -173,19 +173,19 @@ function pickInjury(key) {
 /* ---------- picture buttons: tap what happened, no reading or typing needed ---------- */
 // The emergencies people bring most often. Everything else is in "Type it, or choose from the full list".
 const PICS = [
-  { key: "fracture", icon: "🦴" },
-  { key: "deep_cut", icon: "🩸", label: "bleeding" },
-  { key: "chest_pain", icon: "💔", label: "chest" },
-  { key: "collapsed_not_breathing", icon: "😵", label: "collapsed" },
-  { key: "fall_polytrauma", icon: "🏍️", label: "accident", situation: "road_accident" },
-  { key: "burns", icon: "🔥", label: "burn" },
-  { key: "pregnancy_problem", icon: "🤰", label: "pregnancy" },
-  { key: "child_unwell", icon: "👶", label: "child" },
-  { key: "other", icon: "➕", label: "other" },
+  { key: "fracture", icon: "fracture" },
+  { key: "deep_cut", icon: "deep_cut", label: "bleeding" },
+  { key: "chest_pain", icon: "chest_pain", label: "chest" },
+  { key: "collapsed_not_breathing", icon: "pulse", label: "collapsed" },
+  { key: "fall_polytrauma", icon: "car", label: "accident", situation: "road_accident" },
+  { key: "burns", icon: "burns", label: "burn" },
+  { key: "pregnancy_problem", icon: "pregnancy_problem", label: "pregnancy" },
+  { key: "child_unwell", icon: "child_unwell", label: "child" },
+  { key: "other", icon: "plus", label: "other" },
 ];
 function renderPics() {
   $("pics").innerHTML = PICS.map((p) => `<button type="button" class="pic" data-pic="${p.key}" aria-pressed="${state.injury === p.key && !!state.understood?.picked}">
-    <span class="pic__icon" aria-hidden="true">${p.icon}</span><span class="pic__label">${esc(t(`pic.${p.label || p.key}`))}</span></button>`).join("");
+    <svg class="pic__icon" aria-hidden="true"><use href="#i-${p.icon}"/></svg><span class="pic__label">${esc(t(`pic.${p.label || p.key}`))}</span></button>`).join("");
 }
 function onPic(ev) {
   const btn = ev.target.closest(".pic");

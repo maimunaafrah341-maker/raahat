@@ -581,11 +581,11 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .understood-card__title { text-tr
 .pics__label { margin-top: 20px; font-weight: 800; color: var(--ink); }
 .pics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
 .pic { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 104px;
-  padding: 12px 8px; border: 1.5px solid var(--line); border-radius: 16px; background: #fff; cursor: pointer;
-  font: inherit; font-weight: 700; color: var(--ink); text-align: center; line-height: 1.25; }
+  padding: 14px 8px; border: 1px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer;
+  font: inherit; font-weight: 600; color: var(--ink); text-align: center; line-height: 1.25; gap: 10px; }
 .pic:hover { border-color: var(--primary); }
-.pic[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 2px var(--primary) inset; }
-.pic__icon { font-size: 2.1rem; line-height: 1; }
+.pic[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); }
+.pic__icon { width: 30px; height: 30px; fill: none; stroke: var(--primary); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .pic__label { font-size: .92rem; }
 .more-ways { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
 .more-ways > summary { cursor: pointer; font-weight: 700; color: var(--primary-ink); }
