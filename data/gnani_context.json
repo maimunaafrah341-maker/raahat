@@ -1,0 +1,14 @@
+{
+  "_about": "Hints for Gnani Prisma speech to text: what recordings are about, and words to listen for. Edit freely. Gnani allows up to 200 keyterms in total (the area names from localities.json are added when include_localities is true; extras past 200 are dropped). Topic: up to 1,600 characters. Set enabled to false to send no hints.",
+  "enabled": false,
+  "topic": "Someone in Hyderabad describing a medical emergency (an injury, illness or pregnancy problem) or asking which hospital to go to, what it will cost, or about government health schemes, in Telugu, Hindi or English, often mixed.",
+  "include_localities": true,
+  "keyterms": [
+    "108", "ambulance", "emergency", "hospital", "casualty", "Aarogyasri", "Ayushman Bharat", "PM-JAY",
+    "ration card", "white card", "Aadhaar", "fracture", "bleeding", "burn", "chest pain", "heart attack",
+    "stroke", "accident", "pregnancy", "delivery", "unconscious", "breathing", "fever", "snake bite",
+    "poison", "dog bite", "Osmania", "Gandhi Hospital", "NIMS", "Niloufer", "Sarojini Devi", "Owaisi Hospital",
+    "Mahavir Hospital", "Yashoda", "KIMS", "CARE Hospitals", "Apollo", "Erragadda", "MNJ", "Basavatarakam",
+    "Continental Hospitals", "Kamineni", "Rainbow Children's Hospital"
+  ]
+}

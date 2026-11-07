@@ -74,7 +74,6 @@ def test_synthesize_uses_timbre_and_the_language_voice(calls):
     (FakeResponse(status=401), "API key rejected"),
     (FakeResponse(status=402), "out of credits"),
     (FakeResponse(status=429), "rate limited"),
-    (FakeResponse(json_body={"success": True, "transcript": ""}), "no speech"),
     (FakeResponse(json_body={"success": False, "error": {"message": "bad audio"}}), "transcription failed"),
     (FakeResponse(content=b"<html>"), "not JSON"),
     (requests.exceptions.Timeout(), "no answer within"),
@@ -276,3 +275,42 @@ def test_over_the_cap_read_aloud_quietly_uses_gemini_and_cache_is_free(tts, monk
     res = say("రెండు.")
     assert res.status_code == 200 and res.headers["X-TTS-Provider"] == "gemini"
     assert ran == ["gnani", "gemini"]
+
+
+def test_silence_is_an_empty_transcript_not_an_error(calls):
+    calls.reply = FakeResponse(json_body={"success": True, "request_id": "x", "transcript": ""})
+    assert gnani.transcribe(b"RIFF....", "te") == ""
+
+
+def test_silence_says_nothing_heard_without_asking_gemini(route, monkeypatch):
+    ran, _ = route
+    monkeypatch.setattr(gnani, "transcribe", lambda audio, lang, mime: ran.append(("gnani", lang)) or "")
+    res = _post_audio("te").get_json()
+    assert res["transcript"] == "" and res["stt_provider"] == "gnani"
+    assert ran == [("gnani", "te")]  # no Gemini text step, no Gemini listening retry
+
+
+def test_hints_come_from_the_config_file_within_the_api_limits(monkeypatch, tmp_path):
+    import json
+    (tmp_path / "localities.json").write_text(json.dumps([{"name": "Ameerpet"}, {"name": "108"}]), encoding="utf-8")
+    cfg = {"enabled": True, "topic": "x" * 2000, "include_localities": True, "keyterms": ["108", " NIMS ", ""] + [f"t{i}" for i in range(300)]}
+    (tmp_path / "gnani_context.json").write_text(json.dumps(cfg), encoding="utf-8")
+    monkeypatch.setattr(gnani, "DATA_DIR", tmp_path)
+    ctx = gnani.load_context()
+    assert len(ctx["topic"]) == 1600 and len(ctx["keyterms"]) == 200
+    assert ctx["keyterms"][:2] == ["108", "NIMS"] and ctx["keyterms"].count("108") == 1
+    cfg["enabled"] = False
+    (tmp_path / "gnani_context.json").write_text(json.dumps(cfg), encoding="utf-8")
+    assert gnani.load_context() == {}
+
+
+def test_hints_are_sent_as_a_json_list_when_enabled(calls, monkeypatch):
+    import json
+    monkeypatch.setattr(gnani, "CONTEXT", {"topic": "emergency", "keyterms": ["ఆరోగ్యశ్రీ", "NIMS"]})
+    calls.reply = FakeResponse(json_body={"success": True, "transcript": "ok"})
+    gnani.transcribe(b"RIFF....", "te")
+    data = calls[0][1]["data"]
+    assert data["topic"] == "emergency" and json.loads(data["keyterms"]) == ["ఆరోగ్యశ్రీ", "NIMS"]
+    monkeypatch.setattr(gnani, "CONTEXT", {})
+    gnani.transcribe(b"RIFF....", "te")
+    assert "keyterms" not in calls[1][1]["data"]

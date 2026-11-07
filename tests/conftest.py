@@ -11,3 +11,4 @@ def no_real_gnani_calls(monkeypatch):
     # Fresh call counters for every test, so caps never carry over from another test.
     monkeypatch.setattr(gnani, "_per_ip", {})
     monkeypatch.setattr(gnani, "_today", {"date": "", "count": 0})
+    monkeypatch.setattr(gnani, "CONTEXT", {})  # hints off unless a test sets them, whatever the config says

@@ -258,6 +258,9 @@ def _understand_with_gnani(audio: bytes, mime: str, lang: str) -> dict | None:
     except gnani.GnaniError as err:
         app.logger.warning("Gnani speech to text failed, falling back to Gemini: %s", err)
         return None
+    if not transcript:  # nobody spoke: the page says "we couldn't hear anything" straight away
+        return {"transcript": "", "injury": None, "situations": [], "conditions": [], "area": None,
+                "life_threatening_signs": False, "summary": "", "language": None, "stt_provider": "gnani"}
     result = understand(transcript)
     if result is None:  # Gemini busy: nothing to fall back to
         return None

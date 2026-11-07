@@ -3,11 +3,13 @@
 Docs: https://docs.gnani.ai (api/STT/speech-to-text, api/TTS/tts-inference). Gnani has no Urdu, so
 callers check supports() first and keep Gemini for everything else, and as the fallback when this fails.
 """
+import json
 import os
 import struct
 import threading
 import time
 from collections import deque
+from pathlib import Path
 
 import requests
 
@@ -26,6 +28,26 @@ STT_LANGUAGES = {"te": "te-IN,en-IN", "hi": "hi-IN,en-IN", "en": "en-IN"}
 # Ambuja "clear, composed", Kaveri "firm voice". All female, like the Gemini fallback voice.
 VOICES = {"te": "Suhana", "hi": "Ambuja", "en": "Kaveri"}
 # Prisma picks the format from the file name, so the upload needs the right extension.
+# Hints that help Prisma hear our words: area and hospital names, "Aarogyasri", "108". The list
+# lives in data/gnani_context.json so it can be edited without touching code.
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+MAX_KEYTERMS = 200  # the API's limit
+
+
+def load_context() -> dict:
+    """{"topic": str, "keyterms": [...]} to send with each transcription, or {} if hints are turned off."""
+    cfg = json.loads((DATA_DIR / "gnani_context.json").read_text(encoding="utf-8"))
+    if not cfg.get("enabled", True):
+        return {}
+    terms = list(cfg.get("keyterms", []))
+    if cfg.get("include_localities"):
+        terms += [loc["name"] for loc in json.loads((DATA_DIR / "localities.json").read_text(encoding="utf-8"))]
+    terms = list(dict.fromkeys(t.strip() for t in terms if t.strip()))[:MAX_KEYTERMS]
+    return {"topic": cfg["topic"][:1600], "keyterms": terms}
+
+
+CONTEXT = load_context()
+
 # Credit protection for a public link. Over either cap, callers quietly use Gemini instead.
 # One visitor in a real emergency makes ~15 calls in an hour (a couple of voice descriptions, two or
 # three first-aid cards read aloud at ~3 pieces each), so 40 an hour per IP never gets in their way
@@ -96,7 +118,8 @@ def _post(path: str, timeout: float, **kwargs) -> requests.Response:
 
 
 def transcribe(audio: bytes, lang: str, mime_type: str = "audio/wav") -> str:
-    """Recorded audio -> the words spoken, in the script they were spoken in (English words stay English)."""
+    """Recorded audio -> the words spoken, in the script they were spoken in (English words stay English).
+    "" if the recording held no speech."""
     if lang not in LANGS:
         raise GnaniError(f"language {lang!r} is not supported")
     ext = EXTENSIONS.get(mime_type)
@@ -104,15 +127,22 @@ def transcribe(audio: bytes, lang: str, mime_type: str = "audio/wav") -> str:
         raise GnaniError(f"audio type {mime_type} is not supported")
     resp = _post("/stt/v3", STT_TIMEOUT_S,
                  files={"audio_file": (f"recording.{ext}", audio, mime_type)},
-                 data={"model": STT_MODEL, "language_code": STT_LANGUAGES[lang], "format": "codemix"})
+                 data={"model": STT_MODEL, "language_code": STT_LANGUAGES[lang], "format": "codemix", **_context_fields()})
     try:
         body = resp.json()
     except ValueError:
         raise GnaniError("answer was not JSON") from None
-    transcript = (body.get("transcript") or "").strip() if body.get("success") else ""
-    if not transcript:
-        raise GnaniError("no speech was heard" if body.get("success") else "transcription failed")
-    return transcript
+    if not body.get("success"):
+        raise GnaniError("transcription failed")
+    # Silence is not an error (docs): an empty transcript means nobody spoke, so say so at once
+    # instead of asking Gemini to listen to the same silence.
+    return (body.get("transcript") or "").strip()
+
+
+def _context_fields() -> dict:
+    if not CONTEXT:
+        return {}
+    return {"topic": CONTEXT["topic"], "keyterms": json.dumps(CONTEXT["keyterms"], ensure_ascii=False)}
 
 
 def synthesize(text: str, lang: str) -> bytes:
