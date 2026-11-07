@@ -49,6 +49,14 @@ the web page and the API. In Render: **New → Blueprint →** pick this repo, t
 your `GEMINI_API_KEY` when asked. The database is seeded and the vector index built on startup.
 Peak memory for a full session is well inside the free tier's 512 MB (the API alone peaked at ~136 MB).
 
+Optional voice setting:
+
+- `GNANI_API_KEY`: Telugu, Hindi and English speech goes to Gnani (Prisma writes down what was said,
+  Timbre reads answers aloud), and Urdu stays with Gemini. Without the key, or when Gnani fails, Gemini
+  does both. `GNANI_LIMIT_PER_IP_HOUR` (default 40) and `GNANI_LIMIT_PER_DAY` (default 300) cap the calls,
+  and over a cap the app quietly uses Gemini. Set `GNANI_LIMIT_PER_DAY=0` to turn Gnani off. The counts are
+  kept in memory, so a restart or the free plan's sleep resets them.
+
 Two optional settings for collecting validation data:
 
 - `DATABASE_URL` — a Postgres URL (a free Neon or Supabase database works). Render's free disk is wiped

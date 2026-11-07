@@ -278,7 +278,8 @@ def understand_spoken():
         return {"error": "audio is empty or too long"}, 413
     lang = request.args.get("language")
     mime = "audio/wav" if mime == "audio/x-wav" else mime
-    result = _understand_with_gnani(audio, mime, lang) if gnani.supports(lang) else None
+    use_gnani = gnani.supports(lang) and gnani.take_quota(_client_ip())  # over a cap: quietly Gemini
+    result = _understand_with_gnani(audio, mime, lang) if use_gnani else None
     if result is None:
         result = understand_audio(audio, mime, LANGUAGE_NAMES.get(lang))
         if result is not None:
@@ -303,8 +304,12 @@ SPEAK_LIMIT, SPEAK_WINDOW_S = 150, 600
 _speak_log: dict[str, deque] = {}
 
 
+def _client_ip() -> str:
+    return (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+
+
 def _speak_allowed() -> bool:
-    ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+    ip = _client_ip()
     now, log = time.monotonic(), _speak_log.setdefault(ip, deque())
     while log and now - log[0] > SPEAK_WINDOW_S:
         log.popleft()
@@ -329,7 +334,7 @@ def speak_text():
     if not _speak_allowed():
         return {"error": "Too many read-aloud requests. Please wait a few minutes."}, 429
     try:
-        audio, model = speech.speak(text, language)
+        audio, model = speech.speak(text, language, client=_client_ip())
     except rag.AI_ERRORS:
         return {"error": "Read aloud is busy right now. Please try again."}, 503
     resp = Response(audio, mimetype="audio/wav")

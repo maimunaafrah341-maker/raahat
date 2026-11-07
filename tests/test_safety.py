@@ -207,7 +207,7 @@ def test_translation_keeps_numbers_followed_by_punctuation():
 def test_read_aloud_returns_audio_and_rejects_bad_requests(monkeypatch):
     from backend import speech
     from backend.app import app, _speak_log
-    monkeypatch.setattr(speech, "speak", lambda text, lang: (b"RIFF fake wav", "fake-tts"))
+    monkeypatch.setattr(speech, "speak", lambda text, lang, client=None: (b"RIFF fake wav", "fake-tts"))
     _speak_log.clear()
     client = app.test_client()
     res = client.post("/api/speak", json={"text": "108కి ఫోన్ చేయండి.", "language": "te"})

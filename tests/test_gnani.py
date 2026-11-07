@@ -228,3 +228,51 @@ def test_streaming_wav_header_gets_the_real_length(calls):
                                + b"data\xff\xff\xff\xff" + pcm)
     with wave.open(io.BytesIO(gnani.synthesize("hello", "en"))) as w:
         assert w.getnframes() == 24000
+
+
+def test_per_ip_cap_then_daily_cap(monkeypatch):
+    monkeypatch.setattr(gnani, "LIMIT_PER_IP_HOUR", 3)
+    monkeypatch.setattr(gnani, "LIMIT_PER_DAY", 5)
+    assert [gnani.take_quota("1.1.1.1") for _ in range(4)] == [True, True, True, False]
+    assert [gnani.take_quota("2.2.2.2") for _ in range(3)] == [True, True, False]  # day total 5 reached
+    assert not gnani.take_quota("3.3.3.3")
+
+
+def test_ip_cap_frees_up_after_an_hour_and_day_cap_resets_next_day(monkeypatch):
+    monkeypatch.setattr(gnani, "LIMIT_PER_IP_HOUR", 1)
+    clock = {"t": 1000.0}
+    monkeypatch.setattr(gnani.time, "monotonic", lambda: clock["t"])
+    assert gnani.take_quota("1.1.1.1") and not gnani.take_quota("1.1.1.1")
+    clock["t"] += 3601
+    assert gnani.take_quota("1.1.1.1")
+    monkeypatch.setattr(gnani, "LIMIT_PER_DAY", 1)
+    gnani._today.update(date="2000-01-01", count=1)  # yesterday's total doesn't count today
+    assert gnani.take_quota("9.9.9.9")
+
+
+def test_zero_turns_gnani_off(monkeypatch):
+    monkeypatch.setattr(gnani, "LIMIT_PER_DAY", 0)
+    assert not gnani.take_quota("1.1.1.1")
+
+
+def test_over_the_cap_voice_quietly_uses_gemini(route, monkeypatch):
+    ran, _ = route
+    monkeypatch.setattr(gnani, "LIMIT_PER_IP_HOUR", 1)
+    assert _post_audio("te").get_json()["stt_provider"] == "gnani"
+    res = _post_audio("te")
+    assert res.status_code == 200 and res.get_json()["stt_provider"] == "gemini"
+    assert [r[0] for r in ran] == ["gnani", "gemini_text", "gemini_audio"]
+
+
+def test_over_the_cap_read_aloud_quietly_uses_gemini_and_cache_is_free(tts, monkeypatch):
+    from backend.app import app, _speak_log
+    speech, ran, _ = tts
+    _speak_log.clear()
+    monkeypatch.setattr(gnani, "LIMIT_PER_DAY", 1)
+    client = app.test_client()
+    say = lambda text: client.post("/api/speak", json={"text": text, "language": "te"})
+    assert say("ఒకటి.").headers["X-TTS-Provider"] == "gnani"
+    assert say("ఒకటి.").headers["X-TTS-Provider"] == "gnani"   # repeat: from the cache, no call counted
+    res = say("రెండు.")
+    assert res.status_code == 200 and res.headers["X-TTS-Provider"] == "gemini"
+    assert ran == ["gnani", "gemini"]

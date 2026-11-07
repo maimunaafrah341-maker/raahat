@@ -55,13 +55,14 @@ def _remember(key: str, audio: bytes, model: str) -> None:
         _cache.popitem(last=False)
 
 
-def speak(text: str, language: str) -> tuple[bytes, str]:
-    """Return (wav bytes, model used). Raises one of rag.AI_ERRORS if no model answers in time."""
+def speak(text: str, language: str, client: str | None = None) -> tuple[bytes, str]:
+    """Return (wav bytes, model used). Raises one of rag.AI_ERRORS if no model answers in time.
+    `client` (the visitor's IP) counts toward Gnani's call caps; a repeat served from the cache doesn't."""
     key = hashlib.sha256(f"{language}\n{text}".encode()).hexdigest()
     if key in _cache:
         _cache.move_to_end(key)
         return _cache[key]
-    if gnani.supports(language):
+    if gnani.supports(language) and gnani.take_quota(client):
         try:
             audio = gnani.synthesize(text, language)
         except gnani.GnaniError as err:

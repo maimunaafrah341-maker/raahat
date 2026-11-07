@@ -5,6 +5,9 @@ callers check supports() first and keep Gemini for everything else, and as the f
 """
 import os
 import struct
+import threading
+import time
+from collections import deque
 
 import requests
 
@@ -23,12 +26,46 @@ STT_LANGUAGES = {"te": "te-IN,en-IN", "hi": "hi-IN,en-IN", "en": "en-IN"}
 # Ambuja "clear, composed", Kaveri "firm voice". All female, like the Gemini fallback voice.
 VOICES = {"te": "Suhana", "hi": "Ambuja", "en": "Kaveri"}
 # Prisma picks the format from the file name, so the upload needs the right extension.
+# Credit protection for a public link. Over either cap, callers quietly use Gemini instead.
+# One visitor in a real emergency makes ~15 calls in an hour (a couple of voice descriptions, two or
+# three first-aid cards read aloud at ~3 pieces each), so 40 an hour per IP never gets in their way
+# but stops one person or script from draining the account. The daily cap is the real backstop,
+# because an IP limit is easy to get around (mobile networks, VPNs). 0 turns Gnani off.
+LIMIT_PER_IP_HOUR = int(os.environ.get("GNANI_LIMIT_PER_IP_HOUR", "40"))
+LIMIT_PER_DAY = int(os.environ.get("GNANI_LIMIT_PER_DAY", "300"))
+# Counters live in this process's memory: one gunicorn worker (start.sh), so all threads share them.
+# A restart, a redeploy or Render's free-plan sleep after 15 idle minutes resets them.
+_lock = threading.Lock()
+_per_ip: dict[str, deque] = {}
+_today = {"date": "", "count": 0}
+
 EXTENSIONS = {"audio/wav": "wav", "audio/x-wav": "wav", "audio/mpeg": "mp3", "audio/mp3": "mp3",
               "audio/ogg": "ogg", "audio/flac": "flac", "audio/aac": "aac", "audio/mp4": "m4a"}
 
 
 class GnaniError(Exception):
     """Gnani didn't give a usable answer. The message is safe to log: it never contains the key."""
+
+
+def take_quota(client: str | None) -> bool:
+    """Count one Gnani call for this client (IP). False, and nothing counted, if a cap is reached."""
+    now, date = time.monotonic(), time.strftime("%Y-%m-%d", time.gmtime())
+    with _lock:
+        if _today["date"] != date:
+            _today.update(date=date, count=0)
+        if _today["count"] >= LIMIT_PER_DAY:
+            return False
+        calls = _per_ip.setdefault(client or "?", deque())
+        while calls and now - calls[0] > 3600:
+            calls.popleft()
+        if len(calls) >= LIMIT_PER_IP_HOUR:
+            return False
+        calls.append(now)
+        _today["count"] += 1
+        if len(_per_ip) > 5000:  # forget visitors idle for an hour
+            for ip in [ip for ip, c in _per_ip.items() if not c or now - c[-1] > 3600]:
+                del _per_ip[ip]
+        return True
 
 
 def _key() -> str | None:
