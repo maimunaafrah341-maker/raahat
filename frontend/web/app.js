@@ -279,6 +279,7 @@ function renderUnderstood() {
       html += `<div class="understood-card">
         <p class="understood-card__title">${esc(t("understood.title"))}</p>
         ${u.transcript ? `<p class="understood-card__heard"><b>${esc(t("voice.heard"))}:</b> “${esc(u.transcript)}”</p>` : ""}
+        ${u.stt_provider === "gnani" ? `<p class="by-gnani">${esc(t("voice.by_gnani_stt"))}</p>` : ""}
         ${u.summary ? `<p class="understood-card__summary">${esc(u.summary)}</p>` : ""}
         <p class="understood-card__row"><b>${esc(item ? injuryLabel(item) : u.injury)}</b>${who ? ` · ${esc(who)}` : ""}${
           u.area ? ` · ${esc(t("understood.area", { area: u.area }))}` : ""}</p>
@@ -955,7 +956,14 @@ async function fetchSpeech(text, lang) {
     body: JSON.stringify({ text, language: lang }),
   });
   if (!res.ok) throw new Error(`speak ${res.status}`);
-  return URL.createObjectURL(await res.blob());
+  return { url: URL.createObjectURL(await res.blob()), provider: res.headers.get("X-TTS-Provider") };
+}
+
+// "Voice by Gnani" under the Read aloud button, only while every piece so far came from Gnani:
+// one piece read by the Gemini fallback removes it, so it never claims Gnani for Gemini's voice.
+function setVoiceBy(btn, gnani) {
+  btn.querySelector(".by-gnani")?.remove();
+  if (gnani) btn.insertAdjacentHTML("beforeend", `<small class="by-gnani">${esc(t("voice.by_gnani_tts"))}</small>`);
 }
 
 async function speakWithServer(btn, text, lang) {
@@ -971,11 +979,15 @@ async function speakWithServer(btn, text, lang) {
   });
   const chunks = speechChunks(text);
   let next = fetchSpeech(chunks[0], lang);
+  let allGnani = true;
+  setVoiceBy(btn, false);
   try {
     for (let i = 0; i < chunks.length; i++) {
-      const url = await next;
+      const { url, provider } = await next;
       if (job.aborted) return;
       job.urls.push(url);
+      allGnani = allGnani && provider === "gnani";
+      setVoiceBy(btn, allGnani);
       next = i + 1 < chunks.length ? fetchSpeech(chunks[i + 1], lang) : null; // fetch ahead while this plays
       next?.catch(() => {});
       job.audio.src = url;
@@ -1038,6 +1050,10 @@ function toggleSpeak(btn) {
 const SILENCE_MS = 4000;       // quiet this long after speaking = done
 const FIRST_WORD_MS = 10000;   // time allowed before the first word
 const MAX_LISTEN_MS = 90000;
+// Gnani Prisma (Telugu, Hindi, English) takes at most 30 s of audio; Urdu goes to Gemini, which takes 90.
+const GNANI_LANGS = ["te", "hi", "en"];
+const recordCapMs = () => (GNANI_LANGS.includes(state.lang) ? 30000 : MAX_LISTEN_MS);
+const COUNTDOWN_FROM_S = 10;
 let recognition = null;
 const listen = { finals: "", interim: "", started: 0, lastHeard: 0, stop: false, timer: null };
 
@@ -1128,7 +1144,7 @@ async function startRecording() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
   } catch { toast(t("voice.no_mic")); return; }
-  Object.assign(rec, { stream, chunks: [], started: Date.now(), lastLoud: 0, noise: 0, signal: false });
+  Object.assign(rec, { stream, chunks: [], started: Date.now(), lastLoud: 0, noise: 0, signal: false, cap: recordCapMs(), capped: false });
   rec.mr = new MediaRecorder(stream);
   rec.mr.ondataavailable = (e) => { if (e.data.size) rec.chunks.push(e.data); };
   rec.mr.onstop = onRecordingStopped;
@@ -1152,11 +1168,15 @@ async function startRecording() {
     if (rms > 0) rec.signal = true;
     $("mic-level").style.transform = `scaleX(${Math.min(1, rms * 12).toFixed(2)})`;
     // Some phones never feed the level meter; then only a tap or the time cap ends the recording.
-    if (!rec.signal && now - rec.started > 2000) { if (now - rec.started > MAX_LISTEN_MS) stopRecording(); return; }
+    // The last seconds before the cap count down on the button, so the cut-off is never a surprise.
+    const left = Math.ceil((rec.cap - (now - rec.started)) / 1000);
+    $("mic-label").textContent = left <= COUNTDOWN_FROM_S ? `${t("voice.listening")} · ${t("voice.time_left", { s: Math.max(0, left) })}` : t("voice.listening");
+    if (now - rec.started > rec.cap - 300) { rec.capped = true; stopRecording(); return; } // a little early: never over Gnani's 30 s
+    if (!rec.signal && now - rec.started > 2000) return;
     if (now - rec.started < 500) { rec.noise = Math.max(rec.noise, rms); return; }
     if (rms > Math.max(0.012, rec.noise * 2.5)) rec.lastLoud = now;
     const quiet = rec.lastLoud ? now - rec.lastLoud > SILENCE_MS : now - rec.started > FIRST_WORD_MS;
-    if (quiet || now - rec.started > MAX_LISTEN_MS) stopRecording();
+    if (quiet) stopRecording();
   }, 100);
 }
 
@@ -1194,6 +1214,7 @@ async function onRecordingStopped() {
   // Too short to hold any words (an accidental tap): don't send it.
   if (Date.now() - rec.started < 1200 || !blob.size) { ctx?.close(); micState("idle"); return; }
   micState("processing");
+  if (rec.capped) toast(t("voice.capped", { s: rec.cap / 1000 }));
   const timer = new AbortController();
   const stop = setTimeout(() => timer.abort(), 60000);
   try {
