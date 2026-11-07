@@ -11,7 +11,7 @@ from pathlib import Path
 from flask import Flask, Response, abort, jsonify, redirect, request, send_from_directory
 
 
-from backend import analytics, rag, speech
+from backend import analytics, gnani, rag, speech
 from backend.checklist import rules as checklist_rules
 from backend.db import get_connection, list_facilities
 from backend.i18n import LANGUAGES, RTL, STRINGS
@@ -250,6 +250,20 @@ MAX_AUDIO_BYTES = 6 * 1024 * 1024  # ~3 minutes of 16 kHz mono WAV; the page sto
 AUDIO_TYPES = ("audio/wav", "audio/x-wav", "audio/mp3", "audio/mpeg", "audio/ogg", "audio/aac", "audio/flac", "audio/webm")
 
 
+def _understand_with_gnani(audio: bytes, mime: str, lang: str) -> dict | None:
+    """Telugu, Hindi, English: Gnani Prisma writes down the words, then the same Gemini step as typed text
+    works out the emergency. None (so the caller uses Gemini's own listening) if Gnani fails."""
+    try:
+        transcript = gnani.transcribe(audio, lang, mime)[:1000]
+    except gnani.GnaniError as err:
+        app.logger.warning("Gnani speech to text failed, falling back to Gemini: %s", err)
+        return None
+    result = understand(transcript)
+    if result is None:  # Gemini busy: nothing to fall back to
+        return None
+    return {**result, "transcript": transcript, "stt_provider": "gnani", "stt_model": gnani.STT_MODEL}
+
+
 @app.post("/api/understand_audio")
 def understand_spoken():
     """A spoken description (raw audio body) -> what was heard + the same fields as /api/understand.
@@ -263,8 +277,12 @@ def understand_spoken():
     if not audio or len(audio) > MAX_AUDIO_BYTES:
         return {"error": "audio is empty or too long"}, 413
     lang = request.args.get("language")
-    result = understand_audio(audio, "audio/wav" if mime == "audio/x-wav" else mime,
-                              LANGUAGE_NAMES.get(lang))
+    mime = "audio/wav" if mime == "audio/x-wav" else mime
+    result = _understand_with_gnani(audio, mime, lang) if gnani.supports(lang) else None
+    if result is None:
+        result = understand_audio(audio, mime, LANGUAGE_NAMES.get(lang))
+        if result is not None:
+            result["stt_provider"] = "gemini"
     session = request.args.get("session")
     analytics.log("understand", session=session if session and session.isascii() and len(session) <= 40 else None,
                   language=lang if lang in LANGUAGE_NAMES else None, text=(result or {}).get("transcript"),
@@ -272,7 +290,8 @@ def understand_spoken():
                   extra={"voice": True, "understood": bool(result and result.get("injury")),
                          "ai_available": result is not None, "area": bool(result and result.get("area")),
                          "life_threatening": bool(result and result.get("life_threatening_signs")),
-                         "audio_kb": round(len(audio) / 1024), "model": (result or {}).get("model")})
+                         "audio_kb": round(len(audio) / 1024), "model": (result or {}).get("model"),
+                         "stt_provider": (result or {}).get("stt_provider")})
     if result is None:
         return {"error": "The AI service is busy. Please type or choose from the list instead."}, 503
     return jsonify(result)

@@ -102,3 +102,64 @@ def test_nothing_is_sent_without_a_key_or_for_urdu_or_webm(calls, monkeypatch):
     with pytest.raises(gnani.GnaniError, match="not set"):
         gnani.synthesize("hello", "en")
     assert not calls
+
+
+WAV = b"RIFF" + b"\x00" * 40
+HEARD = {"injury": "fracture", "situations": [], "conditions": [], "life_threatening_signs": False,
+         "area": "Ameerpet", "summary": "Arm may be broken", "language": "te", "model": "gemini-x"}
+
+
+def _post_audio(lang):
+    from backend.app import app
+    return app.test_client().post(f"/api/understand_audio?language={lang}", data=WAV,
+                                  headers={"Content-Type": "audio/wav"})
+
+
+@pytest.fixture
+def route(monkeypatch):
+    """Fake Gnani's transcription and both Gemini steps; record which ones ran."""
+    from backend import app as app_module
+    monkeypatch.setenv("GNANI_API_KEY", KEY)
+    ran = []
+
+    def fake_transcribe(audio, lang, mime):
+        ran.append(("gnani", lang))
+        if route_state["gnani_fails"]:
+            raise gnani.GnaniError("HTTP 429 (rate limited)")
+        return "నా చేయి విరిగింది, అమీర్‌పేట్"
+
+    def fake_understand(text):
+        ran.append(("gemini_text", text))
+        return dict(HEARD)
+
+    def fake_understand_audio(audio, mime, hint):
+        ran.append(("gemini_audio", hint))
+        return {**HEARD, "transcript": "heard by gemini"}
+
+    route_state = {"gnani_fails": False}
+    monkeypatch.setattr(gnani, "transcribe", fake_transcribe)
+    monkeypatch.setattr(app_module, "understand", fake_understand)
+    monkeypatch.setattr(app_module, "understand_audio", fake_understand_audio)
+    return ran, route_state
+
+
+def test_telugu_voice_is_heard_by_gnani_then_understood_by_gemini(route):
+    ran, _ = route
+    res = _post_audio("te").get_json()
+    assert res["stt_provider"] == "gnani" and res["stt_model"] == "prisma-v3.0"
+    assert res["transcript"] == "నా చేయి విరిగింది, అమీర్‌పేట్" and res["injury"] == "fracture"
+    assert ran == [("gnani", "te"), ("gemini_text", "నా చేయి విరిగింది, అమీర్‌పేట్")]
+
+
+def test_gnani_failure_falls_back_to_gemini_listening(route):
+    ran, state = route
+    state["gnani_fails"] = True
+    res = _post_audio("hi").get_json()
+    assert res["stt_provider"] == "gemini" and res["transcript"] == "heard by gemini"
+    assert [r[0] for r in ran] == ["gnani", "gemini_audio"]
+
+
+def test_urdu_never_goes_to_gnani(route):
+    ran, _ = route
+    assert _post_audio("ur").get_json()["stt_provider"] == "gemini"
+    assert [r[0] for r in ran] == ["gemini_audio"]
