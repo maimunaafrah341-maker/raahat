@@ -6,6 +6,7 @@ before it gets here, and the UI always offers the English original next to
 the translation, labelled as machine translation.
 """
 import re
+import time
 
 from google.genai import types
 
@@ -39,11 +40,16 @@ def _preserved(original: str, translated: str) -> bool:
     return set(_NUMBER_RX.findall(original)) <= set(_NUMBER_RX.findall(translated))
 
 
-def translate_explanation(text: str, language: str) -> str | None:
+# Translating an answer someone is waiting for: quick models, this many seconds in total.
+TRANSLATE_FAST_BUDGET_S = 6
+
+
+def translate_explanation(text: str, language: str, fast: bool = False) -> str | None:
     """Return the translation, or None when there's nothing to do or it can't be trusted.
 
     None means "no translation available": callers show the English alone rather
-    than an unchecked translation.
+    than an unchecked translation. `fast`: someone is waiting for an answer, so use the quick
+    models and give up after TRANSLATE_FAST_BUDGET_S in total.
     """
     if not text or language not in LANGUAGE_NAMES or language == "en":
         return None
@@ -51,10 +57,16 @@ def translate_explanation(text: str, language: str) -> str | None:
     citation_rule = ("- Keep every text inside square brackets [like this] EXACTLY as written, in English -- "
                      "these are source citations.\n") if _CITATION_RX.search(text) else ""
     prompt = _PROMPT.format(language=LANGUAGE_NAMES[language], text=text, citation_rule=citation_rule)
+    deadline = time.monotonic() + TRANSLATE_FAST_BUDGET_S
     for _ in range(2):
         try:
-            resp, _model = rag._generate_with(
-                prompt, types.GenerateContentConfig(temperature=0.1), budget_s=25)
+            if fast:
+                resp, _model = rag._generate_with(
+                    prompt, types.GenerateContentConfig(temperature=0.1), rag.ANSWER_MODELS, attempts=1,
+                    timeout_ms=rag.ANSWER_TIMEOUT_MS, budget_s=deadline - time.monotonic())
+            else:
+                resp, _model = rag._generate_with(
+                    prompt, types.GenerateContentConfig(temperature=0.1), budget_s=25)
         except rag.AI_ERRORS:
             return None
         translated = (resp or "").strip()

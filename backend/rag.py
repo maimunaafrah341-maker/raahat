@@ -30,6 +30,14 @@ GEN_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 GEN_FALLBACK_MODELS = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-3-flash-preview",
                        "gemini-3.1-flash-lite", "gemini-flash-lite-latest"]
 GEMINI_TIMEOUT_MS = 25_000  # per request
+# Answers to someone's question are written by fast "lite" models. Timed on a real Telugu question (a
+# 4.8k-character prompt): gemini-3.1-flash-lite 3.0 s and gemini-flash-lite-latest 2.2 s, while
+# gemini-3.8-flash took 34 s and gemini-flash-latest 20 s -- past their limits, so people waited 45 s
+# for "we couldn't generate". ANSWER_BUDGET_S covers both drafts (the guardrail rewrite included).
+ANSWER_MODELS = [m for m in os.getenv("GEMINI_ANSWER_MODELS", "").split(",") if m] or [
+    "gemini-3.1-flash-lite", "gemini-flash-lite-latest"]
+ANSWER_BUDGET_S = float(os.getenv("GEMINI_ANSWER_BUDGET_S", "10"))
+ANSWER_TIMEOUT_MS = 8_000  # per call, so a stuck first model still leaves time for the second
 
 # Documents whose best chunk is within this cosine similarity of the top document are kept.
 # Tuned on sample situations: 0.04 keeps 1-3 of the 4 documents.
@@ -445,10 +453,10 @@ def _generate_with(prompt, config: types.GenerateContentConfig, models: list[str
     raise last_err
 
 
-def _generate(prompt: str) -> tuple[str, str]:
-    # Up to two drafts (guardrail retry) + a 25 s translation must fit in the server's 120 s request limit.
+def _generate(prompt: str, budget_s: float) -> tuple[str, str]:
+    # One try per model (no same-model retries stacking up); the next model is the retry.
     return _generate_with(prompt, types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=0.2),
-                          budget_s=40)
+                          ANSWER_MODELS, attempts=1, timeout_ms=ANSWER_TIMEOUT_MS, budget_s=budget_s)
 
 
 def generate_explanation(injury_label: str, situation: str | None, facility: dict | None,
@@ -477,8 +485,14 @@ def generate_explanation(injury_label: str, situation: str | None, facility: dic
                          "about symptoms, what to do, or first aid. Leave out every source the question doesn't need.)")
     prompt = "\n".join(lines) + f"\n\nCONTEXT:\n{format_context(chunks)}"
     allowed = {c["metadata"]["title"] for c in chunks}
+    deadline, text = time.monotonic() + ANSWER_BUDGET_S, None
     for _ in range(2):
-        text, model = _generate(prompt)
+        try:
+            text, model = _generate(prompt, deadline - time.monotonic())
+        except AI_ERRORS:
+            if text is None:
+                raise
+            break  # no time left for the rewrite: keep the first draft, cleaned up below
         issues = _problems(text, allowed)
         if not issues:
             return text, model

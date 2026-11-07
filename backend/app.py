@@ -437,7 +437,11 @@ def entitlements():
         # English stays authoritative; the translation is an extra, checked field.
         result["language"] = language
         result["explanation_translated"] = (
-            translate_explanation(result["explanation"], language) if result["generated"] else None)
+            translate_explanation(result["explanation"], language, fast=True) if result["generated"] else None)
+        if not result["generated"] and not result["low_confidence"]:
+            # Gemini didn't answer in time: the fixed fallback, in their language (source names stay as titled).
+            titles = "\n".join(f"- {s['title']}" for s in result["sources"])
+            result["explanation"] = f"{STRINGS[language]['answer.fallback']}\n{titles}"
     except rag.AI_ERRORS:
         return {"error": "The AI service is busy. Please try again in a moment."}, 503
     analytics.log("answer", session=_session(body), language=language, injury=injury, conditions=conds,
