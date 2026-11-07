@@ -193,3 +193,27 @@ def understand_audio(audio: bytes, mime_type: str, language_hint: str | None = N
         return {"transcript": "", "injury": None, "situations": [], "conditions": [], "area": None,
                 "life_threatening_signs": False, "summary": "", "language": None}
     return {**_result(parsed, transcript), "transcript": transcript, "model": model}
+
+
+# Spoken Hindi and Urdu sound alike, so the app's language decides the script. Naming the script with a
+# sample, and the one to avoid, before the audio is what makes the fast model follow it (it wrote Urdu
+# in Devanagari otherwise).
+_SCRIPTS = {"Urdu": "Urdu script (اردو حروف), never Devanagari", "Hindi": "Devanagari script (देवनागरी), never Urdu script",
+            "Telugu": "Telugu script (తెలుగు)", "English": "English letters"}
+
+
+def transcribe_audio(audio: bytes, mime_type: str, language_hint: str | None = None) -> tuple[str, str] | None:
+    """Gemini fallback for a spoken follow-up question: (what was said, model), nothing else worked out.
+    None if Gemini is unavailable."""
+    script = _SCRIPTS.get(language_hint or "")
+    prompt = ("Transcribe this recording. "
+              + (f"The person reads {language_hint}, so write the transcript in {script}. " if script else
+                 "Use the script normally used for the language spoken. ")
+              + "Keep English words in English letters. Reply with the transcript only. If nothing is said, reply with nothing.")
+    try:
+        text, model = rag._generate_with([prompt, types.Part.from_bytes(data=audio, mime_type=mime_type)],
+                                         types.GenerateContentConfig(temperature=0), UNDERSTAND_MODELS,
+                                         attempts=1, timeout_ms=UNDERSTAND_TIMEOUT_MS, budget_s=UNDERSTAND_BUDGET_S)
+    except rag.AI_ERRORS:
+        return None
+    return text.strip()[:500], model

@@ -58,6 +58,10 @@ LIMIT_PER_DAY = int(os.environ.get("GNANI_LIMIT_PER_DAY", "300"))
 # Counters live in this process's memory: one gunicorn worker (start.sh), so all threads share them.
 # A restart, a redeploy or Render's free-plan sleep after 15 idle minutes resets them.
 _lock = threading.Lock()
+# Gnani allows one active request per account ("Only 1 active request is allowed at a time", 429), so
+# the app sends one at a time. A second call waits this long for its turn, then the caller uses Gemini.
+LOCK_WAIT_S = 2.0
+_one_at_a_time = threading.Semaphore(1)
 _per_ip: dict[str, deque] = {}
 _today = {"date": "", "count": 0}
 
@@ -104,6 +108,8 @@ def _post(path: str, timeout: float, **kwargs) -> requests.Response:
     key = _key()
     if not key:
         raise GnaniError("GNANI_API_KEY is not set")
+    if not _one_at_a_time.acquire(timeout=LOCK_WAIT_S):
+        raise GnaniError(f"busy: another Gnani request still running after {LOCK_WAIT_S:g} s")
     try:
         resp = requests.post(f"{BASE_URL}{path}", headers={"X-API-Key-ID": key, **kwargs.pop("headers", {})},
                              timeout=timeout, **kwargs)
@@ -111,6 +117,8 @@ def _post(path: str, timeout: float, **kwargs) -> requests.Response:
         raise GnaniError(f"no answer within {timeout:g} s") from None
     except requests.exceptions.RequestException as err:
         raise GnaniError(f"network error: {type(err).__name__}") from None
+    finally:
+        _one_at_a_time.release()
     if resp.status_code != 200:
         reason = {401: "API key rejected", 402: "out of credits", 429: "rate limited"}.get(resp.status_code, "error")
         raise GnaniError(f"HTTP {resp.status_code} ({reason})")

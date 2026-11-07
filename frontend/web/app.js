@@ -973,6 +973,7 @@ async function speakWithServer(btn, text, lang) {
   btn.classList.add("is-loading");
   btn.querySelector("span").textContent = t("voice.loading");
   job.audio.addEventListener("playing", () => {
+    btn.classList.remove("speak-btn--ready");
     if (speakingBtn !== btn) return;
     btn.classList.remove("is-loading");
     btn.querySelector("span").textContent = t("voice.stop");
@@ -998,8 +999,9 @@ async function speakWithServer(btn, text, lang) {
       });
       if (job.aborted) return;
     }
-  } catch {
-    if (!job.aborted) toast(t("voice.no_voice"));
+  } catch (err) {
+    // NotAllowedError: the browser wants a tap before playing sound; the button is pulsing for it.
+    if (!job.aborted && err?.name !== "NotAllowedError") toast(t("voice.no_voice"));
   }
   if (speakingBtn === btn) stopSpeaking();
 }
@@ -1041,6 +1043,7 @@ function toggleSpeak(btn) {
   u.lang = SPEECH_LANG[state.lang];
   if (voice) u.voice = voice;
   u.rate = 0.9;
+  u.onstart = () => btn.classList.remove("speak-btn--ready");
   u.onend = u.onerror = () => { if (speakingBtn === btn) stopSpeaking(); };
   window.speechSynthesis.speak(u);
 }
@@ -1131,20 +1134,29 @@ function toggleListening() {
 const CAN_RECORD = !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder && (window.AudioContext || window.webkitAudioContext));
 const rec = { stream: null, mr: null, chunks: [], ctx: null, timer: null, started: 0, lastLoud: 0, noise: 0, busy: false };
 
-function micState(mode) {
-  const btn = $("mic-btn");
-  btn.classList.toggle("is-listening", mode === "listening");
-  btn.disabled = mode === "processing";
-  if (mode !== "listening") $("mic-level").style.transform = "scaleX(0)";
-  $("mic-label").textContent = t(mode === "listening" ? "voice.listening" : mode === "processing" ? "voice.processing" : "voice.speak");
+// Two mic buttons share the recorder: the big one describes the emergency, the small one beside the
+// question box asks a follow-up. Each recording remembers which one it belongs to.
+function micUi(target) {
+  return target === "ask"
+    ? { btn: $("ask-mic"), label: $("ask-mic-label"), level: $("ask-mic-level"), listening: "voice.stop_short", idle: "voice.ask_speak" }
+    : { btn: $("mic-btn"), label: $("mic-label"), level: $("mic-level"), listening: "voice.listening", idle: "voice.speak" };
 }
 
-async function startRecording() {
+function micState(mode, ui = rec.ui || micUi("describe")) {
+  if (!ui.btn) return; // the question box was redrawn meanwhile
+  ui.btn.classList.toggle("is-listening", mode === "listening");
+  ui.btn.disabled = mode === "processing";
+  if (mode !== "listening") ui.level.style.transform = "scaleX(0)";
+  ui.label.textContent = t(mode === "listening" ? ui.listening : mode === "processing" ? "voice.processing" : ui.idle);
+}
+
+async function startRecording(target = "describe") {
   let stream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
   } catch { toast(t("voice.no_mic")); return; }
-  Object.assign(rec, { stream, chunks: [], started: Date.now(), lastLoud: 0, noise: 0, signal: false, cap: recordCapMs(), capped: false });
+  Object.assign(rec, { stream, chunks: [], started: Date.now(), lastLoud: 0, noise: 0, signal: false, cap: recordCapMs(), capped: false,
+                       target, ui: micUi(target) });
   rec.mr = new MediaRecorder(stream);
   rec.mr.ondataavailable = (e) => { if (e.data.size) rec.chunks.push(e.data); };
   rec.mr.onstop = onRecordingStopped;
@@ -1166,11 +1178,11 @@ async function startRecording() {
     const rms = Math.sqrt(sum / buf.length);
     const now = Date.now();
     if (rms > 0) rec.signal = true;
-    $("mic-level").style.transform = `scaleX(${Math.min(1, rms * 12).toFixed(2)})`;
+    rec.ui.level.style.transform = `scaleX(${Math.min(1, rms * 12).toFixed(2)})`;
     // Some phones never feed the level meter; then only a tap or the time cap ends the recording.
     // The last seconds before the cap count down on the button, so the cut-off is never a surprise.
     const left = Math.ceil((rec.cap - (now - rec.started)) / 1000);
-    $("mic-label").textContent = left <= COUNTDOWN_FROM_S ? `${t("voice.listening")} · ${t("voice.time_left", { s: Math.max(0, left) })}` : t("voice.listening");
+    rec.ui.label.textContent = left <= COUNTDOWN_FROM_S ? `${t(rec.ui.listening)} · ${t("voice.time_left", { s: Math.max(0, left) })}` : t(rec.ui.listening);
     if (now - rec.started > rec.cap - 300) { rec.capped = true; stopRecording(); return; } // a little early: never over Gnani's 30 s
     if (!rec.signal && now - rec.started > 2000) return;
     if (now - rec.started < 500) { rec.noise = Math.max(rec.noise, rms); return; }
@@ -1209,16 +1221,18 @@ async function toWav16k(blob, ctx) {
 
 async function onRecordingStopped() {
   const ctx = rec.ctx;
+  const { target, ui } = rec; // a new recording may start while this one is being sent
   rec.ctx = null;
   const blob = new Blob(rec.chunks, { type: rec.mr.mimeType || "audio/webm" });
   // Too short to hold any words (an accidental tap): don't send it.
-  if (Date.now() - rec.started < 1200 || !blob.size) { ctx?.close(); micState("idle"); return; }
-  micState("processing");
+  if (Date.now() - rec.started < 1200 || !blob.size) { ctx?.close(); micState("idle", ui); return; }
+  micState("processing", ui);
   if (rec.capped) toast(t("voice.capped", { s: rec.cap / 1000 }));
   const timer = new AbortController();
   const stop = setTimeout(() => timer.abort(), 60000);
   try {
     const wav = await toWav16k(blob, ctx);
+    if (target === "ask") { await askBySpeaking(wav, timer.signal); return; }
     const r = await fetch(`/api/understand_audio?language=${state.lang}&session=${encodeURIComponent(sessionId())}`,
       { method: "POST", headers: { "Content-Type": "audio/wav" }, body: wav, signal: timer.signal });
     const res = await r.json().catch(() => null);
@@ -1231,14 +1245,36 @@ async function onRecordingStopped() {
   } finally {
     clearTimeout(stop);
     ctx?.close();
-    micState("idle");
+    micState("idle", ui);
   }
 }
 
-function onMic() {
+// A spoken follow-up: only the words come back; the question then goes through ask() like a typed
+// one, and the answer is read aloud because the person chose to talk rather than read.
+async function askBySpeaking(wav, signal) {
+  const r = await fetch(`/api/transcribe?language=${state.lang}`,
+    { method: "POST", headers: { "Content-Type": "audio/wav" }, body: wav, signal });
+  const res = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(res?.error || t("cannot_connect"));
+  if (!res.transcript) { toast(t("voice.nothing")); return; }
+  ask(res.transcript, null, { spoken: true, heardBy: res.stt_provider });
+}
+
+// Read the newest answer aloud. If the browser blocks sound that the person didn't tap for, nothing
+// plays and no error shows: the Read aloud button pulses until they tap it.
+function readLatestAnswer() {
+  const btns = $("ent-result").querySelectorAll(".msg--ai .speak-btn");
+  const btn = btns[btns.length - 1];
+  if (!btn) return;
+  btn.classList.add("speak-btn--ready");
+  btn.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  toggleSpeak(btn);
+}
+
+function onMic(target = "describe") {
   if (CAN_RECORD) {
     if (rec.mr?.state === "recording") stopRecording();
-    else if (!$("mic-btn").disabled) startRecording();
+    else if (!micUi(target).btn?.disabled) startRecording(target);
   } else toggleListening();
 }
 
@@ -1246,22 +1282,26 @@ function onMic() {
 // people used to voice notes hold the button and let go, which a tap-only button ignores.
 const HOLD_MS = 700;
 function wireMic() {
-  const btn = $("mic-btn");
-  if (!CAN_RECORD) { btn.addEventListener("click", onMic); return; }
+  if (!CAN_RECORD) { $("mic-btn").addEventListener("click", () => onMic()); return; }
+  wireHoldToTalk("#mic-btn", "describe");
+  wireHoldToTalk("#ask-mic", "ask"); // redrawn with the conversation, so listen on the document
+}
+function wireHoldToTalk(selector, target) {
   let pressedAt = 0;
-  btn.addEventListener("pointerdown", (ev) => {
+  const on = (type, fn) => document.addEventListener(type, (ev) => { const btn = ev.target.closest?.(selector); if (btn) fn(ev, btn); });
+  on("pointerdown", (ev, btn) => {
     if (btn.disabled || ev.button > 0) return;
     pressedAt = Date.now();
-    onMic();
+    onMic(target);
   });
-  btn.addEventListener("pointerup", () => {
+  on("pointerup", () => {
     const held = pressedAt && Date.now() - pressedAt > HOLD_MS;
     pressedAt = 0;
     if (held && rec.mr?.state === "recording") stopRecording();
   });
-  btn.addEventListener("contextmenu", (ev) => ev.preventDefault()); // long press shouldn't open a menu
-  btn.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onMic(); } });
-  btn.addEventListener("click", (ev) => ev.preventDefault());
+  on("contextmenu", (ev) => ev.preventDefault()); // long press shouldn't open a menu
+  on("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onMic(target); } });
+  on("click", (ev) => ev.preventDefault());
 }
 
 // "Was this helpful?" -- one answer per item; the choice is remembered so it isn't asked twice.
@@ -1310,13 +1350,15 @@ function renderChat() {
     html += `<div class="ent__placeholder"><div><svg class="ico"><use href="#i-shield"/></svg><p>${esc(t("eligible_caption"))}</p></div></div>`;
   }
   html += `<div class="chat-log">${msgs.map((m, i) => m.role === "user"
-    ? `<div class="msg msg--user"><span class="msg__who">${esc(t("chat_you"))}</span><p>${esc(m.content)}</p></div>`
+    ? `<div class="msg msg--user"><span class="msg__who">${esc(t("chat_you"))}</span><p>${esc(m.content)}</p>${
+        m.heardBy === "gnani" ? `<small class="by-gnani">${esc(t("voice.by_gnani_stt"))}</small>` : ""}</div>`
     : `<div class="msg msg--ai">${renderAnswer(m, i)}</div>`).join("")}`;
   if (state.pending) html += `<div class="msg msg--ai"><p class="mt-label">${esc(t("spinner"))}</p><div class="skeleton"><div></div><div></div></div></div>`;
   html += `</div>
     <div class="suggest">${["q.1", "q.2", "q.3", "q.4"].map((k) => `<button type="button" class="chip suggest__q" data-q="${esc(t(k))}">${esc(t(k))}</button>`).join("")}</div>
     <form class="ask" id="ask-form">
       <textarea id="ask-input" rows="2" maxlength="500" placeholder="${esc(t("ask_placeholder"))}"></textarea>
+      ${CAN_RECORD ? `<button type="button" class="btn mic ask__mic" id="ask-mic" ${state.pending ? "disabled" : ""}><svg class="ico"><use href="#i-mic"/></svg><span id="ask-mic-label">${esc(t("voice.ask_speak"))}</span><span class="mic__level" aria-hidden="true"><i id="ask-mic-level"></i></span></button>` : ""}
       <button type="submit" class="btn btn--primary" ${state.pending ? "disabled" : ""}>${esc(t("ask_button"))}</button>
     </form>
     <div class="memory"><span>${esc(t("memory_note"))}</span>${msgs.length ? `<button type="button" class="btn btn--ghost btn--sm" id="new-case">${esc(t("new_case"))}</button>` : ""}</div>`;
@@ -1325,11 +1367,12 @@ function renderChat() {
   if (log) log.scrollTop = log.scrollHeight;
 }
 
-async function ask(question, shownText) {
+async function ask(question, shownText, { spoken = false, heardBy = null } = {}) {
   if (state.pending || !state.triage) return;
   syncCase();
   const previous = state.caseData.messages.slice(-HISTORY_SENT).map((m) => ({ role: m.role, content: m.content }));
-  state.caseData.messages.push({ role: "user", content: shownText || question });
+  state.caseData.messages.push({ role: "user", content: shownText || question, ...(heardBy ? { heardBy } : {}) });
+  let answered = false;
   state.pending = true;
   renderChat();
   try {
@@ -1347,6 +1390,7 @@ async function ask(question, shownText) {
       lowConfidence: res.low_confidence,
     });
     saveCase();
+    answered = true;
   } catch (err) {
     state.caseData.messages.pop(); // let them retry the same question
     toast(err.message);
@@ -1354,6 +1398,7 @@ async function ask(question, shownText) {
     state.pending = false;
     renderChat();
   }
+  if (answered && spoken) readLatestAnswer();
   $("ent-result").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 

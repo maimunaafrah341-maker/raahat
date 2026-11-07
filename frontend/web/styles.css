@@ -368,6 +368,13 @@ html[dir="rtl"] .msg--user { border-radius: 16px 16px 16px 4px; }
 .suggest { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 10px; }
 .suggest__q { font-size: .84rem; }
 .ask { display: flex; gap: 10px; align-items: stretch; }
+.ask__mic { flex: none; gap: 6px; padding: 8px 14px; border-radius: 14px; background: var(--primary-soft); }
+.ask__mic .ico { width: 20px; height: 20px; }
+.msg--user .by-gnani { display: block; }
+/* The answer to a spoken question is waiting to be heard: make Read aloud impossible to miss. */
+.speak-btn--ready { outline: 3px solid var(--primary); outline-offset: 2px; animation: ready 1.2s ease-in-out infinite; }
+@keyframes ready { 50% { outline-offset: 6px; } }
+@media (max-width: 480px) { .ask { flex-wrap: wrap; } .ask textarea { flex-basis: 100%; } .ask__mic, .ask button[type=submit] { flex: 1; min-height: 48px; } }
 .ask textarea { flex: 1; resize: vertical; min-height: 52px; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #fff; }
 .memory { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 12px; font-size: .8rem; color: var(--muted); }
 .ent__result .note { margin-bottom: 12px; border-radius: 12px; padding: 10px 14px; font-size: .92rem; }

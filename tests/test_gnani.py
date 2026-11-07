@@ -314,3 +314,96 @@ def test_hints_are_sent_as_a_json_list_when_enabled(calls, monkeypatch):
     monkeypatch.setattr(gnani, "CONTEXT", {})
     gnani.transcribe(b"RIFF....", "te")
     assert "keyterms" not in calls[1][1]["data"]
+
+
+def _wav(seconds):
+    import io
+    import wave
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000); w.writeframes(b"\x00\x00" * int(16000 * seconds))
+    return buf.getvalue()
+
+
+@pytest.fixture
+def follow_up(monkeypatch):
+    """/api/transcribe with Gnani and Gemini's words-only fallback faked."""
+    from backend import app as app_module
+    monkeypatch.setenv("GNANI_API_KEY", KEY)
+    ran = []
+    monkeypatch.setattr(gnani, "transcribe", lambda audio, lang, mime: ran.append("gnani") or "ఆరోగ్యశ్రీ వర్తిస్తుందా?")
+    monkeypatch.setattr(app_module, "transcribe_audio", lambda audio, mime, hint: ran.append("gemini") or ("heard by gemini", "g"))
+    client = app_module.app.test_client()
+    post = lambda lang, audio=None: client.post(f"/api/transcribe?language={lang}", data=audio or _wav(2),
+                                                headers={"Content-Type": "audio/wav"})
+    return post, ran
+
+
+@pytest.mark.parametrize("lang", ["te", "hi", "en"])
+def test_follow_up_question_is_heard_by_gnani(follow_up, lang):
+    post, ran = follow_up
+    assert post(lang).get_json() == {"transcript": "ఆరోగ్యశ్రీ వర్తిస్తుందా?", "stt_provider": "gnani"}
+    assert ran == ["gnani"]
+
+
+def test_urdu_follow_up_goes_to_gemini(follow_up):
+    post, ran = follow_up
+    assert post("ur").get_json() == {"transcript": "heard by gemini", "stt_provider": "gemini"}
+    assert ran == ["gemini"]
+
+
+def test_recording_over_30_seconds_skips_gnani_on_both_voice_routes(follow_up, route):
+    post, ran = follow_up
+    assert post("te", _wav(31)).get_json()["stt_provider"] == "gemini"
+    assert post("te", _wav(29)).get_json()["stt_provider"] == "gnani"
+    from backend.app import app
+    res = app.test_client().post("/api/understand_audio?language=te", data=_wav(31), headers={"Content-Type": "audio/wav"})
+    assert res.get_json()["stt_provider"] == "gemini"
+
+
+def test_follow_up_falls_back_to_gemini_when_gnani_fails_or_the_cap_is_hit(follow_up, monkeypatch):
+    post, ran = follow_up
+    def broken(audio, lang, mime):
+        raise gnani.GnaniError("HTTP 500 (error)")
+    monkeypatch.setattr(gnani, "transcribe", broken)
+    assert post("te").get_json()["stt_provider"] == "gemini"
+    monkeypatch.setattr(gnani, "LIMIT_PER_DAY", 0)
+    assert post("hi").get_json()["stt_provider"] == "gemini"
+
+
+def test_follow_up_rejects_non_audio_and_reports_busy_ai(follow_up, monkeypatch):
+    from backend import app as app_module
+    post, _ = follow_up
+    client = app_module.app.test_client()
+    assert client.post("/api/transcribe?language=te", data=b"x", headers={"Content-Type": "text/plain"}).status_code == 415
+    monkeypatch.setattr(app_module, "transcribe_audio", lambda audio, mime, hint: None)
+    assert post("ur").status_code == 503
+
+
+def test_second_simultaneous_call_waits_about_two_seconds_then_uses_gemini(monkeypatch):
+    """Two visitors at once: Gnani allows one active request, so the second waits ~2 s, then Gemini."""
+    import threading
+    import time
+    from backend import speech
+    monkeypatch.setenv("GNANI_API_KEY", KEY)
+    monkeypatch.setattr(speech, "_cache", type(speech._cache)())
+    monkeypatch.setattr(speech, "_gemini_speak", lambda text: (b"RIFF gemini", "gemini-tts"))
+    first_started = threading.Event()
+
+    def slow_post(url, **kwargs):  # a Gnani call that takes 4 s
+        first_started.set()
+        time.sleep(4)
+        return FakeResponse(content=b"RIFF\x00\x00\x00\x00WAVEdata\x00\x00\x00\x00\x01\x00")
+
+    monkeypatch.setattr(gnani.requests, "post", slow_post)
+    results = {}
+    first = threading.Thread(target=lambda: results.update(first=speech.speak("ఒకటి.", "te")))
+    first.start()
+    first_started.wait(2)
+    t0 = time.monotonic()
+    results["second"] = speech.speak("రెండు.", "te")  # no exception: quietly Gemini
+    waited = time.monotonic() - t0
+    first.join()
+    assert speech.provider(results["first"][1]) == "gnani"
+    assert speech.provider(results["second"][1]) == "gemini"
+    assert 1.8 <= waited < 3.5

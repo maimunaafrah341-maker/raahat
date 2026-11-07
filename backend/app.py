@@ -5,6 +5,7 @@ import hmac
 import io
 import os
 import time
+import wave
 from collections import deque
 from pathlib import Path
 
@@ -17,7 +18,7 @@ from backend.db import get_connection, list_facilities
 from backend.i18n import LANGUAGES, RTL, STRINGS
 from backend.translation import LANGUAGE_NAMES, translate_explanation
 from backend.first_aid import danger_signs, first_aid
-from backend.understanding import understand, understand_audio
+from backend.understanding import transcribe_audio, understand, understand_audio
 from backend.triage import CONDITIONS, DEFAULT_RADIUS_KM, INJURIES, rank_facilities
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "frontend" / "web"
@@ -250,6 +251,60 @@ MAX_AUDIO_BYTES = 6 * 1024 * 1024  # ~3 minutes of 16 kHz mono WAV; the page sto
 AUDIO_TYPES = ("audio/wav", "audio/x-wav", "audio/mp3", "audio/mpeg", "audio/ogg", "audio/aac", "audio/flac", "audio/webm")
 
 
+def _audio_seconds(audio: bytes, mime: str) -> float | None:
+    """Length of a WAV recording (what the page sends); None for other formats."""
+    if mime != "audio/wav":
+        return None
+    try:
+        with wave.open(io.BytesIO(audio)) as w:
+            return w.getnframes() / w.getframerate()
+    except (wave.Error, EOFError, ZeroDivisionError):
+        return None
+
+
+def _use_gnani(audio: bytes, mime: str, lang: str | None) -> bool:
+    """Gnani hears it if: the language is one it has, the recording fits its 30 s limit, and the caps allow
+    one more call. Otherwise Gemini does, and the person sees no difference."""
+    seconds = _audio_seconds(audio, mime)
+    if not gnani.supports(lang) or (seconds is not None and seconds > gnani.MAX_AUDIO_S):
+        return False
+    return gnani.take_quota(_client_ip())
+
+
+def _audio_body():
+    """(audio, mime) from a raw-audio request, or a Flask error response."""
+    mime = (request.mimetype or "").lower()
+    if mime not in AUDIO_TYPES:
+        return None, ({"error": f"Content-Type must be one of {list(AUDIO_TYPES)}"}, 415)
+    audio = request.get_data(cache=False)
+    if not audio or len(audio) > MAX_AUDIO_BYTES:
+        return None, ({"error": "audio is empty or too long"}, 413)
+    return (audio, "audio/wav" if mime == "audio/x-wav" else mime), None
+
+
+@app.post("/api/transcribe")
+def transcribe_spoken():
+    """A spoken follow-up question (raw audio body) -> {transcript, stt_provider}. Only the words: the
+    question then goes to /api/entitlements like a typed one. Gnani first, Gemini if not."""
+    body, error = _audio_body()
+    if error:
+        return error
+    audio, mime = body
+    lang = request.args.get("language")
+    transcript, provider = None, "gnani"
+    if _use_gnani(audio, mime, lang):
+        try:
+            transcript = gnani.transcribe(audio, lang, mime)[:500]
+        except gnani.GnaniError as err:
+            app.logger.warning("Gnani speech to text failed, falling back to Gemini: %s", err)
+    if transcript is None:
+        heard = transcribe_audio(audio, mime, LANGUAGE_NAMES.get(lang))
+        if heard is None:
+            return {"error": "The AI service is busy. Please type your question instead."}, 503
+        transcript, provider = heard[0], "gemini"
+    return {"transcript": transcript, "stt_provider": provider}
+
+
 def _understand_with_gnani(audio: bytes, mime: str, lang: str) -> dict | None:
     """Telugu, Hindi, English: Gnani Prisma writes down the words, then the same Gemini step as typed text
     works out the emergency. None (so the caller uses Gemini's own listening) if Gnani fails."""
@@ -281,8 +336,7 @@ def understand_spoken():
         return {"error": "audio is empty or too long"}, 413
     lang = request.args.get("language")
     mime = "audio/wav" if mime == "audio/x-wav" else mime
-    use_gnani = gnani.supports(lang) and gnani.take_quota(_client_ip())  # over a cap: quietly Gemini
-    result = _understand_with_gnani(audio, mime, lang) if use_gnani else None
+    result = _understand_with_gnani(audio, mime, lang) if _use_gnani(audio, mime, lang) else None
     if result is None:
         result = understand_audio(audio, mime, LANGUAGE_NAMES.get(lang))
         if result is not None:
