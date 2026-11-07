@@ -1,4 +1,5 @@
-"""Read text aloud in any of the app's languages with Gemini text-to-speech.
+"""Read text aloud in any of the app's languages: Gnani Timbre for Telugu, Hindi and English, Gemini for Urdu
+and whenever Gnani fails.
 
 Browsers only speak languages the phone has a voice for, and most phones and
 laptops have no Telugu or Urdu voice. The app asks here instead, one short
@@ -6,6 +7,7 @@ chunk at a time so the first words play within a few seconds.
 """
 import hashlib
 import io
+import logging
 import os
 import time
 import wave
@@ -13,7 +15,9 @@ from collections import OrderedDict
 
 from google.genai import types
 
-from backend import rag
+from backend import gnani, rag
+
+log = logging.getLogger(__name__)
 
 TTS_MODELS = [m.strip() for m in os.environ.get(
     "GEMINI_TTS_MODELS", "gemini-3.8-flash-lite-tts,gemini-3.8-flash-tts,gemini-2.5-flash-preview-tts").split(",")
@@ -23,7 +27,7 @@ MAX_CHARS = 600         # one chunk: a step or a short paragraph
 BUDGET_S = 25
 _SAMPLE_RATE = 24000    # what Gemini returns when it sends raw PCM
 
-_cache: OrderedDict[str, bytes] = OrderedDict()
+_cache: OrderedDict[str, tuple[bytes, str]] = OrderedDict()  # -> (audio, model)
 _CACHE_MAX = 400        # first-aid cards repeat, so most chunks are served from here
 
 
@@ -40,12 +44,37 @@ def _as_wav(data: bytes) -> bytes:
     return buf.getvalue()
 
 
+def provider(model: str) -> str:
+    """Who made the audio, for the "Voice by Gnani" label: "gnani" or "gemini"."""
+    return "gnani" if model.startswith("timbre") else "gemini"
+
+
+def _remember(key: str, audio: bytes, model: str) -> None:
+    _cache[key] = (audio, model)
+    if len(_cache) > _CACHE_MAX:
+        _cache.popitem(last=False)
+
+
 def speak(text: str, language: str) -> tuple[bytes, str]:
     """Return (wav bytes, model used). Raises one of rag.AI_ERRORS if no model answers in time."""
-    key = hashlib.sha256(f"{language}\n{VOICE}\n{text}".encode()).hexdigest()
+    key = hashlib.sha256(f"{language}\n{text}".encode()).hexdigest()
     if key in _cache:
         _cache.move_to_end(key)
-        return _cache[key], "cache"
+        return _cache[key]
+    if gnani.supports(language):
+        try:
+            audio = gnani.synthesize(text, language)
+        except gnani.GnaniError as err:
+            log.warning("Gnani text to speech failed, falling back to Gemini: %s", err)
+        else:
+            _remember(key, audio, gnani.TTS_MODEL)
+            return audio, gnani.TTS_MODEL
+    audio, model = _gemini_speak(text)
+    _remember(key, audio, model)
+    return audio, model
+
+
+def _gemini_speak(text: str) -> tuple[bytes, str]:
     config = types.GenerateContentConfig(
         response_modalities=["AUDIO"],
         speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(
@@ -65,11 +94,7 @@ def speak(text: str, language: str) -> tuple[bytes, str]:
             continue
         if not part or not part.data:
             continue
-        audio = _as_wav(part.data)
-        _cache[key] = audio
-        if len(_cache) > _CACHE_MAX:
-            _cache.popitem(last=False)
-        return audio, model
+        return _as_wav(part.data), model
     if isinstance(last_error, rag.AI_ERRORS):
         raise last_error
     raise rag.OutOfTime("no text-to-speech model answered")

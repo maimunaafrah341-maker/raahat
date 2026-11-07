@@ -319,7 +319,8 @@ def _speak_allowed() -> bool:
 
 @app.post("/api/speak")
 def speak_text():
-    """{text, language} -> WAV audio of the text read aloud, for phones with no voice for that language."""
+    """{text, language} -> WAV audio of the text read aloud, for phones with no voice for that language.
+    Headers X-TTS-Provider ("gnani" or "gemini") and X-TTS-Model say who made it."""
     body = request.get_json(silent=True) or {}
     text = (body.get("text") or "").strip()
     language = body.get("language")
@@ -328,10 +329,13 @@ def speak_text():
     if not _speak_allowed():
         return {"error": "Too many read-aloud requests. Please wait a few minutes."}, 429
     try:
-        audio, _model = speech.speak(text, language)
+        audio, model = speech.speak(text, language)
     except rag.AI_ERRORS:
         return {"error": "Read aloud is busy right now. Please try again."}, 503
     resp = Response(audio, mimetype="audio/wav")
+    # The body is the audio itself, so who made it travels in headers (for the "Voice by Gnani" label).
+    resp.headers["X-TTS-Provider"] = speech.provider(model)
+    resp.headers["X-TTS-Model"] = model
     resp.headers["Cache-Control"] = "private, max-age=86400"
     return resp
 

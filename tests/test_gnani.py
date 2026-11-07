@@ -62,11 +62,11 @@ def test_transcribe_sends_the_documented_request(calls):
 
 
 def test_synthesize_uses_timbre_and_the_language_voice(calls):
-    calls.reply = FakeResponse(content=b"RIFF\x00\x00WAVE")
+    calls.reply = FakeResponse(content=b"RIFF\x00\x00\x00\x00WAVEdata\x00\x00\x00\x00\x01\x00")
     assert gnani.synthesize("नमस्ते", "hi").startswith(b"RIFF")
     url, kw = calls[0]
     assert url == "https://api.vachana.ai/api/v1/tts/inference"
-    assert kw["json"]["model"] == "timbre-v2.5" and kw["json"]["voice"] == "Nalini"
+    assert kw["json"]["model"] == "timbre-v2.5" and kw["json"]["voice"] == "Ambuja"
     assert kw["json"]["language"] == "hi-IN" and kw["json"]["audio_config"]["container"] == "wav"
 
 
@@ -163,3 +163,68 @@ def test_urdu_never_goes_to_gnani(route):
     ran, _ = route
     assert _post_audio("ur").get_json()["stt_provider"] == "gemini"
     assert [r[0] for r in ran] == ["gemini_audio"]
+
+
+@pytest.fixture
+def tts(monkeypatch):
+    """Fake Timbre and the Gemini fallback; record which ran. Starts with an empty audio cache."""
+    from backend import speech
+    monkeypatch.setenv("GNANI_API_KEY", KEY)
+    monkeypatch.setattr(speech, "_cache", type(speech._cache)())
+    ran, state = [], {"gnani_fails": False}
+
+    def fake_synthesize(text, lang):
+        ran.append("gnani")
+        if state["gnani_fails"]:
+            raise gnani.GnaniError("no answer within 10 s")
+        return b"RIFF gnani"
+
+    def fake_gemini(text):
+        ran.append("gemini")
+        return b"RIFF gemini", "gemini-tts"
+
+    monkeypatch.setattr(gnani, "synthesize", fake_synthesize)
+    monkeypatch.setattr(speech, "_gemini_speak", fake_gemini)
+    return speech, ran, state
+
+
+def test_telugu_read_aloud_uses_timbre_and_says_so(tts):
+    from backend.app import app, _speak_log
+    speech, ran, _ = tts
+    _speak_log.clear()
+    res = app.test_client().post("/api/speak", json={"text": "108కి ఫోన్ చేయండి.", "language": "te"})
+    assert res.status_code == 200 and res.data == b"RIFF gnani"
+    assert res.headers["X-TTS-Provider"] == "gnani" and res.headers["X-TTS-Model"] == "timbre-v2.5"
+    assert ran == ["gnani"]
+
+
+def test_timbre_failure_falls_back_to_gemini(tts):
+    speech, ran, state = tts
+    state["gnani_fails"] = True
+    audio, model = speech.speak("Press firmly on the wound.", "en")
+    assert audio == b"RIFF gemini" and speech.provider(model) == "gemini"
+    assert ran == ["gnani", "gemini"]
+
+
+def test_urdu_read_aloud_never_goes_to_gnani(tts):
+    speech, ran, _ = tts
+    assert speech.provider(speech.speak("108 پر کال کریں", "ur")[1]) == "gemini"
+    assert ran == ["gemini"]
+
+
+def test_repeated_text_is_served_from_cache_with_its_provider(tts):
+    speech, ran, _ = tts
+    first = speech.speak("Call 108.", "hi")
+    assert speech.speak("Call 108.", "hi") == first and ran == ["gnani"]
+
+
+def test_streaming_wav_header_gets_the_real_length(calls):
+    import io
+    import struct
+    import wave
+    pcm = b"\x01\x00" * 24000  # one second at 24 kHz
+    fmt = struct.pack("<HHIIHH", 1, 1, 24000, 48000, 2, 16)
+    calls.reply = FakeResponse(content=b"RIFF\xff\xff\xff\xffWAVEfmt " + struct.pack("<I", 16) + fmt
+                               + b"data\xff\xff\xff\xff" + pcm)
+    with wave.open(io.BytesIO(gnani.synthesize("hello", "en"))) as w:
+        assert w.getnframes() == 24000

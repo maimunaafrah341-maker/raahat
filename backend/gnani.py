@@ -4,6 +4,7 @@ Docs: https://docs.gnani.ai (api/STT/speech-to-text, api/TTS/tts-inference). Gna
 callers check supports() first and keep Gemini for everything else, and as the fallback when this fails.
 """
 import os
+import struct
 
 import requests
 
@@ -17,8 +18,10 @@ MAX_AUDIO_S = 30            # the REST speech-to-text endpoint rejects longer cl
 LANGS = {"te": "te-IN", "hi": "hi-IN", "en": "en-IN"}
 # What the person may speak: their language plus English, which most people here mix in.
 STT_LANGUAGES = {"te": "te-IN,en-IN", "hi": "hi-IN,en-IN", "en": "en-IN"}
-# Timbre v2.5 voices are tied to a preferred language (docs: api/TTS/available-voices).
-VOICES = {"te": "Suhana", "hi": "Nalini", "en": "Kaveri"}
+# Timbre v2.5 voices are tied to a preferred language (docs: api/TTS/available-voices). Calm and clear,
+# for someone hearing first aid in an emergency: Suhana "calm, soothing voice with confidence",
+# Ambuja "clear, composed", Kaveri "firm voice". All female, like the Gemini fallback voice.
+VOICES = {"te": "Suhana", "hi": "Ambuja", "en": "Kaveri"}
 # Prisma picks the format from the file name, so the upload needs the right extension.
 EXTENSIONS = {"audio/wav": "wav", "audio/x-wav": "wav", "audio/mpeg": "mp3", "audio/mp3": "mp3",
               "audio/ogg": "ogg", "audio/flac": "flac", "audio/aac": "aac", "audio/mp4": "m4a"}
@@ -85,4 +88,15 @@ def synthesize(text: str, lang: str) -> bytes:
                          "encoding": "linear_pcm", "container": "wav"}})
     if resp.content[:4] != b"RIFF":
         raise GnaniError("answer was not WAV audio")
-    return resp.content
+    return _with_real_length(resp.content)
+
+
+def _with_real_length(wav: bytes) -> bytes:
+    """Timbre sends a streaming WAV header whose sizes are 0xFFFFFFFF ("unknown"), which reads as a
+    25-hour clip. Write in the real sizes so browsers know when each piece ends and play the next."""
+    data_at = wav.find(b"data", 12)
+    if data_at < 0:
+        raise GnaniError("answer was not WAV audio")
+    body = len(wav) - (data_at + 8)
+    return (wav[:4] + struct.pack("<I", len(wav) - 8) + wav[8:data_at + 4]
+            + struct.pack("<I", body) + wav[data_at + 8:])
