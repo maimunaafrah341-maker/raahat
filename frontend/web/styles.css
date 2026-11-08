@@ -167,6 +167,19 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .field__label { text-transform: n
   background-repeat: no-repeat; background-size: 18px; background-position: right 12px center;
 }
 html[dir="rtl"] .field select { background-position: left 12px center; }
+/* Area search: big enough for a thumb, list in the page flow so it never hangs off the screen. */
+.area-search { width: 100%; min-height: 50px; border: 1px solid var(--line); background: #fbfcfb; border-radius: 12px;
+  padding: 12px 14px; font-size: 1.05rem; }
+.area-search:focus { outline: 2px solid var(--primary); outline-offset: 1px; background: #fff; }
+.area-list { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--line); border-radius: 12px;
+  background: #fff; box-shadow: 0 8px 24px rgba(0, 0, 0, .08); overflow-y: auto; overscroll-behavior: contain; }
+.area-list li { display: flex; flex-direction: column; justify-content: center; min-height: 52px; padding: 8px 12px;
+  border-radius: 9px; cursor: pointer; }
+.area-list li + li { border-top: 1px solid var(--line); }
+.area-list li:hover, .area-list li[aria-selected="true"] { background: var(--primary-soft, #e8f4f1); }
+.area-list b { font-size: 1.05rem; }
+.area-list small { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+.area-none { margin: 8px 0 0; color: var(--muted); font-weight: 600; }
 input[type="range"] { accent-color: var(--primary); width: 100%; margin: 10px 0 4px; }
 
 /* ---------- search bar overlapping hero ---------- */

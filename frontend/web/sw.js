@@ -6,9 +6,9 @@
  */
 "use strict";
 
-const CACHE = "raahat-v4";
+const CACHE = "raahat-v5";
 const SHELL = [
-  "/", "/app.js", "/styles.css",
+  "/", "/areas.js", "/app.js", "/styles.css",
   "/api/i18n", "/api/injuries", "/api/situations", "/api/facilities", "/api/sources", "/api/conditions",
   "/api/checklist", "/api/localities", "/api/helplines",
   "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",

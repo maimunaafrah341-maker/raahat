@@ -3,7 +3,6 @@
 
 // Area name -> [lat, lng], loaded from /api/localities (data/localities.json, OpenStreetMap coordinates).
 let LOCALITIES = {};
-const ZONES = ["central", "old_city", "secunderabad", "west", "east", "south"];
 const TIERS = ["specialist", "can_manage", "stabilize", "unchecked", "unsuitable"];
 const TIER_COLOR = { specialist: "#16a34a", can_manage: "#f59e0b", stabilize: "#dc2626", unchecked: "#6b7f99",
   unsuitable: "#94a3b8", offline: "#64748b" };
@@ -129,7 +128,7 @@ function applyLanguage() {
   $("title-b").textContent = b || "";
   renderInjuryControls();
   renderPics();
-  if (state.localities) renderLocalities();
+  if (state.localities) refreshAreaSearch();
   renderLegend();
   renderHelplines();
   renderSteps();
@@ -291,15 +290,98 @@ function renderUnderstood() {
   box.innerHTML = html;
 }
 
-// Areas grouped by part of the city, alphabetical within each, so a long list stays easy to scan.
-function renderLocalities() {
-  const sel = $("locality");
-  const current = sel.value;
-  sel.innerHTML = ZONES.map((z) => {
-    const names = state.localities.filter((l) => l.zone === z).map((l) => l.name).sort((a, b) => a.localeCompare(b));
-    return names.length ? `<optgroup label="${esc(t(`zone.${z}`))}">${names.map((n) => `<option>${esc(n)}</option>`).join("")}</optgroup>` : "";
-  }).join("");
-  if (current) sel.value = current;
+/* ---------- area search ---------- */
+// Type a few letters (any spelling, an alternate name, or Telugu/Hindi/Urdu script) and tap the area.
+// areas.js does the matching. The chosen name goes into #locality, which the rest of the page reads.
+const AREA_LIMIT = 6;
+let areaIndex = [], areaMatches = [], areaActive = -1;
+
+function setupAreaSearch() {
+  areaIndex = RaahatAreas.index(state.localities);
+  const box = $("area-search"), list = $("area-list");
+  box.addEventListener("input", () => showAreaMatches());
+  box.addEventListener("focus", () => {
+    box.select();
+    // Bring the box near the top so the list fits above the on-screen keyboard.
+    setTimeout(() => {
+      const top = box.getBoundingClientRect().top;
+      if (top > 120) window.scrollBy({ top: top - 90, behavior: "smooth" });
+    }, 250);
+  });
+  box.addEventListener("keydown", (ev) => {
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      if (!areaMatches.length) return;
+      ev.preventDefault();
+      areaActive = (areaActive + (ev.key === "ArrowDown" ? 1 : -1) + areaMatches.length) % areaMatches.length;
+      markActiveArea();
+    } else if (ev.key === "Enter") {
+      if (!areaMatches.length) return;
+      ev.preventDefault(); // pick the area, don't submit the search yet
+      pickArea(areaMatches[Math.max(areaActive, 0)].area.name);
+    } else if (ev.key === "Escape") closeAreaList();
+  });
+  // Tapping an area must not blur the box first (that would close the list under the finger).
+  list.addEventListener("pointerdown", (ev) => ev.preventDefault());
+  list.addEventListener("click", (ev) => {
+    const li = ev.target.closest("[data-area]");
+    if (li) pickArea(li.dataset.area);
+  });
+  box.addEventListener("blur", () => setTimeout(() => {
+    closeAreaList();
+    $("area-none").hidden = true;
+    showChosenArea(); // half-typed text goes back to the area actually in use
+  }, 150));
+  window.visualViewport?.addEventListener("resize", fitAreaList);
+}
+function showAreaMatches() {
+  const q = $("area-search").value;
+  areaMatches = RaahatAreas.match(q, areaIndex, AREA_LIMIT);
+  areaActive = -1;
+  const none = $("area-none");
+  none.hidden = !(q.trim().length >= 2 && !areaMatches.length);
+  if (!none.hidden) none.textContent = t("area.none");
+  if (!areaMatches.length) { closeAreaList(); return; }
+  $("area-list").innerHTML = areaMatches.map((m, i) => `<li id="area-opt-${i}" role="option" aria-selected="false"
+    data-area="${esc(m.area.name)}"><b>${esc(m.area.name)}</b><small>${esc(m.label ? m.label : t(`zone.${m.area.zone}`))}</small></li>`).join("");
+  $("area-list").hidden = false;
+  $("area-search").setAttribute("aria-expanded", "true");
+  fitAreaList();
+}
+function markActiveArea() {
+  $("area-list").querySelectorAll("li").forEach((li, i) => li.setAttribute("aria-selected", String(i === areaActive)));
+  $("area-search").setAttribute("aria-activedescendant", areaActive >= 0 ? `area-opt-${areaActive}` : "");
+}
+// Keep the list inside what is visible above the keyboard (it scrolls inside itself if it must).
+function fitAreaList() {
+  const list = $("area-list");
+  if (list.hidden) return;
+  const vv = window.visualViewport;
+  let bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  // The phone's fixed 108 bar sits over the bottom of the screen: stop above it.
+  const bar = document.querySelector(".sos-bar");
+  if (bar && getComputedStyle(bar).display !== "none") bottom = Math.min(bottom, bar.getBoundingClientRect().top);
+  const room = bottom - list.getBoundingClientRect().top - 8;
+  list.style.maxHeight = `${Math.max(150, Math.round(room))}px`;
+}
+function closeAreaList() {
+  $("area-list").hidden = true;
+  $("area-search").setAttribute("aria-expanded", "false");
+  $("area-search").removeAttribute("aria-activedescendant");
+}
+function pickArea(name) {
+  closeAreaList();
+  $("area-none").hidden = true;
+  $("locality").value = name;
+  $("locality").dispatchEvent(new Event("change"));
+  $("area-search").blur(); // closes the on-screen keyboard
+  track("action", "area_picked");
+}
+// The box shows the area the search will start from; empty while the phone's location is in use.
+function showChosenArea() {
+  $("area-search").value = $("use-coords").checked ? "" : $("locality").value;
+}
+function refreshAreaSearch() {
+  if (!$("area-list").hidden) showAreaMatches(); // zone names follow the language
 }
 
 /* ---------- search ---------- */
@@ -319,7 +401,7 @@ function geoFailed(key) {
   status.hidden = false;
   status.classList.add("geo-status--fail");
   status.textContent = t(key);
-  $("locality").focus(); // straight back to choosing an area by hand
+  $("area-search").focus(); // straight back to choosing an area by hand
 }
 function useMyLocation() {
   const btn = $("geo-btn"), status = $("geo-status");
@@ -335,6 +417,7 @@ function useMyLocation() {
     $("lat").value = lat.toFixed(5);
     $("lng").value = lng.toFixed(5);
     $("use-coords").checked = true;
+    showChosenArea();
     const near = nearestLocality(lat, lng);
     status.textContent = near && near.km <= 5
       ? `✓ ${t("flow.located_near", { area: near.name })}`
@@ -903,7 +986,8 @@ function syncCase() {
   state.caseData = {
     ...(state.caseData || { messages: [] }),
     injury: state.triage?.injury.key || state.injury,
-    locality: $("locality").value,
+    // From the phone's location: no area, never the box's leftover default (and never the coordinates).
+    locality: $("use-coords").checked ? null : $("locality").value,
     facilityId: state.selectedId,
     situations: [...state.chosenSituations],
     conditions: [...state.conditions],
@@ -1503,10 +1587,11 @@ async function init() {
 
   $("lang").innerHTML = Object.entries(state.languages).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("");
   $("lang").value = state.lang;
-  renderLocalities();
+  setupAreaSearch();
   $("locality").value = "Charminar";
   const syncCoords = () => { const [la, ln] = LOCALITIES[$("locality").value]; $("lat").value = la; $("lng").value = ln; };
   syncCoords();
+  showChosenArea();
 
   $("lang").addEventListener("change", () => { stopSpeaking();state.lang = $("lang").value; store.set("raahat.lang", state.lang); applyLanguage(); });
   $("locality").addEventListener("change", () => {
@@ -1514,6 +1599,7 @@ async function init() {
     $("use-coords").checked = false; // an area picked by hand replaces "my location"
     $("geo-status").hidden = true;
     $("geo-status").classList.remove("geo-status--fail");
+    showChosenArea();
   });
   $("radius").addEventListener("input", () => ($("radius-val").textContent = $("radius").value));
   $("injury").addEventListener("change", () => { clearResults(); pickInjury($("injury").value); renderPics(); });

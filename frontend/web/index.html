@@ -128,10 +128,16 @@
           <div class="where">
             <button type="button" class="btn btn--ghost where__geo" id="geo-btn"><svg class="ico"><use href="#i-pin"/></svg><span data-i18n="flow.use_location"></span></button>
             <span class="where__or" data-i18n="flow.or"></span>
-            <label class="field where__area">
-              <span class="field__label" data-i18n="location"></span>
-              <select id="locality"></select>
-            </label>
+            <div class="field where__area">
+              <label class="field__label" for="area-search" data-i18n="location"></label>
+              <!-- The chosen area's name lives in #locality (the spoken description fills it too). -->
+              <input id="area-search" class="area-search" type="search" role="combobox" aria-autocomplete="list"
+                aria-expanded="false" aria-controls="area-list" autocomplete="off" autocapitalize="words"
+                spellcheck="false" enterkeyhint="done" data-i18n-ph="area.placeholder">
+              <input id="locality" type="hidden">
+              <ul id="area-list" class="area-list" role="listbox" hidden></ul>
+              <p id="area-none" class="area-none" role="status" hidden></p>
+            </div>
           </div>
           <p id="geo-status" class="geo-status" hidden></p>
           <label class="check lowcost"><input type="checkbox" id="low-cost">
@@ -248,6 +254,7 @@
   <dialog id="desk" class="desk-dialog" aria-label="Show to hospital staff"></dialog>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="areas.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

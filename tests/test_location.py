@@ -31,7 +31,7 @@ def test_the_handler_uses_each_message_and_falls_back_to_the_area_box():
     for key in GEO_KEYS:
         assert f'"{key}"' in h, key
     assert "PERMISSION_DENIED" in h and "TIMEOUT" in h
-    assert '$("locality").focus()' in h
+    assert '$("area-search").focus()' in h
     assert re.search(r"timeout:\s*GEO_TIMEOUT_MS", h)
 
 

@@ -179,6 +179,11 @@ as ❔ near those areas.
 `data/localities.json`: 106 Hyderabad areas in six zones, coordinates from OpenStreetMap (Nominatim).
 Ambiguous names (e.g. two places called Bandlaguda) are left out rather than guessed.
 
+People find their area by typing a few letters into a search box (`frontend/web/areas.js`). It copes with
+spelling variants (Amirpet, Kukatpalli), small typos, alternate names listed as `aliases` (KPHB, Lal Bahadur
+Nagar, Old City), and names typed in Telugu, Hindi or Urdu script. A case saved after a search from the phone's
+location records no area.
+
 ## What is logged (anonymously)
 
 `backend/analytics.py`: emergency type, language, the area name when the person picked one from the list,
