@@ -192,8 +192,6 @@ def test_scrub_removes_numbers_and_emails():
     assert "age 45" in text  # short numbers (ages, temperatures) are kept for context
 
 
-def test_coarse_area_is_about_a_kilometre():
-    assert analytics.coarse_area(17.372954, 78.47427) == "17.37,78.47"
 
 
 def test_translation_keeps_numbers_followed_by_punctuation():

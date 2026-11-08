@@ -3,6 +3,7 @@ import csv
 import gzip
 import hmac
 import io
+import json
 import os
 import time
 import wave
@@ -23,6 +24,9 @@ from backend.triage import CONDITIONS, DEFAULT_RADIUS_KM, INJURIES, rank_facilit
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "frontend" / "web"
 LOCALITIES_FILE = Path(__file__).resolve().parent.parent / "data" / "localities.json"
+# Area name -> its coordinates, to tell a search from a picked area (logged by name) from one from the
+# phone's location (nothing about where is logged).
+AREA_COORDS = {a["name"]: (a["lat"], a["lng"]) for a in json.loads(LOCALITIES_FILE.read_text(encoding="utf-8"))}
 
 app = Flask(__name__, static_folder=str(WEB_DIR), static_url_path="")
 
@@ -195,6 +199,15 @@ def facilities():
         return jsonify(list_facilities(conn))
 
 
+def _picked_area(area, lat: float, lng: float) -> str | None:
+    """The area's name only when the search started from that picked area. A search from the phone's
+    location (or any other coordinates) logs nothing about where the person is."""
+    coords = AREA_COORDS.get(area) if isinstance(area, str) else None
+    if coords and abs(coords[0] - lat) < 1e-4 and abs(coords[1] - lng) < 1e-4:
+        return area
+    return None
+
+
 @app.post("/api/triage")
 def triage():
     body = request.get_json(silent=True) or {}
@@ -214,9 +227,8 @@ def triage():
         ranked = rank_facilities(list_facilities(conn), injury, lat, lng, radius, tuple(conds),
                                  low_cost_first=body.get("low_cost_first") is True)
     if _session(body):  # the page's own example preview sends no session and isn't counted
-        area = body.get("area") if isinstance(body.get("area"), str) else None
         analytics.log("search", session=_session(body), language=_lang(body), injury=injury, conditions=conds,
-                      area=(area[:40] if area else analytics.coarse_area(lat, lng)),
+                      area=_picked_area(body.get("area"), lat, lng),
                       extra={"results": len(ranked), "top_tier": ranked[0]["tier"] if ranked else None,
                              "specialists": sum(r["tier"] == "specialist" for r in ranked), "radius_km": radius,
                              "low_cost_first": body.get("low_cost_first") is True})

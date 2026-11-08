@@ -62,11 +62,6 @@ def scrub(text: str | None, limit: int = 300) -> str | None:
     return text.strip()[:limit] or None
 
 
-def coarse_area(lat: float, lng: float) -> str:
-    """~1 km: enough to see which parts of the city use Raahat, not who."""
-    return f"{lat:.2f},{lng:.2f}"
-
-
 def _connect():
     if DATABASE_URL:
         import psycopg  # only needed when Postgres is configured

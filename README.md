@@ -181,9 +181,12 @@ Ambiguous names (e.g. two places called Bandlaguda) are left out rather than gue
 
 ## What is logged (anonymously)
 
-`backend/analytics.py`: emergency type, language, area (a named locality, or GPS rounded to ~1 km),
+`backend/analytics.py`: emergency type, language, the area name when the person picked one from the list,
 result counts, questions with long numbers and emails removed, "was this helpful?", 108/directions/share
-taps, and "something wrong with this hospital" reports. No IP address, user agent or exact location.
+taps, and "something wrong with this hospital" reports. No IP address or user agent.
+
+**Location.** "Use my location" coordinates are used only for the search and are never stored or logged,
+on the phone or on the server, not even rounded. The log records only that the button was used.
 A random id per case groups one person's events without identifying them.
 
 ## Hospital data
