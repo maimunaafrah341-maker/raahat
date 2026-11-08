@@ -2,9 +2,6 @@
 
 Build with AI: Code for Communities — Track 3 (Smart Health & Supply Chain Resilience).
 
-- **Demo video:** https://youtu.be/JqOIDOfVCZs
-- **Live app:** https://raahat-9g7r.onrender.com (free Render plan: the first load after it has been idle can take about 50 seconds to wake up)
-
 Given an injury and a location, Raahat ranks nearby facilities by whether they can
 actually treat that injury (specialty + trauma capability + 24x7 emergency), then by
 distance, and shows Aarogyasri empanelment on a colour-coded map. A Gemini RAG layer then
@@ -19,6 +16,13 @@ Paschim Banga judgment, Aarogyasri, Telangana BOCW Welfare Board) — always wit
 > first", only after the researched ones. Aarogyasri status is `official` (hospital or government site),
 > `reported` (secondary sources) or unverified (`?`). The original synthetic set is still available:
 > `python data/seed_facilities.py --demo`.
+
+## Demo
+
+The video shows someone speaking an emergency in Hinglish, the hospital results, first aid read aloud with Gnani Timbre, and a spoken follow-up question answered from sources.
+
+- **Video:** https://youtu.be/zD166e7fdb4
+- **Live app:** https://raahat-9g7r.onrender.com (it runs on a free tier, so the first load can take about a minute)
 
 ## Screenshots
 
