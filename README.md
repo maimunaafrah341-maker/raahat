@@ -25,7 +25,7 @@ Paschim Banga judgment, Aarogyasri, Telangana BOCW Welfare Board) — always wit
 | | |
 |---|---|
 | ![Home page on a computer](Raahat%20screenshots/01-home-desktop.png) **1. Home:** 108 first, helplines that call when tapped, then "what happened?" | ![Home page on a phone](Raahat%20screenshots/02-home-phone.png) **2. On a phone:** a 108 bar on every screen |
-| ![Describing the emergency in Telugu](Raahat%20screenshots/03-describe-in-telugu-ai-fills-the-form.png) **3. Describe it in Telugu** (typed or spoken): the AI fills in the emergency and the area, then searches | ![Map and hospital list](Raahat%20screenshots/04-results-map-and-hospital-list.png) **4. Results:** hospitals that can treat it first, colour-coded on the map |
+| ![Describing the emergency in Telugu](Raahat%20screenshots/03-describe-in-telugu-ai-fills-the-form.png) **3. Describe it in Telugu** (typed or spoken): the AI fills in the emergency and the area for the person to confirm | ![Map and hospital list](Raahat%20screenshots/04-results-map-and-hospital-list.png) **4. Results:** hospitals that can treat it first, colour-coded on the map |
 | ![Hospital card](Raahat%20screenshots/05-hospital-card-with-trust-level.png) **5. Hospital card:** why it matches, Aarogyasri status, when it was checked | ![Closer hospitals not yet checked](Raahat%20screenshots/06-closer-hospitals-not-yet-checked-call-first.png) **6. On the city's edge:** closer hospitals we haven't checked yet, with what to ask when you call |
 | ![Next steps](Raahat%20screenshots/07-next-steps-call-directions-staff-card.png) **7. Your next steps:** first aid, where to go, documents, rights, payment | ![Documents to carry](Raahat%20screenshots/08-documents-to-carry-chemotherapy.png) **8. Documents to carry** (chemotherapy: ration card, Aarogyasri card, Aadhaar, referral letter) |
 | ![Paying for treatment](Raahat%20screenshots/09-paying-with-or-without-aarogyasri-card.png) **9. Paying for treatment,** with or without an Aarogyasri card | ![Answer with citations](Raahat%20screenshots/10-answer-with-citations-and-dates.png) **10. Answers cite their sources,** with the date each was checked |
@@ -67,8 +67,9 @@ Two optional settings for collecting validation data:
 
 ## Safety rails
 
-- **Citations with dates.** Every answer names the documents it cites and when each was last checked
-  (the `Last verified:` line at the top of each `corpus/*.md`; update it when you re-check a source).
+- **Citations with dates.** Every answer names the documents it cites as chips inside the answer, once each.
+  A ✓ on a chip means we know when that source was last checked; tapping it shows the date (the
+  `Last verified:` line at the top of each `corpus/*.md`; update it when you re-check a source).
   Hospital cards show when their details were checked and warn after 90 days.
 - **"I'm not sure" instead of guessing.** A question whose closest source passage scores below
   `LOW_CONFIDENCE` (0.64, `backend/rag.py`) gets "please ask at the hospital desk" and is never sent to
@@ -85,11 +86,13 @@ Two optional settings for collecting validation data:
 - **Works without signal.** `frontend/web/sw.js` keeps the page, the hospital list and every first-aid
   card on the phone. Offline, a search lists hospitals by distance only, clearly marked as unranked.
 
-- **Voice understood by Gemini.** The mic records until the person stops talking, converts the audio to
-  16 kHz WAV and sends it to `/api/understand_audio`. Gemini returns what it heard (in the speaker's
-  script), the emergency, who the patient is, their situation and their area, plus a one-line summary
-  to confirm. Tested on Telugu, Hindi (code-mixed), Urdu and English recordings. If the area is known,
-  the search runs straight away. Phones that can't record fall back to the browser's own recognition.
+- **Voice understood.** The mic records until the person stops talking, converts the audio to 16 kHz WAV
+  and sends it to `/api/understand_audio`. Gnani writes down Telugu, Hindi and English (Gemini does Urdu, and
+  takes over whenever Gnani can't; see [Voice by Gnani](#voice-by-gnani)). Gemini then works out the
+  emergency, who the patient is, their situation and their area, and the page shows what it heard (in the
+  speaker's script) with a one-line summary to confirm. It never searches by itself: the person checks their
+  area and taps "Find hospitals". Tested on Telugu, Hindi (code-mixed), Urdu and English recordings. Phones
+  that can't record fall back to the browser's own recognition.
 - **Mental health crisis.** An emergency type with Tele-MANAS (14416, free, 24x7), Roshni (Hyderabad)
   and 108 as call buttons, and sourced steps (NHS). Suicidal or self-harm talk counts as life-threatening.
 - **Paying for treatment, with or without a card**: what to do at the Aarogya Mithra desk in each case.
@@ -244,6 +247,10 @@ a voice for them that was never downloaded and then play nothing: the page asks 
 or two at a time, showing "Loading the voice…" until the first words play (about 4 seconds). Chunks are cached, so first-aid cards that many people
 read cost nothing after the first time, and each visitor is limited to 150 chunks per 10 minutes.
 
+On iPhones and in Safari the recording is made in one piece: recorded in slices, Safari's MP4 can't be decoded by
+Safari itself ("Decoding failed"). Chrome, Edge, Firefox and Android record in 250 ms slices as before. If a phone
+still can't read its own recording, the person sees a short message in their language, never the browser's error.
+
 ## Voice by Gnani
 
 With `GNANI_API_KEY` set, Telugu, Hindi and English speech goes to Gnani (`backend/gnani.py`):
@@ -274,8 +281,8 @@ Known limits:
 `corpus/first_aid_*.md` and `corpus/danger_*.md` hold first-aid steps and danger signs for all 17 emergency types,
 taken only from NHS, British Red Cross, St John Ambulance, British Heart Foundation, Macmillan and Government of India
 guidance (sources listed in each file; 999 replaced by 108).
-The app shows these steps as a fixed card — never generated — as soon as the injury is understood and in
-"Your next steps". The Hindi, Telugu and Urdu versions are translated once by `data/translate_cards.py` and saved in
+The app shows these steps as a fixed card — never generated — as step 1 of "Your next steps", which appears
+with the hospital list after "Find hospitals". The Hindi, Telugu and Urdu versions are translated once by `data/translate_cards.py` and saved in
 `data/card_translations.json` (rejected unless numbers and step count survive), so cards appear instantly in every
 language, even when Gemini is busy. Each translation is tied to the English it came from: after editing a card,
 rerun `python data/translate_cards.py`; until then that card is translated live.
@@ -313,7 +320,9 @@ sources instead of guessing. "Start a new case" clears it.
 - Each corpus document is split into labelled sections (key fact / caveat / usage guidance) and
   embedded with `gemini-embedding-001`.
 - Retrieval ranks documents by their best-matching section and keeps only those within 0.04
-  cosine similarity of the top one, so the answer draws on 1–3 of the 4 sources.
+  cosine similarity of the top one, so an answer draws on a few closely matching sources out of 11 law and
+  scheme documents and the first-aid and danger-sign cards. The 0.04 margin was tuned when there were 4
+  documents.
 - A selected document always brings its caveat with it; a non-empanelled hospital always pulls in
   the Aarogyasri empanelment warning.
 - Ticked situations force in the sources that always apply to them (e.g. "turned away" → Clinical
