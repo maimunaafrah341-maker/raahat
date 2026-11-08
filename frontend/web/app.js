@@ -35,15 +35,16 @@ function inlineMd(text) {
     .replace(/(^|[\s(])[_*]([^_*\n]+)[_*](?=[\s).,;:!?]|$)/g, "$1<i>$2</i>")
     .replace(/ {2}\n/g, "<br>");
 }
-function renderExplanation(text) {
+// `sources` (optional): the answer's sources, so each [Title] chip can say when that source was last checked.
+function renderExplanation(text, sources = []) {
   const blocks = String(text || "").split(/\n\s*\n|\n(?=\s*[*-] )/).map((b) => b.trim()).filter(Boolean);
   const bullets = [], paras = [];
   for (const b of blocks) {
     const m = b.match(/^[*-]\s+([\s\S]*)$/);
     (m ? bullets : paras).push(m ? m[1] : b);
   }
-  // Every [Source title] becomes a badge, wherever Gemini placed it in the bullet.
-  const withCites = (s) => inlineMd(s).replace(/\s*\[([^\]]+)\]\.?/g, (_, c) => ` <span class="cite">${c}</span>`);
+  // Every [Source title] becomes a badge, wherever Gemini placed it in the bullet, with its checked date.
+  const withCites = (s) => inlineMd(s).replace(/\s*\[([^\]]+)\]\.?/g, (_, c) => ` ${citeChip(c, sources)}`);
   let html = "";
   if (bullets.length) html += `<ul>${bullets.map((b) => `<li>${withCites(b)}</li>`).join("")}</ul>`;
   if (paras.length) html += paras.map((p) => `<p>${withCites(p)}</p>`).join("");
@@ -1465,11 +1466,24 @@ function feedbackHtml(question, chosen, attrs) {
     <button type="button" class="chip feedback__btn" ${attrs} data-value="yes">${esc(t("helpful.yes"))}</button>
     <button type="button" class="chip feedback__btn" ${attrs} data-value="no">${esc(t("helpful.no"))}</button></div>`;
 }
-// Which document each answer came from and when it was last checked, always visible.
-function sourceLine(sources) {
-  return `<p class="from"><b>${esc(t("answer.from"))}:</b> ${sources.map((x) =>
-    `<span class="cite">${esc(x.title)}${x.verified ? ` · ${esc(t("answer.verified", { date: fmtDate(x.verified) }))}` : ""}</span>`).join(" ")}</p>`;
+// A source chip. When we know when the source was last checked, the chip shows a small ✓ and tapping it
+// shows "checked <date>" on a second line, so chips stay one line until someone wants the date.
+// `title` is already escaped HTML when it comes from the answer text. Read aloud skips .cite.
+function citeChip(title, sources) {
+  const plain = title.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+  const s = sources.find((x) => x.title.toLowerCase() === plain.trim().toLowerCase());
+  if (!s?.verified) return `<span class="cite">${title}</span>`;
+  const checked = esc(t("answer.verified", { date: fmtDate(s.verified) }));
+  return `<button type="button" class="cite cite--dated" aria-expanded="false" title="${checked}">${title}<span class="cite__tick" aria-hidden="true">✓</span><span class="cite__date" hidden>${checked}</span></button>`;
 }
+document.addEventListener("click", (ev) => {
+  const chip = ev.target.closest(".cite--dated");
+  if (!chip) return;
+  const open = chip.getAttribute("aria-expanded") !== "true";
+  chip.setAttribute("aria-expanded", String(open));
+  chip.querySelector(".cite__date").hidden = !open;
+});
+const countCites = (html) => (html.match(/class="cite[ "]/g) || []).length;
 
 function renderAnswer(m, index) {
   const fb = `<div class="feedback">${feedbackHtml(t("helpful.q"), m.feedback, `data-target="answer" data-msg="${index}"`)}</div>`;
@@ -1483,12 +1497,14 @@ function renderAnswer(m, index) {
   let html = "";
   if (translated) html += `<p class="mt-label"><svg class="ico"><use href="#i-sparkle"/></svg>${esc(t("mt_label"))}</p>`;
   else if (state.lang !== "en" && m.generated) html += `<p class="mt-label">${esc(t("translation_failed"))}</p>`;
-  html += `<div class="explanation">${renderExplanation(translated || m.content)}</div>`;
-  // Name the documents the answer actually cites (retrieval can bring in ones it didn't use).
-  const cited = (m.sources || []).filter((s) => m.content.includes(`[${s.title}]`));
-  if (cited.length || m.sources?.length) html += sourceLine(cited.length ? cited : m.sources);
+  // Sources are shown once: as the chips inside the answer, each with its checked date. Only if the
+  // shown text kept no [Title] at all (a translation that dropped them) do the sources follow as chips.
+  const body = renderExplanation(translated || m.content, m.sources || []);
+  const orphan = m.generated && !countCites(body) && m.sources?.length
+    ? `<p class="cites">${m.sources.map((s) => citeChip(esc(s.title), m.sources)).join(" ")}</p>` : "";
+  html += `<div class="explanation">${body}${orphan}</div>`;
   html += speakButton(".msg--ai");
-  if (translated) html += `<details><summary>${esc(t("show_english"))}</summary><div class="explanation english">${renderExplanation(m.content)}</div></details>`;
+  if (translated) html += `<details><summary>${esc(t("show_english"))}</summary><div class="explanation english">${renderExplanation(m.content, m.sources || [])}</div></details>`;
   if (m.sources?.length) html += `<details><summary>${esc(t("sources_used"))}</summary><div class="sources">${m.sources.map((x) =>
     `<div><b>${esc(x.title)}</b>${esc(x.citation)}</div>`).join("")}</div></details>`;
   if (m.model?.generation) html += `<p class="model">${esc(t("generated_by", { gen: m.model.generation, emb: m.model.embedding }))}</p>`;

@@ -386,8 +386,15 @@ ul.firstaid__steps { list-style: disc; }
 .preview__badge { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #8a5a00; background: #fff4d6; border-radius: 999px; padding: 3px 10px; }
 /* Grid and flex children default to the width of their widest content; the one-row chip strip and long
    source names would then push the whole answer past a phone's edge. Let them shrink and wrap instead. */
-.ent > *, .chat-log, .msg--ai, .explanation, .from { min-width: 0; }
+.ent > *, .chat-log, .msg--ai, .explanation { min-width: 0; }
 .cite { max-width: 100%; overflow-wrap: anywhere; }
+/* A chip with a checked date: a small tick on the same line; tap for the date on a second line. */
+.cite--dated { border: 0; font-family: inherit; line-height: inherit; text-align: start; cursor: pointer; }
+.cite__tick { margin-inline-start: 5px; font-weight: 800; opacity: .7; }
+.cite__date { display: block; font-weight: 500; opacity: .8; }
+.cite__date[hidden] { display: none; }
+.cites { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 6px; }
+.cites .cite { margin-top: 0; }
 .chat-log { display: flex; flex-direction: column; gap: 14px; max-height: 620px; overflow: auto; padding-inline-end: 4px; }
 .msg--user { align-self: flex-end; max-width: 85%; background: var(--primary); color: #fff; border-radius: 16px 16px 4px 16px; padding: 10px 14px; }
 html[dir="rtl"] .msg--user { border-radius: 16px 16px 16px 4px; }
@@ -455,8 +462,6 @@ html[dir="rtl"] .msg--user { border-radius: 16px 16px 16px 4px; }
 #results-feedback:empty { display: none; }
 
 /* ---------- answers: where it came from, and "I'm not sure" ---------- */
-.from { margin-top: 12px; font-size: .82rem; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-.from .cite { margin-top: 0; }
 .unsure { background: #fff7e6; border: 1px solid #f1d9a6; border-radius: 14px; padding: 14px 16px; color: #6b4600; }
 .unsure__title { display: flex; align-items: center; gap: 8px; font-weight: 800; color: #6b4600; margin-bottom: 4px; }
 
