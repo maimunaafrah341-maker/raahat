@@ -17,9 +17,9 @@ Paschim Banga judgment, Aarogyasri, Telangana BOCW Welfare Board) — always wit
 > `reported` (secondary sources) or unverified (`?`). The original synthetic set is still available:
 > `python data/seed_facilities.py --demo`.
 
-## Demo
+## Pitch and demo
 
-The video shows someone speaking an emergency in Hinglish, the hospital results, first aid read aloud with Gnani Timbre, and a spoken follow-up question answered from sources.
+The one-page pitch is in [PITCH.md](PITCH.md). The video shows someone speaking an emergency in Hinglish, the hospital results, first aid read aloud with Gnani Timbre, and a spoken follow-up question answered from sources.
 
 - **Video:** https://youtu.be/zD166e7fdb4
 - **Live app:** https://raahat-9g7r.onrender.com (it runs on a free tier, so the first load can take about a minute)
