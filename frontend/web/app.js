@@ -303,22 +303,49 @@ function renderLocalities() {
 }
 
 /* ---------- search ---------- */
-// The phone's own location is the most accurate start point; the area list is the fallback.
-function useMyLocation() {
+// The phone's own location is the most accurate start point; the area search is the fallback.
+// The coordinates only go into the search request: never saved on the phone, never sent to analytics.
+const GEO_TIMEOUT_MS = 12000;
+function nearestLocality(lat, lng) {
+  let best = null;
+  for (const l of state.localities || []) {
+    const km = haversineKm(lat, lng, l.lat, l.lng);
+    if (!best || km < best.km) best = { name: l.name, km };
+  }
+  return best;
+}
+function geoFailed(key) {
   const status = $("geo-status");
-  if (!navigator.geolocation) { toast(t("flow.geo_fail")); return; }
   status.hidden = false;
+  status.classList.add("geo-status--fail");
+  status.textContent = t(key);
+  $("locality").focus(); // straight back to choosing an area by hand
+}
+function useMyLocation() {
+  const btn = $("geo-btn"), status = $("geo-status");
+  if (btn.disabled) return; // already asking
+  if (!navigator.geolocation) { geoFailed("flow.geo_unavailable"); return; }
+  btn.disabled = true;
+  status.hidden = false;
+  status.classList.remove("geo-status--fail");
   status.textContent = t("flow.locating");
   navigator.geolocation.getCurrentPosition((pos) => {
-    $("lat").value = pos.coords.latitude.toFixed(5);
-    $("lng").value = pos.coords.longitude.toFixed(5);
+    btn.disabled = false;
+    const { latitude: lat, longitude: lng } = pos.coords;
+    $("lat").value = lat.toFixed(5);
+    $("lng").value = lng.toFixed(5);
     $("use-coords").checked = true;
-    status.textContent = `✓ ${t("flow.located")}`;
+    const near = nearestLocality(lat, lng);
+    status.textContent = near && near.km <= 5
+      ? `✓ ${t("flow.located_near", { area: near.name })}`
+      : `✓ ${t("flow.located")}`;
     track("action", "geo_used");
-  }, () => {
-    status.hidden = true;
-    toast(t("flow.geo_fail"));
-  }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  }, (err) => {
+    btn.disabled = false;
+    $("use-coords").checked = false;
+    geoFailed(err.code === err.PERMISSION_DENIED ? "flow.geo_denied"
+      : err.code === err.TIMEOUT ? "flow.geo_timeout" : "flow.geo_unavailable");
+  }, { enableHighAccuracy: true, timeout: GEO_TIMEOUT_MS, maximumAge: 60000 });
 }
 function searchOrigin() {
   if ($("use-coords").checked) {
@@ -1486,6 +1513,7 @@ async function init() {
     syncCoords();
     $("use-coords").checked = false; // an area picked by hand replaces "my location"
     $("geo-status").hidden = true;
+    $("geo-status").classList.remove("geo-status--fail");
   });
   $("radius").addEventListener("input", () => ($("radius-val").textContent = $("radius").value));
   $("injury").addEventListener("change", () => { clearResults(); pickInjury($("injury").value); renderPics(); });

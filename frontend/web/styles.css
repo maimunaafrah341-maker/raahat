@@ -99,6 +99,7 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .hero__title { font-size: clamp(1
 .where__or { color: var(--muted); font-weight: 600; padding-bottom: 12px; }
 .where__area { flex: 1; min-width: 200px; }
 .geo-status { margin-top: 10px; font-weight: 700; color: var(--primary-ink); }
+.geo-status--fail { color: var(--danger); font-weight: 600; }
 .btn--block { width: 100%; margin-top: 16px; justify-content: center; }
 .understood { scroll-margin-top: 80px; }
 .describe { margin: 0; }
