@@ -336,6 +336,16 @@ html:is([lang="te"], [lang="hi"], [lang="ur"]) .sources-band__label { letter-spa
 .mic__level i { display: block; height: 100%; width: 100%; background: #fff; transform-origin: left; transform: scaleX(0); transition: transform .1s linear; }
 .mic:disabled { opacity: .85; cursor: progress; }
 .mic-hint { margin-top: 8px; font-size: .85rem; color: var(--muted); }
+/* Examples: small and quiet, under the mic. */
+.examples { margin-top: 10px; font-size: .85rem; color: var(--muted); }
+.examples__say { margin: 0 0 6px; }
+.examples__row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.examples__row > span:last-child { display: contents; }
+.examples__label { font-weight: 600; }
+.example { border: 1px dashed #c9d6d1; background: transparent; color: var(--primary-ink); border-radius: 999px;
+  padding: 6px 12px; min-height: 40px; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.example:hover, .example:focus-visible { border-style: solid; border-color: var(--primary); }
+.area-need { margin: 8px 0 0; color: var(--danger); font-weight: 700; }
 .speak-btn {
   display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; min-height: 44px;
   border: 1.5px solid var(--primary); background: var(--primary-soft); color: var(--primary-ink); border-radius: 999px;

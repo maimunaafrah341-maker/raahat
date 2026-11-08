@@ -92,7 +92,7 @@ def test_no_match_message_in_all_four_languages():
 
 def test_a_case_from_the_phones_location_saves_no_area():
     sync = APP_JS[APP_JS.index("function syncCase"):APP_JS.index("function newCase")]
-    assert re.search(r'locality:\s*\$\("use-coords"\)\.checked\s*\?\s*null\s*:\s*\$\("locality"\)\.value', sync)
+    assert re.search(r'locality:\s*\$\("use-coords"\)\.checked\s*\?\s*null\s*:\s*\$\("locality"\)\.value\s*\|\|\s*null', sync)
     assert "lat" not in sync and "lng" not in sync
 
 

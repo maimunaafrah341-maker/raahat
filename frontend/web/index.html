@@ -96,6 +96,11 @@
           <!-- The first thing anyone sees: one big button to speak, and pictures to tap. -->
           <button type="button" class="btn mic mic--big" id="mic-btn" hidden><svg class="ico"><use href="#i-mic"/></svg><span id="mic-label" data-i18n="voice.speak"></span><span class="mic__level" aria-hidden="true"><i id="mic-level"></i></span></button>
           <p class="mic-hint" id="mic-hint" data-i18n="voice.hint" hidden></p>
+          <!-- Examples: what to say, and three to tap. Hidden while a hospital list is showing. -->
+          <div class="examples" id="examples">
+            <p class="examples__say" id="examples-say" data-i18n="ex.say" hidden></p>
+            <div class="examples__row"><span class="examples__label" data-i18n="ex.label"></span><span id="examples-chips"></span></div>
+          </div>
           <p class="pics__label" data-i18n="pics.label"></p>
           <div class="pics" id="pics"></div>
           <details class="more-ways" id="more-ways">
@@ -137,6 +142,7 @@
               <input id="locality" type="hidden">
               <ul id="area-list" class="area-list" role="listbox" hidden></ul>
               <p id="area-none" class="area-none" role="status" hidden></p>
+              <p id="area-need" class="area-need" role="alert" hidden></p>
             </div>
           </div>
           <p id="geo-status" class="geo-status" hidden></p>

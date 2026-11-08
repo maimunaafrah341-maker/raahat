@@ -182,7 +182,12 @@ Ambiguous names (e.g. two places called Bandlaguda) are left out rather than gue
 People find their area by typing a few letters into a search box (`frontend/web/areas.js`). It copes with
 spelling variants (Amirpet, Kukatpalli), small typos, alternate names listed as `aliases` (KPHB, Lal Bahadur
 Nagar, Old City), and names typed in Telugu, Hindi or Urdu script. A case saved after a search from the phone's
-location records no area.
+location records no area. The page starts with no area: "Find hospitals" asks for one rather than searching
+from a default.
+
+Under the mic, an example sentence shows what to say, and three examples (broken leg, chest pain, pregnant and
+bleeding) can be tapped instead. They go through the same path as a described emergency, without calling the AI,
+and are hidden while a hospital list is showing.
 
 ## What is logged (anonymously)
 

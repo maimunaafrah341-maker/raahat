@@ -129,6 +129,7 @@ function applyLanguage() {
   renderInjuryControls();
   renderPics();
   if (state.localities) refreshAreaSearch();
+  if ($("examples-chips")) renderExamples();
   renderLegend();
   renderHelplines();
   renderSteps();
@@ -208,12 +209,41 @@ function onPic(ev) {
   $("understood").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/* ---------- examples under the mic: tap one instead of speaking or typing ---------- */
+// Each goes through the same path as a described emergency, with what it would have been understood as,
+// so it works without the AI (or a signal). `text` is shown back as the summary and kept as the notes.
+const EXAMPLES = [
+  { key: "fracture", injury: "fracture" },
+  { key: "chest", injury: "chest_pain" },
+  { key: "pregnancy", injury: "pregnancy_problem" }, // "pregnant" is added from the emergency itself
+];
+function renderExamples() {
+  $("examples-chips").innerHTML = EXAMPLES.map((x) =>
+    `<button type="button" class="example" data-example="${x.key}">${esc(t(`ex.${x.key}`))}</button>`).join("");
+}
+function onExample(ev) {
+  const btn = ev.target.closest("[data-example]");
+  if (!btn) return;
+  const x = EXAMPLES.find((e) => e.key === btn.dataset.example);
+  const text = t(`ex.${x.key}`);
+  const urgent = state.injuries.find((i) => i.key === x.injury)?.group === "urgent";
+  applyUnderstanding({ injury: x.injury, situations: [], conditions: [], area: null, summary: text,
+    life_threatening_signs: urgent }, text);
+  // Use the area or location they already gave; with none, the card asks for it (nothing is picked for them).
+  state.understood.knowPlace = !!searchOrigin();
+  renderUnderstood();
+  track("action", "example_used");
+}
+// Examples are for getting started: out of the way while a hospital list is showing.
+function syncExamples() { $("examples").hidden = !$("results").hidden; }
+
 // A new emergency hides the previous hospital list until the person searches again.
 function clearResults() {
   if ($("results").hidden) return;
   $("results").hidden = true;
   $("entitlements").hidden = true;
   state.triage = null;
+  syncExamples();
 }
 
 /* ---------- describe (free text -> suggestions) ---------- */
@@ -418,6 +448,7 @@ function useMyLocation() {
     $("lng").value = lng.toFixed(5);
     $("use-coords").checked = true;
     showChosenArea();
+    $("area-need").hidden = true;
     const near = nearestLocality(lat, lng);
     status.textContent = near && near.km <= 5
       ? `✓ ${t("flow.located_near", { area: near.name })}`
@@ -430,22 +461,32 @@ function useMyLocation() {
       : err.code === err.TIMEOUT ? "flow.geo_timeout" : "flow.geo_unavailable");
   }, { enableHighAccuracy: true, timeout: GEO_TIMEOUT_MS, maximumAge: 60000 });
 }
+// Where the search starts: the phone's location, or an area the person chose. Null until they give one:
+// the page never picks an area for them.
 function searchOrigin() {
   if ($("use-coords").checked) {
     const lat = parseFloat($("lat").value), lng = parseFloat($("lng").value);
     if (Number.isFinite(lat) && Number.isFinite(lng)) return [lat, lng];
   }
-  return LOCALITIES[$("locality").value];
+  return LOCALITIES[$("locality").value] || null;
+}
+function askForArea() {
+  const need = $("area-need");
+  need.textContent = t("area.needed");
+  need.hidden = false;
+  $("area-search").focus();
 }
 async function runSearch({ scroll = true, selectId = null } = {}) {
   const btn = $("search-btn");
-  const [lat, lng] = searchOrigin();
+  const origin = searchOrigin();
+  if (!origin) { askForArea(); return; }
+  const [lat, lng] = origin;
   busy(btn, true);
   try {
     state.triage = await api("/api/triage", {
       injury: state.injury, lat, lng, radius_km: Number($("radius").value), conditions: [...state.conditions],
       low_cost_first: $("low-cost").checked,
-      // A named area is logged as-is; GPS is rounded to ~1 km on the server.
+      // A named area is logged as-is; nothing is logged for the phone's location.
       session: sessionId(), language: state.lang, area: $("use-coords").checked ? null : $("locality").value,
     });
     const ids = state.triage.results.map((f) => f.id);
@@ -453,6 +494,7 @@ async function runSearch({ scroll = true, selectId = null } = {}) {
     state.resultsFeedback = null;
     $("results").hidden = false;
     $("entitlements").hidden = !state.triage.results.length;
+    syncExamples();
     renderResults();
     renderEntitlementForm();
     renderChat();
@@ -491,6 +533,7 @@ function showOffline(lat, lng, radius, scroll) {
   state.selectedId = results[0]?.id ?? null;
   $("results").hidden = false;
   $("entitlements").hidden = true; // questions need the server
+  syncExamples();
   renderResults();
   if (scroll) $("results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -987,7 +1030,7 @@ function syncCase() {
     ...(state.caseData || { messages: [] }),
     injury: state.triage?.injury.key || state.injury,
     // From the phone's location: no area, never the box's leftover default (and never the coordinates).
-    locality: $("use-coords").checked ? null : $("locality").value,
+    locality: $("use-coords").checked ? null : $("locality").value || null,
     facilityId: state.selectedId,
     situations: [...state.chosenSituations],
     conditions: [...state.conditions],
@@ -1588,9 +1631,12 @@ async function init() {
   $("lang").innerHTML = Object.entries(state.languages).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("");
   $("lang").value = state.lang;
   setupAreaSearch();
-  $("locality").value = "Charminar";
-  const syncCoords = () => { const [la, ln] = LOCALITIES[$("locality").value]; $("lat").value = la; $("lng").value = ln; };
-  syncCoords();
+  renderExamples();
+  // No area until the person gives one (typed, spoken or their location), so nobody searches from a default.
+  const syncCoords = () => {
+    const c = LOCALITIES[$("locality").value];
+    if (c) { $("lat").value = c[0]; $("lng").value = c[1]; }
+  };
   showChosenArea();
 
   $("lang").addEventListener("change", () => { stopSpeaking();state.lang = $("lang").value; store.set("raahat.lang", state.lang); applyLanguage(); });
@@ -1599,8 +1645,10 @@ async function init() {
     $("use-coords").checked = false; // an area picked by hand replaces "my location"
     $("geo-status").hidden = true;
     $("geo-status").classList.remove("geo-status--fail");
+    $("area-need").hidden = true;
     showChosenArea();
   });
+  $("examples").addEventListener("click", onExample);
   $("radius").addEventListener("input", () => ($("radius-val").textContent = $("radius").value));
   $("injury").addEventListener("change", () => { clearResults(); pickInjury($("injury").value); renderPics(); });
   $("pics").addEventListener("click", onPic);
@@ -1692,7 +1740,7 @@ async function init() {
   });
   $("ent-facility").addEventListener("change", () => selectFacility(Number($("ent-facility").value)));
   $("describe-form").addEventListener("submit", onDescribe);
-  if (CAN_RECORD || SpeechRec) { $("mic-btn").hidden = false; $("mic-hint").hidden = false; wireMic(); }
+  if (CAN_RECORD || SpeechRec) { $("mic-btn").hidden = false; $("mic-hint").hidden = false; $("examples-say").hidden = false; wireMic(); }
   // Phones: the helplines list starts folded so the form is the first thing on screen.
   if (window.matchMedia("(max-width: 600px)").matches) $("helplines-box").open = false;
   document.addEventListener("click", (ev) => {
