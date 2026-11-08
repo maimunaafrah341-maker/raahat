@@ -49,13 +49,14 @@ the web page and the API. In Render: **New → Blueprint →** pick this repo, t
 your `GEMINI_API_KEY` when asked. The database is seeded and the vector index built on startup.
 Peak memory for a full session is well inside the free tier's 512 MB (the API alone peaked at ~136 MB).
 
-Optional voice setting:
+Optional settings for voice and answers (see [Voice by Gnani](#voice-by-gnani)):
 
-- `GNANI_API_KEY`: Telugu, Hindi and English speech goes to Gnani (Prisma writes down what was said,
-  Timbre reads answers aloud), and Urdu stays with Gemini. Without the key, or when Gnani fails, Gemini
-  does both. `GNANI_LIMIT_PER_IP_HOUR` (default 40) and `GNANI_LIMIT_PER_DAY` (default 300) cap the calls,
-  and over a cap the app quietly uses Gemini. Set `GNANI_LIMIT_PER_DAY=0` to turn Gnani off. The counts are
-  kept in memory, so a restart or the free plan's sleep resets them.
+- `GNANI_API_KEY` turns on Gnani speech for Telugu, Hindi and English. Without it, Gemini does all speech.
+- `GNANI_LIMIT_PER_IP_HOUR` (default 40) and `GNANI_LIMIT_PER_DAY` (default 300) cap Gnani calls. Over a cap
+  the app quietly uses Gemini. `GNANI_LIMIT_PER_DAY=0` turns Gnani off. The counts are kept in memory, so a
+  restart or the free plan's sleep resets them.
+- `GEMINI_ANSWER_MODELS` (comma-separated, default `gemini-3.1-flash-lite,gemini-flash-lite-latest`) and
+  `GEMINI_ANSWER_BUDGET_S` (default 10) choose the models that write answers to questions and how long they get.
 
 Two optional settings for collecting validation data:
 
@@ -112,6 +113,13 @@ Two optional settings for collecting validation data:
 Understanding (typed or spoken) uses fast "lite" models first (`UNDERSTAND_MODELS` in
 `backend/understanding.py`, ~4-8 s). On the free tier `gemini-3.8-flash` allows only 20 requests a day,
 so for real use enable billing on the API key; the fallback chains keep the app answering meanwhile.
+
+Answers to questions are written by fast "lite" models too (`GEMINI_ANSWER_MODELS`), one try each, within
+`GEMINI_ANSWER_BUDGET_S` (10 s) including the guardrail rewrite. If the rewrite runs out of time, the first
+draft is kept and cleaned up. The translation then gets up to 6 s. On a real Telugu question the bigger models
+took 20–34 s, and people waited about 45 s for nothing; with lite models typed Telugu questions took 6.5–9.5 s
+from question to answer. If no answer comes in time, the person sees the list of relevant sources with a short
+note in their own language.
 
 ## Researching hospitals yourself
 
@@ -207,7 +215,9 @@ a captcha, so entries are checked by hand.
 - `GET  /api/situations` — situation tags the user can tick
 - `POST /api/entitlements` — `{"injury": "hand_finger", "facility_id": 3, "situations": ["cant_pay"], "situation": "optional notes", "question": "optional", "history": [{"role": "user", "content": "..."}], "language": "te"}` → also `low_confidence`, and `verified` on each source
 - `GET  /api/checklist` — rules for the documents-to-carry card
-- `POST /api/speak` — `{"text": "108కి ఫోన్ చేయండి.", "language": "te"}` → WAV audio (up to 600 characters)
+- `POST /api/speak` — `{"text": "108కి ఫోన్ చేయండి.", "language": "te"}` → WAV audio (up to 600 characters); headers `X-TTS-Provider` (`gnani` or `gemini`) and `X-TTS-Model`
+- `POST /api/understand_audio` — WAV body, `?language=te` → like `/api/understand`, plus `transcript` and `stt_provider`
+- `POST /api/transcribe` — WAV body, `?language=te` → `{"transcript": "...", "stt_provider": "gnani|gemini"}` (spoken follow-up questions)
 - `POST /api/event` — `{"kind": "feedback|action|report", "value": "...", "session": "..."}` (closed vocabularies, see `backend/analytics.py`)
 
 ## Voice
@@ -217,9 +227,34 @@ Urdu or English) and goes straight to understanding it — no extra tap. Tap to 
 hold while talking like a WhatsApp voice note; a bar moves with the voice so people can see they're being heard.
 "Read aloud" buttons on the first-aid card, the next-steps guide and each answer use the phone's own voice for
 English, skipping citation labels. Telugu, Hindi and Urdu always use the server's voice, because many phones list
-a voice for them that was never downloaded and then play nothing: the page asks `/api/speak`, which reads the text with Gemini text-to-speech (`backend/speech.py`) a sentence
+a voice for them that was never downloaded and then play nothing: the page asks `/api/speak`, which reads the text with Gnani Timbre for Telugu and Hindi when it is set up, and Gemini text-to-speech otherwise (`backend/speech.py`), a sentence
 or two at a time, showing "Loading the voice…" until the first words play (about 4 seconds). Chunks are cached, so first-aid cards that many people
 read cost nothing after the first time, and each visitor is limited to 150 chunks per 10 minutes.
+
+## Voice by Gnani
+
+With `GNANI_API_KEY` set, Telugu, Hindi and English speech goes to Gnani (`backend/gnani.py`):
+
+- **Speech to text: Prisma** (`prisma-v3.0`). Used for describing the emergency (`/api/understand_audio`)
+  and for spoken follow-up questions (`/api/transcribe`). Telugu and Hindi are sent with English as well, for
+  code-mixed speech. Gnani takes at most 30 s of audio, so recordings in these languages stop at 30 s, with a
+  countdown for the last 10 s. Silence comes back as "nothing heard" straight away.
+- **Read aloud: Timbre** (`timbre-v2.5`), voices Suhana (Telugu) and Ambuja (Hindi), through `/api/speak`.
+- **Spoken follow-ups.** In the conversation, the Speak button records a question; Gnani writes it down, it is
+  asked like a typed question, and the answer is read aloud. If the browser blocks autoplay, the Read aloud
+  button pulses instead.
+- **Labels.** "Heard by Gnani Prisma" and "Voice by Gnani" show only when Gnani really did the work.
+- **Fallback to Gemini**, silently, when there's no key, a cap is reached, Gnani errors or times out (12 s for
+  speech to text, 10 s for read aloud), or another Gnani request is running. Gnani allows one request at a time,
+  so the app waits up to 2 s for it and otherwise uses Gemini.
+
+Known limits:
+
+- **Urdu uses Gemini only.** Gnani has no Urdu.
+- **English read aloud uses the device voice**, as before; Timbre is only used for English if something asks
+  `/api/speak` in English. Prisma also misheard "Aarogyasri" in English ("autogisery").
+- **Keyterm hints are off.** `data/gnani_context.json` can send Prisma a topic and up to 200 keyterms
+  (`"enabled": true`), but in testing they turned a Telugu word ("కి") into "okay", so they stay disabled.
 
 ## First aid
 
