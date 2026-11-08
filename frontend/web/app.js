@@ -1287,6 +1287,8 @@ function toggleListening() {
  * heard plus the filled-in form. Phones that can't record fall back to the browser's recognition. */
 const CAN_RECORD = !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder && (window.AudioContext || window.webkitAudioContext));
 const rec = { stream: null, mr: null, chunks: [], ctx: null, timer: null, started: 0, lastLoud: 0, noise: 0, busy: false };
+// WebM recorders (Chrome, Edge, Firefox, Android) keep the slices they always had.
+const RECORD_IN_SLICES = !!window.MediaRecorder?.isTypeSupported?.("audio/webm");
 
 // Two mic buttons share the recorder: the big one describes the emergency, the small one beside the
 // question box asks a follow-up. Each recording remembers which one it belongs to.
@@ -1314,7 +1316,10 @@ async function startRecording(target = "describe") {
   rec.mr = new MediaRecorder(stream);
   rec.mr.ondataavailable = (e) => { if (e.data.size) rec.chunks.push(e.data); };
   rec.mr.onstop = onRecordingStopped;
-  rec.mr.start(250);
+  // iPhones and Safari record MP4. Recorded in 250 ms slices, the pieces join into a fragmented MP4
+  // that Safari's own decoder rejects ("Decoding failed"), so there it is recorded as one piece.
+  if (RECORD_IN_SLICES) rec.mr.start(250);
+  else rec.mr.start();
   micState("listening");
   // Silence detection: the first half second sets the room's noise level; after that, quiet for
   // SILENCE_MS after speaking (or FIRST_WORD_MS before any speech, or MAX_LISTEN_MS overall) ends it.
@@ -1395,7 +1400,9 @@ async function onRecordingStopped() {
     $("describe-text").value = res.transcript;
     applyUnderstanding(res, res.transcript);
   } catch (err) {
-    toast(err.name === "AbortError" ? t("timeout") : err.message || t("cannot_connect"));
+    // The phone couldn't turn its own recording into audio: say so plainly, never the browser's error.
+    const unreadable = err.name === "EncodingError" || /decod/i.test(err.message || "");
+    toast(err.name === "AbortError" ? t("timeout") : unreadable ? t("voice.unreadable") : err.message || t("cannot_connect"));
   } finally {
     clearTimeout(stop);
     ctx?.close();
